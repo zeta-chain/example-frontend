@@ -13,6 +13,7 @@ import {
 import "@rainbow-me/rainbowkit/styles.css";
 import { Messaging } from "./Messaging";
 import { Balances } from "./Balances";
+import { Transactions } from "./Transactions";
 import { Fees } from "./Fees";
 import "@rainbow-me/rainbowkit/styles.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -25,6 +26,8 @@ import {
   zetachainAthensTestnet,
 } from "wagmi/chains";
 import { publicProvider } from "wagmi/providers/public";
+import AppContext from "./AppContext";
+import { useState } from "react";
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
@@ -53,40 +56,48 @@ const wagmiConfig = createConfig({
 });
 
 export const App = () => {
+  const [cctxs, setCCTXs] = useState([]);
+
   return (
-    <ChakraProvider theme={theme}>
-      <WagmiConfig config={wagmiConfig}>
-        <RainbowKitProvider chains={chains}>
-          <Tabs variant="soft-rounded" m="4" mt="0" colorScheme={"gray"}>
-            <Flex flexWrap="wrap-reverse" alignItems="center">
-              <TabList>
-                <Flex flexWrap="wrap" alignContent="center">
-                  <Tab>Messaging</Tab>
-                  <Tab>Balances</Tab>
-                  <Tab>Fees</Tab>
+    <AppContext.Provider value={{ cctxs, setCCTXs }}>
+      <ChakraProvider theme={theme}>
+        <WagmiConfig config={wagmiConfig}>
+          <RainbowKitProvider chains={chains}>
+            <Tabs variant="soft-rounded" m="4" mt="0" colorScheme={"gray"}>
+              <Flex flexWrap="wrap-reverse" alignItems="center">
+                <TabList>
+                  <Flex flexWrap="wrap" alignContent="center">
+                    <Tab>Messaging</Tab>
+                    <Tab>Balances</Tab>
+                    <Tab>Fees</Tab>
+                    <Tab>Transactions</Tab>
+                  </Flex>
+                </TabList>
+                <Spacer />
+                <Flex alignItems="center" mb="4" mt="4">
+                  <ConnectButton />
                 </Flex>
-              </TabList>
-              <Spacer />
-              <Flex alignItems="center" mb="4" mt="4">
-                <ConnectButton />
               </Flex>
-            </Flex>
-            <Container mt="4" p="0">
-              <TabPanels>
-                <TabPanel>
-                  <Messaging />
-                </TabPanel>
-                <TabPanel>
-                  <Balances />
-                </TabPanel>
-                <TabPanel>
-                  <Fees />
-                </TabPanel>
-              </TabPanels>
-            </Container>
-          </Tabs>
-        </RainbowKitProvider>
-      </WagmiConfig>
-    </ChakraProvider>
+              <Container mt="4" p="0">
+                <TabPanels>
+                  <TabPanel>
+                    <Messaging />
+                  </TabPanel>
+                  <TabPanel>
+                    <Balances />
+                  </TabPanel>
+                  <TabPanel>
+                    <Fees />
+                  </TabPanel>
+                  <TabPanel>
+                    <Transactions />
+                  </TabPanel>
+                </TabPanels>
+              </Container>
+            </Tabs>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </ChakraProvider>
+    </AppContext.Provider>
   );
 };

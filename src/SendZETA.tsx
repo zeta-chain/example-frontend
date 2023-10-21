@@ -1,9 +1,10 @@
 import { Input, Select, Button, Heading } from "@chakra-ui/react";
-import React from "react";
-import { useNetwork, useWalletClient, useAccount } from "wagmi";
+import React, { useContext } from "react";
+import { useNetwork, useAccount } from "wagmi";
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName";
 import { sendZETA } from "@zetachain/toolkit/helpers";
 import { useEthersSigner } from "./ethers";
+import AppContext from "./AppContext";
 
 export const SendZETA = () => {
   const networks = [
@@ -12,6 +13,9 @@ export const SendZETA = () => {
     "bsc_testnet",
     "zeta_testnet",
   ];
+
+  const { cctxs, setCCTXs } = useContext(AppContext);
+
   const { address, isConnected } = useAccount();
   const [destinationNetwork, setDestinationNetwork] = React.useState("");
 
@@ -44,13 +48,18 @@ export const SendZETA = () => {
 
     if (signer && destinationNetwork && amount) {
       try {
-        await sendZETA(
+        const tx = await sendZETA(
           signer,
           amount,
           currentNetworkName,
           destinationNetwork,
           address
         );
+        const cctx = {
+          inboundHash: tx.hash,
+          desc: `Sent ${amount} ZETA to ${recipient} on ${destinationNetwork}`,
+        };
+        setCCTXs([cctx, ...cctxs]);
       } catch (error) {
         console.error("Error sending ZETA:", error);
       } finally {
