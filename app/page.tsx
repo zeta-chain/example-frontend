@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useContext, useEffect } from "react"
 import { getBalances } from "@zetachain/toolkit/helpers"
 import { useAccount } from "wagmi"
 
@@ -14,26 +14,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Transfer from "@/components/transfer"
+import AppContext from "@/app/app"
 
 export default function IndexPage() {
-  const [balances, setBalances] = useState<any>(null)
-  const [error, setError] = useState<Error | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const { address, isConnected } = useAccount()
-
-  useEffect(() => {
-    const fetchBalances = async () => {
-      setIsLoading(true)
-      try {
-        const result = await getBalances(address)
-        setBalances(result)
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error(String(err)))
-      }
-      setIsLoading(false)
-    }
-    fetchBalances()
-  }, [address])
+  const { balances, balancesLoading } = useContext(AppContext)
 
   return (
     <div>
@@ -42,7 +26,7 @@ export default function IndexPage() {
           <h1 className="text-3xl font-extrabold leading-tight tracking-tighter mt-6 mb-4">
             Balances
           </h1>
-          {isLoading ? (
+          {balancesLoading ? (
             <p>Loading...</p>
           ) : (
             <Card>

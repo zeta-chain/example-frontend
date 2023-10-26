@@ -7,7 +7,6 @@ import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
-import Index from "@/app/index"
 
 import "@rainbow-me/rainbowkit/styles.css"
 import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit"
@@ -53,22 +52,40 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 })
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function Index({ children }: RootLayoutProps) {
+  const [cctxs, setCCTXs] = useState([])
+  const [balances, setBalances] = useState([])
+  const [balancesLoading, setBalancesLoading] = useState(true)
+  const { address } = useAccount()
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      setBalancesLoading(true)
+      try {
+        const result = await getBalances(address)
+        setBalances(result as any)
+      } catch (err) {
+        console.log(err)
+      }
+      setBalancesLoading(false)
+    }
+    fetchBalances()
+  }, [])
+
   return (
     <>
-      <html lang="en" suppressHydrationWarning>
-        <head />
-        <body
-          className={cn(
-            "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
-          )}
-        >
-          <WagmiConfig config={wagmiConfig}>
-            <Index children={children} />
-          </WagmiConfig>
-        </body>
-      </html>
+      <AppContext.Provider
+        value={{ cctxs, setCCTXs, balances, setBalances, balancesLoading }}
+      >
+        <RainbowKitProvider chains={chains}>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+            <div className="relative flex min-h-screen flex-col">
+              <SiteHeader />
+              <section className="container">{children}</section>
+            </div>
+          </ThemeProvider>
+        </RainbowKitProvider>
+      </AppContext.Provider>
     </>
   )
 }
