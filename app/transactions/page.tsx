@@ -15,7 +15,7 @@ import AppContext from "@/app/app"
 
 import Track from "./track"
 
-export default () => {
+const TransactionsPage = () => {
   const { cctxs } = useContext(AppContext)
 
   return (
@@ -42,3 +42,5 @@ export default () => {
     </div>
   )
 }
+
+export default TransactionsPage

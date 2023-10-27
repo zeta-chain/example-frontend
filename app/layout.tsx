@@ -65,7 +65,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           )}
         >
           <WagmiConfig config={wagmiConfig}>
-            <Index children={children} />
+            <Index>{children}</Index>
           </WagmiConfig>
         </body>
       </html>

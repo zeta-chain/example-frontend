@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-export default () => {
+const FeesPage = () => {
   const [fees, setFees] = useState<any>(null)
   const [error, setError] = useState<Error | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -36,7 +36,7 @@ export default () => {
 
   return (
     <div>
-      <h2 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl mt-6 mb-4">
+      <h2 className="text-3xl font-extrabold leading-tight tracking-tight mt-6 mb-4 md:text-4xl">
         Omnichain Fees
       </h2>
       <div>(in native gas tokens of destination chain)</div>
@@ -70,7 +70,7 @@ export default () => {
           </Table>
         </Card>
       )}
-      <h2 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl mt-6 mb-4">
+      <h2 className="text-3xl font-extrabold leading-tight tracking-tight mt-6 mb-4 md:text-4xl">
         Cross-Chain Messaging Fees
       </h2>
       <div>(in ZETA, gas limit: 500000)</div>
@@ -107,3 +107,5 @@ export default () => {
     </div>
   )
 }
+
+export default FeesPage

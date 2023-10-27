@@ -7,7 +7,7 @@ import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 
 import { TableCell, TableRow } from "@/components/ui/table"
 
-export default ({ value }: any) => {
+const Track = ({ value }: any) => {
   const { inboundHash, desc } = value
   const [status, setStatus] = useState("searching")
 
@@ -43,3 +43,5 @@ export default ({ value }: any) => {
     </TableRow>
   )
 }
+
+export default Track

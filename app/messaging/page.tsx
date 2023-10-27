@@ -30,7 +30,7 @@ const contracts: any = {
   bsc_testnet: "0xc5d7437DE3A8b18f6380f3B8884532206272D599",
 }
 
-export default () => {
+const MessagingPage = () => {
   const [message, setMessage] = React.useState("")
   const [debouncedMessage] = useDebounce(message, 500)
 
@@ -142,3 +142,5 @@ export default () => {
     </div>
   )
 }
+
+export default MessagingPage

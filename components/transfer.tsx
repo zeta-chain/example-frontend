@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select"
 import AppContext from "@/app/app"
 
-export default () => {
+const Transfer = () => {
   const networks = [
     "goerli_testnet",
     "mumbai_testnet",
@@ -132,3 +132,5 @@ export default () => {
     </div>
   )
 }
+
+export default Transfer
