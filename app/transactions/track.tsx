@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
+// @ts-ignore
 import { trackCCTX } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"

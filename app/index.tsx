@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 
 import "@rainbow-me/rainbowkit/styles.css"
 import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit"
+// @ts-ignore
 import { getBalances } from "@zetachain/toolkit/helpers"
 import { WagmiConfig, configureChains, createConfig, useAccount } from "wagmi"
 import {

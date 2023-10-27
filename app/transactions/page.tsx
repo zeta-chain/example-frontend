@@ -3,6 +3,7 @@
 import { useContext } from "react"
 import { Divide } from "lucide-react"
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -37,7 +38,12 @@ const TransactionsPage = () => {
           </Table>
         </Card>
       ) : (
-        <div>No recent transactions.</div>
+        <Alert>
+          <AlertTitle>No recent transactions</AlertTitle>
+          <AlertDescription>
+            There are no recent cross-chain transactions to show.
+          </AlertDescription>
+        </Alert>
       )}
     </div>
   )

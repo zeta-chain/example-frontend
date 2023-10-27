@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+// @ts-ignore
 import { fetchFees } from "@zetachain/toolkit/helpers"
 import { useAccount } from "wagmi"
 

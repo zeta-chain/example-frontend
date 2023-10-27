@@ -2,6 +2,7 @@
 
 import { useContext, useEffect, useState } from "react"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
+// @ts-ignore
 import { sendZETA } from "@zetachain/toolkit/helpers"
 import { Loader2, Send } from "lucide-react"
 import { useAccount, useNetwork } from "wagmi"

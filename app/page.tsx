@@ -1,6 +1,7 @@
 "use client"
 
 import { useContext, useEffect } from "react"
+// @ts-ignore
 import { getBalances } from "@zetachain/toolkit/helpers"
 import { useAccount } from "wagmi"
 
