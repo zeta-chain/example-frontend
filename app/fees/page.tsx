@@ -36,7 +36,7 @@ export default () => {
 
   return (
     <div>
-      <h2 className="text-3xl font-extrabold leading-tight tracking-tighter md:text-4xl mt-6 mb-4">
+      <h2 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl mt-6 mb-4">
         Omnichain Fees
       </h2>
       <div>(in native gas tokens of destination chain)</div>
@@ -70,7 +70,7 @@ export default () => {
           </Table>
         </Card>
       )}
-      <h2 className="text-3xl font-extrabold leading-tight tracking-tighter md:text-4xl mt-6 mb-4">
+      <h2 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl mt-6 mb-4">
         Cross-Chain Messaging Fees
       </h2>
       <div>(in ZETA, gas limit: 500000)</div>

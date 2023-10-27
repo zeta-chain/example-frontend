@@ -22,6 +22,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@rainbow-me/rainbowkit": "^1.1.2",
     "@zetachain/networks": "^2.5.0",
+    "@zetachain/toolkit": "5.0.0-rc1",
     "class-variance-authority": "^0.4.0",
     "clsx": "^1.2.1",
     "ethers": "5.4.7",

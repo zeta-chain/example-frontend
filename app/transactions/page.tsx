@@ -20,9 +20,6 @@ export default () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-extrabold leading-tight tracking-tighter md:text-4xl mt-6 mb-4">
-        Cross-Chain Transactions
-      </h1>
       {cctxs.length > 0 ? (
         <Card className="max-w-[900px]">
           <Table>
@@ -34,7 +31,7 @@ export default () => {
             </TableHeader>
             <TableBody>
               {cctxs.map((cctx: any, index: any) => (
-                <Track value={cctx} />
+                <Track key={cctx.inboundHash} value={cctx} />
               ))}
             </TableBody>
           </Table>
