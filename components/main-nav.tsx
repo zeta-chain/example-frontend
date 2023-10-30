@@ -45,7 +45,7 @@ export function MainNav({ items }: MainNavProps) {
                   pathname === "/messaging" ? "bg-accent" : ""
                 )}
               >
-                Example
+                Examples
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>

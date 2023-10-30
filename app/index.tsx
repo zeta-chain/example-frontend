@@ -1,7 +1,7 @@
 "use client"
 
 import "@/styles/globals.css"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
@@ -56,27 +56,52 @@ const wagmiConfig = createConfig({
 export default function Index({ children }: RootLayoutProps) {
   const [cctxs, setCCTXs] = useState([])
   const [balances, setBalances] = useState([])
+  const [foreignCoins, setForeignCoins] = useState([])
   const [balancesLoading, setBalancesLoading] = useState(true)
+  const [balancesRefreshing, setBalancesRefreshing] = useState(false)
   const { address } = useAccount()
 
-  useEffect(() => {
-    const fetchBalances = async () => {
-      setBalancesLoading(true)
-      try {
-        const result = await getBalances(address)
-        setBalances(result as any)
-      } catch (err) {
-        console.log(err)
-      }
-      setBalancesLoading(false)
+  const fetchBalances = useCallback(async (refresh: Boolean = false) => {
+    refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
+    try {
+      const result = await getBalances(address)
+      setBalances(result as any)
+    } catch (err) {
+      console.log(err)
     }
+    refresh ? setBalancesRefreshing(false) : setBalancesLoading(false)
+  }, [])
+
+  useEffect(() => {
     fetchBalances()
+
+    const fetchForeignCoins = async () => {
+      try {
+        const response = await fetch(
+          "https://zetachain-athens.blockpi.network/lcd/v1/public/zeta-chain/zetacore/fungible/foreign_coins"
+        )
+        const data = await response.json()
+        setForeignCoins(data.foreignCoins)
+      } catch (err) {
+        console.error("Error fetching foreign coins:", err)
+      }
+    }
+    fetchForeignCoins()
   }, [])
 
   return (
     <>
       <AppContext.Provider
-        value={{ cctxs, setCCTXs, balances, setBalances, balancesLoading }}
+        value={{
+          cctxs,
+          setCCTXs,
+          balances,
+          setBalances,
+          balancesLoading,
+          balancesRefreshing,
+          fetchBalances,
+          foreignCoins,
+        }}
       >
         <RainbowKitProvider chains={chains}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>

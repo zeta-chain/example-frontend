@@ -12,13 +12,27 @@ const Track = ({ value }: any) => {
   const { inboundHash, desc } = value
   const [status, setStatus] = useState("searching")
 
+  const [details, setDetails] = useState("Searching...")
+
   useEffect(() => {
     const emitter = new EventEmitter()
 
     emitter
-      .on("search-add", () => setStatus("searching"))
-      .on("succeed", () => setStatus("success"))
-      .on("fail", () => setStatus("failure"))
+      .on("search-add", ({ text }) => {
+        setStatus("searching")
+        setDetails(text)
+      })
+      .on("succeed", ({ text }) => {
+        setStatus("success")
+        setDetails(text)
+      })
+      .on("fail", ({ text }) => {
+        setStatus("failure")
+        setDetails(text)
+      })
+      .on("add", ({ text }) => {
+        setDetails(text)
+      })
 
     const executeTracking = async () => {
       try {
@@ -35,12 +49,17 @@ const Track = ({ value }: any) => {
 
   return (
     <TableRow key={value.inboundHash}>
-      <TableCell className="flex justify-center">
-        {status === "searching" && <Loader2 className="animate-spin" />}
-        {status === "success" && <CheckCircle2 className="text-green-500" />}
-        {status === "failure" && <AlertTriangle className="text-red-500" />}
+      <TableCell className="w-[100px]">
+        <div className="flex justify-center">
+          {status === "searching" && <Loader2 className="animate-spin" />}
+          {status === "success" && <CheckCircle2 className="text-green-500" />}
+          {status === "failure" && <AlertTriangle className="text-red-500" />}
+        </div>
       </TableCell>
-      <TableCell>{value.desc}</TableCell>
+      <TableCell>
+        <div>{value.desc}</div>
+        <small className="text-muted-foreground">{details}</small>
+      </TableCell>
     </TableRow>
   )
 }
