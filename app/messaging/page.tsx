@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useContext, useEffect } from "react"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
 import networks from "@zetachain/networks/dist/src/networks"
 import { Loader2, Send } from "lucide-react"
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import AppContext from "@/app/app"
 
 const contracts: any = {
   goerli_testnet: "0x122F9Cca5121F23b74333D5FBd0c5D9B413bc002",
@@ -48,13 +50,14 @@ const MessagingPage = () => {
       (networks as any)[destinationNetwork]?.chain_id ?? null
     )
   }, [destinationNetwork])
+  const { cctxs, setCCTXs, foreignCoins } = useContext(AppContext)
 
   const {
     config,
     error: prepareError,
     isError: isPrepareError,
   } = usePrepareContractWrite({
-    address: contracts[destinationNetwork || ""],
+    address: contracts[currentNetworkName || ""],
     abi: [
       {
         inputs: [
@@ -88,6 +91,16 @@ const MessagingPage = () => {
   const { isLoading, isSuccess } = useWaitForTransaction({
     hash: data?.hash,
   })
+
+  useEffect(() => {
+    if (isSuccess && data) {
+      const cctx = {
+        inboundHash: data.hash,
+        desc: `Message sent to ${destinationNetwork}`,
+      }
+      setCCTXs([cctx, ...cctxs])
+    }
+  }, [isSuccess, data])
 
   const availableNetworks = allNetworks.filter(
     (network) => network !== currentNetworkName

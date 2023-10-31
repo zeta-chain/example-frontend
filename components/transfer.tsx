@@ -4,11 +4,12 @@ import { useContext, useEffect, useState } from "react"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
 import networks from "@zetachain/networks/dist/src/networks"
 // @ts-ignore
-import { sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
-import { Loader2, Send } from "lucide-react"
+import { fetchFees, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
+import { AlertCircle, Loader2, Send } from "lucide-react"
 import { useAccount, useNetwork } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,6 +35,10 @@ const Transfer = () => {
   const [destinationNetwork, setDestinationNetwork] = useState("")
   const [destinationAddress, setDestinationAddress] = useState("")
   const [sourceToken, setSourceToken] = useState("")
+  const [fees, setFees] = useState(null)
+  const [feeCCM, setFeeCCM] = useState(null)
+  const [betweenConnectedChains, setBetweenConnectedChains] = useState(false)
+  const [amountLessThanFees, setAmountLessThanFees] = useState(false)
 
   const [amount, setAmount] = useState("")
   const [isSending, setIsSending] = useState(false)
@@ -50,6 +55,54 @@ const Transfer = () => {
 
   const sourceNetworkChainID =
     networks[sourceNetwork as keyof typeof networks]?.chain_id
+
+  useEffect(() => {
+    const fetchFee = async () => {
+      try {
+        const result = await fetchFees(500000)
+        setFees(result)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchFee()
+  }, [address])
+
+  useEffect(() => {
+    if (
+      betweenConnectedChains &&
+      sourceToken === "ZETA" &&
+      amount &&
+      feeCCM &&
+      parseFloat(amount) < parseFloat(feeCCM)
+    ) {
+      setAmountLessThanFees(true)
+    } else {
+      setAmountLessThanFees(false)
+    }
+  }, [amount])
+
+  useEffect(() => {
+    if (
+      sourceNetwork &&
+      sourceNetwork !== "zeta_testnet" &&
+      destinationNetwork &&
+      destinationNetwork !== "zeta_testnet"
+    ) {
+      setBetweenConnectedChains(true)
+    } else {
+      setBetweenConnectedChains(false)
+    }
+  })
+
+  useEffect(() => {
+    if (betweenConnectedChains) {
+      const fee = fees?.feesCCM[destinationNetwork]?.totalFee
+      setFeeCCM(fee)
+    } else {
+      setFeeCCM(null)
+    }
+  }, [betweenConnectedChains])
 
   useEffect(() => {
     setDestinationAddress(address || "")
@@ -189,7 +242,13 @@ const Transfer = () => {
         <Button
           variant="outline"
           type="submit"
-          disabled={!isConnected || !destinationNetwork || !amount || isSending}
+          disabled={
+            !isConnected ||
+            !destinationNetwork ||
+            !amount ||
+            isSending ||
+            amountLessThanFees
+          }
         >
           {isSending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -198,6 +257,15 @@ const Transfer = () => {
           )}
           Send Tokens
         </Button>
+        {amountLessThanFees && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Amount should be more than the fee: <br />
+              {fees?.feesCCM[destinationNetwork]?.totalFee}
+            </AlertDescription>
+          </Alert>
+        )}
       </form>
     </div>
   )
