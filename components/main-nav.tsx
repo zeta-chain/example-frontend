@@ -1,18 +1,29 @@
+"use client"
+
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { ArrowDownUp } from "lucide-react"
 
 import { NavItem } from "@/types/nav"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import Transactions from "@/app/transactions/page"
 
 interface MainNavProps {
   items?: NavItem[]
@@ -38,16 +49,24 @@ export function MainNav({ items }: MainNavProps) {
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Link href="/messaging" legacyBehavior passHref>
-              <NavigationMenuLink
-                className={cn(
-                  navigationMenuTriggerStyle(),
-                  pathname === "/messaging" ? "bg-accent" : ""
-                )}
-              >
-                Examples
-              </NavigationMenuLink>
-            </Link>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <ArrowDownUp className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="bg-transparent w-full max-w-full sm:w-[500px] sm:max-w-full border-none shadow-none flex">
+                <div className="p-10 bg-white rounded-lg shadow-xl height-100">
+                  <SheetHeader>
+                    <SheetDescription></SheetDescription>
+                  </SheetHeader>
+                  <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
+                    Transactions
+                  </h1>
+                  <Transactions />
+                </div>
+              </SheetContent>
+            </Sheet>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>

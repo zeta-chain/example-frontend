@@ -1,16 +1,18 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useContext, useEffect, useState } from "react"
 // @ts-ignore
 import { trackCCTX } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 
 import { TableCell, TableRow } from "@/components/ui/table"
+import AppContext from "@/app/app"
 
 const Track = ({ value }: any) => {
   const { inboundHash, desc } = value
   const [status, setStatus] = useState("searching")
+  const { cctxs, setCCTXs, foreignCoins } = useContext(AppContext)
 
   const [details, setDetails] = useState("Searching...")
 
@@ -36,7 +38,7 @@ const Track = ({ value }: any) => {
 
     const executeTracking = async () => {
       try {
-        await trackCCTX(inboundHash, false, emitter)
+        console.log(await trackCCTX(inboundHash, false, emitter))
       } catch (e) {}
     }
 
@@ -49,14 +51,14 @@ const Track = ({ value }: any) => {
 
   return (
     <TableRow key={value.inboundHash}>
-      <TableCell className="w-[100px]">
-        <div className="flex justify-center">
+      <TableCell className="w-[75px] align-top">
+        <div className="flex justify-center p-2">
           {status === "searching" && <Loader2 className="animate-spin" />}
           {status === "success" && <CheckCircle2 className="text-green-500" />}
           {status === "failure" && <AlertTriangle className="text-red-500" />}
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="pl-0">
         <div>{value.desc}</div>
         <small className="text-muted-foreground">{details}</small>
       </TableCell>

@@ -36,8 +36,6 @@ const Transfer = () => {
   const [destinationAddress, setDestinationAddress] = useState("")
   const [sourceToken, setSourceToken] = useState("")
   const [fees, setFees] = useState(null)
-  const [feeCCM, setFeeCCM] = useState(null)
-  const [betweenConnectedChains, setBetweenConnectedChains] = useState(false)
   const [amountLessThanFees, setAmountLessThanFees] = useState(false)
 
   const [amount, setAmount] = useState("")
@@ -70,39 +68,20 @@ const Transfer = () => {
 
   useEffect(() => {
     if (
-      betweenConnectedChains &&
+      sourceNetwork &&
+      sourceNetwork !== "zeta_testnet" &&
+      destinationNetwork &&
+      destinationNetwork !== "zeta_testnet" &&
       sourceToken === "ZETA" &&
       amount &&
-      feeCCM &&
-      parseFloat(amount) < parseFloat(feeCCM)
+      parseFloat(amount) <
+        parseFloat(fees?.feesCCM[destinationNetwork]?.totalFee)
     ) {
       setAmountLessThanFees(true)
     } else {
       setAmountLessThanFees(false)
     }
-  }, [amount])
-
-  useEffect(() => {
-    if (
-      sourceNetwork &&
-      sourceNetwork !== "zeta_testnet" &&
-      destinationNetwork &&
-      destinationNetwork !== "zeta_testnet"
-    ) {
-      setBetweenConnectedChains(true)
-    } else {
-      setBetweenConnectedChains(false)
-    }
-  })
-
-  useEffect(() => {
-    if (betweenConnectedChains) {
-      const fee = fees?.feesCCM[destinationNetwork]?.totalFee
-      setFeeCCM(fee)
-    } else {
-      setFeeCCM(null)
-    }
-  }, [betweenConnectedChains])
+  }, [amount, destinationNetwork, sourceToken])
 
   useEffect(() => {
     setDestinationAddress(address || "")

@@ -22,14 +22,8 @@ const TransactionsPage = () => {
   return (
     <div>
       {cctxs.length > 0 ? (
-        <Card className="max-w-[900px]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead>Description</TableHead>
-              </TableRow>
-            </TableHeader>
+        <Card>
+          <Table className="break-all">
             <TableBody>
               {cctxs.map((cctx: any, index: any) => (
                 <Track key={cctx.inboundHash} value={cctx} />

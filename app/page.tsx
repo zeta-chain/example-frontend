@@ -25,6 +25,7 @@ export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
     useContext(AppContext)
   const { address, isConnected } = useAccount()
+  const { cctxs, setCCTXs, foreignCoins } = useContext(AppContext)
 
   const refreshBalances = async () => {
     await fetchBalances(true)
@@ -86,10 +87,7 @@ export default function IndexPage() {
                   </AlertDescription>
                 </Alert>
               )}
-              <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
-                Cross-Chain Transactions
-              </h1>
-              <Transactions />
+              {JSON.stringify(cctxs)}
             </>
           )}
         </div>
