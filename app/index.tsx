@@ -1,7 +1,10 @@
 "use client"
 
 import "@/styles/globals.css"
-import { useCallback, useEffect, useState } from "react"
+import { use, useCallback, useEffect, useRef, useState } from "react"
+// @ts-ignore
+import { trackCCTX } from "@zetachain/toolkit/helpers"
+import EventEmitter from "eventemitter3"
 
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
@@ -54,7 +57,6 @@ const wagmiConfig = createConfig({
 })
 
 export default function Index({ children }: RootLayoutProps) {
-  const [cctxs, setCCTXs] = useState([])
   const [balances, setBalances] = useState([])
   const [foreignCoins, setForeignCoins] = useState([])
   const [balancesLoading, setBalancesLoading] = useState(true)
@@ -89,12 +91,51 @@ export default function Index({ children }: RootLayoutProps) {
     fetchForeignCoins()
   }, [])
 
+  const [inbounds, setInbounds] = useState([])
+  const [cctxs, setCCTXs] = useState([])
+  const [emitters, setEmitters] = useState<any>([])
+
+  useEffect(() => {
+    const newEmitters = [...emitters]
+
+    inbounds
+      .map((i: any) => i.inboundHash)
+      .forEach((key: any) => {
+        if (!newEmitters[key as keyof typeof newEmitters]) {
+          const emitter = new EventEmitter()
+          emitter
+            .on("add", ({ text }) => {
+              console.log("add")
+            })
+            .on("search-add", ({ text }) => {
+              console.log("search-add")
+            })
+            .on("succeed", ({ text }) => {
+              console.log("succeed")
+            })
+            .on("fail", ({ text }) => {
+              console.log("fail")
+            })
+            .on("mined", ({ cctxs }) => {
+              console.log(cctxs)
+            })
+
+          trackCCTX(key, false, emitter)
+          newEmitters.push(emitter)
+        }
+      })
+
+    setEmitters(newEmitters)
+  }, [inbounds])
+
   return (
     <>
       <AppContext.Provider
         value={{
           cctxs,
           setCCTXs,
+          inbounds,
+          setInbounds,
           balances,
           setBalances,
           balancesLoading,
@@ -107,6 +148,11 @@ export default function Index({ children }: RootLayoutProps) {
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
+              {JSON.stringify(inbounds)}
+              <br />
+              {JSON.stringify(cctxs)}
+              <br />
+              <br />
               <section className="container">{children}</section>
             </div>
           </ThemeProvider>

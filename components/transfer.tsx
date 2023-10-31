@@ -42,7 +42,8 @@ const Transfer = () => {
   const [isSending, setIsSending] = useState(false)
 
   const { address, isConnected } = useAccount()
-  const { cctxs, setCCTXs, foreignCoins } = useContext(AppContext)
+  const { cctxs, setCCTXs, foreignCoins, inbounds, setInbounds } =
+    useContext(AppContext)
   const { chain } = useNetwork()
   const signer = useEthersSigner()
 
@@ -132,11 +133,11 @@ const Transfer = () => {
             destinationNetwork,
             address
           )
-          const cctx = {
+          const inbound = {
             inboundHash: tx.hash,
             desc: `Sent ${amount} ZETA from ${sourceNetwork} to ${destinationNetwork}`,
           }
-          setCCTXs([cctx, ...cctxs])
+          setInbounds([...inbounds, inbound])
         } else {
           const tx = await sendZRC20(
             signer,
@@ -146,11 +147,11 @@ const Transfer = () => {
             destinationAddress,
             sourceToken
           )
-          const cctx = {
+          const inbound = {
             inboundHash: tx.hash,
             desc: `Sent ${amount} ${sourceToken} from ${sourceNetwork} to ${destinationNetwork}`,
           }
-          setCCTXs([cctx, ...cctxs])
+          setInbounds([...inbounds, inbound])
         }
       } catch (error) {
         console.error("Error sending tokens:", error)
