@@ -35,7 +35,7 @@ const Transfer = () => {
   const [destinationNetwork, setDestinationNetwork] = useState("")
   const [destinationAddress, setDestinationAddress] = useState("")
   const [sourceToken, setSourceToken] = useState("")
-  const [fees, setFees] = useState(null)
+  const [fees, setFees] = useState<any>(null)
   const [amountLessThanFees, setAmountLessThanFees] = useState(false)
 
   const [amount, setAmount] = useState("")
@@ -59,7 +59,7 @@ const Transfer = () => {
     const fetchFee = async () => {
       try {
         const result = await fetchFees(500000)
-        setFees(result)
+        setFees(result as any)
       } catch (err) {
         console.error(err)
       }

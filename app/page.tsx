@@ -87,7 +87,6 @@ export default function IndexPage() {
                   </AlertDescription>
                 </Alert>
               )}
-              {JSON.stringify(cctxs)}
             </>
           )}
         </div>

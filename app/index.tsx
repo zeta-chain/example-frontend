@@ -91,41 +91,80 @@ export default function Index({ children }: RootLayoutProps) {
     fetchForeignCoins()
   }, [])
 
-  const [inbounds, setInbounds] = useState([])
-  const [cctxs, setCCTXs] = useState([])
-  const [emitters, setEmitters] = useState<any>([])
+  const [inbounds, setInbounds] = useState<any>([])
+  const [cctxs, setCCTXs] = useState<any>([])
+
+  const updateCCTX = (updatedItem: any) => {
+    setCCTXs((prevItems: any) => {
+      const index = prevItems.findIndex(
+        (item: any) => item.inboundHash === updatedItem.inboundHash
+      )
+
+      if (index === -1) return prevItems
+
+      const newItems = [...prevItems]
+      newItems[index] = {
+        ...newItems[index],
+        ...updatedItem,
+      }
+
+      return newItems
+    })
+  }
 
   useEffect(() => {
-    const newEmitters = [...emitters]
+    const cctxList = cctxs.map((c: any) => c.inboundHash)
+    for (let i of inbounds) {
+      if (!cctxList.includes(i.inboundHash)) {
+        const emitter = new EventEmitter()
+        emitter
+          .on("search-add", ({ text }) => {
+            updateCCTX({
+              inboundHash: i.inboundHash,
+              progress: text,
+              status: "searching",
+            })
+          })
+          .on("add", ({ text }) => {
+            updateCCTX({
+              inboundHash: i.inboundHash,
+              progress: text,
+              status: "searching",
+            })
+          })
+          .on("succeed", ({ text }) => {
+            updateCCTX({
+              inboundHash: i.inboundHash,
+              progress: text,
+              status: "succeed",
+            })
+          })
+          .on("fail", ({ text }) => {
+            updateCCTX({
+              inboundHash: i.inboundHash,
+              progress: text,
+              status: "failed",
+            })
+          })
+          .on("mined-success", (value) => {
+            updateCCTX({
+              inboundHash: i.inboundHash,
+              status: "mined-success",
+              ...value,
+            })
+          })
+          .on("mined-fail", (value) => {
+            updateCCTX({
+              inboundHash: i.inboundHash,
+              status: "mined-fail",
+              ...value,
+            })
+          })
 
-    inbounds
-      .map((i: any) => i.inboundHash)
-      .forEach((key: any) => {
-        if (!newEmitters[key as keyof typeof newEmitters]) {
-          const emitter = new EventEmitter()
-          emitter
-            .on("add", ({ text }) => {
-              console.log("add")
-            })
-            .on("search-add", ({ text }) => {
-              console.log("search-add")
-            })
-            .on("succeed", ({ text }) => {
-              console.log("succeed")
-            })
-            .on("fail", ({ text }) => {
-              console.log("fail")
-            })
-            .on("mined", ({ cctxs }) => {
-              console.log(cctxs)
-            })
-
-          trackCCTX(key, false, emitter)
-          newEmitters.push(emitter)
-        }
-      })
-
-    setEmitters(newEmitters)
+        trackCCTX(i.inboundHash, false, emitter)
+        setCCTXs([...cctxs, { inboundHash: i.inboundHash, desc: i.desc }])
+      }
+    }
   }, [inbounds])
 
   return (
@@ -148,11 +187,6 @@ export default function Index({ children }: RootLayoutProps) {
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
-              {JSON.stringify(inbounds)}
-              <br />
-              {JSON.stringify(cctxs)}
-              <br />
-              <br />
               <section className="container">{children}</section>
             </div>
           </ThemeProvider>
