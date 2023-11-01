@@ -16,6 +16,7 @@ export function SiteHeader() {
                 smallScreen: "avatar",
                 largeScreen: "full",
               }}
+              showBalance={false}
             />
           </nav>
         </div>

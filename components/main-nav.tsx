@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useContext } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ArrowDownUp } from "lucide-react"
@@ -23,7 +23,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import Transactions from "@/app/transactions/page"
+import Transactions from "@/components/transactions"
+import AppContext from "@/app/app"
 
 interface MainNavProps {
   items?: NavItem[]
@@ -31,6 +32,13 @@ interface MainNavProps {
 
 export function MainNav({ items }: MainNavProps) {
   const pathname = usePathname()
+  const { cctxs } = useContext(AppContext)
+
+  const inProgress =
+    cctxs.filter(
+      (cctx: any) =>
+        cctx.status !== "mined-success" && cctx.status !== "mined-fail"
+    ).length > 0
 
   return (
     <div className="flex gap-6 md:gap-10">
@@ -44,7 +52,7 @@ export function MainNav({ items }: MainNavProps) {
                   pathname === "/" ? "bg-accent" : ""
                 )}
               >
-                Balance
+                Portfolio
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
@@ -52,11 +60,13 @@ export function MainNav({ items }: MainNavProps) {
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <ArrowDownUp className="h-4 w-4" />
+                  <ArrowDownUp
+                    className={cn("h-4 w-4", inProgress && "animate-bounce")}
+                  />
                 </Button>
               </SheetTrigger>
               <SheetContent className="bg-transparent w-full max-w-full sm:w-[500px] sm:max-w-full border-none shadow-none flex">
-                <div className="p-10 bg-white rounded-lg shadow-xl height-100">
+                <div className="p-7 bg-white rounded-lg shadow-xl height-100">
                   <SheetHeader>
                     <SheetDescription></SheetDescription>
                   </SheetHeader>

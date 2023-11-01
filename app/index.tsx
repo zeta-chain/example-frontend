@@ -61,7 +61,7 @@ export default function Index({ children }: RootLayoutProps) {
   const [foreignCoins, setForeignCoins] = useState([])
   const [balancesLoading, setBalancesLoading] = useState(true)
   const [balancesRefreshing, setBalancesRefreshing] = useState(false)
-  const { address } = useAccount()
+  const { address, isConnected } = useAccount()
 
   const fetchBalances = useCallback(async (refresh: Boolean = false) => {
     refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
@@ -89,7 +89,7 @@ export default function Index({ children }: RootLayoutProps) {
       }
     }
     fetchForeignCoins()
-  }, [])
+  }, [isConnected])
 
   const [inbounds, setInbounds] = useState<any>([])
   const [cctxs, setCCTXs] = useState<any>([])

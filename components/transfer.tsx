@@ -183,7 +183,11 @@ const Transfer = () => {
             type="number"
             step="any"
           />{" "}
-          <Select onValueChange={(e) => setSourceToken(e)} value={sourceToken}>
+          <Select
+            disabled={!isConnected}
+            onValueChange={(e) => setSourceToken(e)}
+            value={sourceToken}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Token" />
             </SelectTrigger>

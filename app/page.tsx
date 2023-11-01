@@ -9,6 +9,7 @@ import { useAccount } from "wagmi"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -19,7 +20,6 @@ import {
 } from "@/components/ui/table"
 import Transfer from "@/components/transfer"
 import AppContext from "@/app/app"
-import Transactions from "@/app/transactions/page"
 
 export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
@@ -39,21 +39,29 @@ export default function IndexPage() {
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
               Balances
             </h1>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="mt-2"
-              onClick={refreshBalances}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${
-                  (balancesLoading || balancesRefreshing) && "animate-spin"
-                }`}
-              />
-            </Button>
+            {/* {isConnected && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="mt-2"
+                onClick={refreshBalances}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${
+                    (balancesLoading || balancesRefreshing) && "animate-spin"
+                  }`}
+                />
+              </Button>
+            )} */}
           </div>
           {balancesLoading ? (
-            <p>Loading...</p>
+            <div className="space-y-4">
+              {Array(5)
+                .fill(null)
+                .map((_, index) => (
+                  <Skeleton key={index} className="h-10 w-full" />
+                ))}
+            </div>
           ) : (
             <>
               {isConnected ? (
