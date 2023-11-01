@@ -94,6 +94,14 @@ export default function IndexPage() {
               )}
             </>
           )}
+          <div className="my-5">
+            <Link href="/messaging" legacyBehavior passHref>
+              <Button variant="outline">
+                <MessageCircle className="mr-1 h-5 w-5" strokeWidth={1.5} />
+                Cross-Chain Messaging Example
+              </Button>
+            </Link>
+          </div>
         </div>
         <div>
           <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
@@ -101,14 +109,6 @@ export default function IndexPage() {
           </h1>
           <Transfer />
         </div>
-      </div>
-      <div className="my-5">
-        <Link href="/messaging" legacyBehavior passHref>
-          <Button variant="outline">
-            <MessageCircle className="mr-1 h-5 w-5" strokeWidth={1.5} />
-            Cross-Chain Messaging Example
-          </Button>
-        </Link>
       </div>
     </div>
   )
