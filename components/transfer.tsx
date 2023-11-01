@@ -180,11 +180,12 @@ const Transfer = () => {
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Amount"
             value={amount}
+            disabled={isSending}
             type="number"
             step="any"
           />{" "}
           <Select
-            disabled={!isConnected}
+            disabled={!isConnected || isSending}
             onValueChange={(e) => setSourceToken(e)}
             value={sourceToken}
           >
@@ -205,7 +206,7 @@ const Transfer = () => {
         <div>
           <Label>Destination</Label>
           <Select
-            disabled={!sourceToken}
+            disabled={!sourceToken || isSending}
             onValueChange={(e) => setDestinationNetwork(e)}
             value={destinationNetwork}
           >

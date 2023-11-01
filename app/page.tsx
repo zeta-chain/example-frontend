@@ -1,9 +1,8 @@
 "use client"
 
-import { useContext, useEffect } from "react"
-// @ts-ignore
-import { getBalances } from "@zetachain/toolkit/helpers"
-import { RefreshCw } from "lucide-react"
+import { useContext } from "react"
+import Link from "next/link"
+import { MessageCircle, RefreshCw } from "lucide-react"
 import { useAccount } from "wagmi"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -39,20 +38,18 @@ export default function IndexPage() {
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
               Balances
             </h1>
-            {/* {isConnected && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="mt-2"
-                onClick={refreshBalances}
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${
-                    (balancesLoading || balancesRefreshing) && "animate-spin"
-                  }`}
-                />
-              </Button>
-            )} */}
+            <Button
+              size="icon"
+              variant="ghost"
+              className="mt-2"
+              onClick={refreshBalances}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${
+                  (balancesLoading || balancesRefreshing) && "animate-spin"
+                }`}
+              />
+            </Button>
           </div>
           {balancesLoading ? (
             <div className="space-y-4">
@@ -104,6 +101,14 @@ export default function IndexPage() {
           </h1>
           <Transfer />
         </div>
+      </div>
+      <div className="my-5">
+        <Link href="/messaging" legacyBehavior passHref>
+          <Button variant="outline">
+            <MessageCircle className="mr-1 h-5 w-5" strokeWidth={1.5} />
+            Cross-Chain Messaging Example
+          </Button>
+        </Link>
       </div>
     </div>
   )

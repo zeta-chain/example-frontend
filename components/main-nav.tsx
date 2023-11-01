@@ -3,7 +3,7 @@
 import { useContext } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ArrowDownUp } from "lucide-react"
+import { Home, Settings } from "lucide-react"
 
 import { NavItem } from "@/types/nav"
 import { cn } from "@/lib/utils"
@@ -52,7 +52,8 @@ export function MainNav({ items }: MainNavProps) {
                   pathname === "/" ? "bg-accent" : ""
                 )}
               >
-                Portfolio
+                <Home className="mr-1 h-4 w-4" />
+                Home
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
@@ -60,8 +61,8 @@ export function MainNav({ items }: MainNavProps) {
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <ArrowDownUp
-                    className={cn("h-4 w-4", inProgress && "animate-bounce")}
+                  <Settings
+                    className={cn("h-4 w-4", inProgress && "animate-spin")}
                   />
                 </Button>
               </SheetTrigger>

@@ -50,7 +50,7 @@ const MessagingPage = () => {
       (networks as any)[destinationNetwork]?.chain_id ?? null
     )
   }, [destinationNetwork])
-  const { cctxs, setCCTXs, foreignCoins } = useContext(AppContext)
+  const { inbounds, setInbounds, foreignCoins } = useContext(AppContext)
 
   const {
     config,
@@ -94,11 +94,11 @@ const MessagingPage = () => {
 
   useEffect(() => {
     if (isSuccess && data) {
-      const cctx = {
+      const inbound = {
         inboundHash: data.hash,
         desc: `Message sent to ${destinationNetwork}`,
       }
-      setCCTXs([cctx, ...cctxs])
+      setInbounds([...inbounds, inbound])
     }
   }, [isSuccess, data])
 
