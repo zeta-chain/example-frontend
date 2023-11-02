@@ -220,7 +220,7 @@ const MessagingPage = () => {
         <div className="text-sm col-span-1 sm:col-span-3">
           <div className="max-w-prose leading-6 space-y-2">
             <p>
-              This is a dapp that uses ZetaChain's{" "}
+              This is a dapp that uses ZetaChain&apos;s{" "}
               <strong>cross-chain messaging</strong> for sending text messages
               between smart contracts deployed on different chains. It is a
               simple example of how to use the cross-chain messaging to send
@@ -245,13 +245,13 @@ const MessagingPage = () => {
               deployed on the following networks:
             </p>
           </div>
-          <pre className="my-4 w-[340px] rounded-md bg-slate-950 p-4 w-full overflow-x-scroll">
+          <pre className="my-4 rounded-md bg-slate-950 p-4 w-full overflow-x-scroll">
             <code className="text-white">
               {JSON.stringify(contracts, null, 2)}
             </code>
           </pre>
           <div className="max-w-prose leading-6 space-y-2">
-            <p>Let's try using the dapp:</p>
+            <p>Let&apos;s try using the dapp:</p>
           </div>{" "}
           <ol className="mt-5 text-sm leading-6 space-y-4">
             <li className="flex">
@@ -267,8 +267,8 @@ const MessagingPage = () => {
             {!!destinationNetwork && (
               <li className="leading-6">
                 <Alert>
-                  You've selected <strong>{destinationNetwork}</strong> as the
-                  destination network.
+                  You&apos;ve selected <strong>{destinationNetwork}</strong> as
+                  the destination network.
                 </Alert>
               </li>
             )}
@@ -287,13 +287,14 @@ const MessagingPage = () => {
             {completed && (
               <li className="leading-6">
                 <Alert>
-                  Great! You've sent a message from {currentNetworkName} to{" "}
+                  Great! You&apos;ve sent a message from {currentNetworkName} to{" "}
                   {destinationNetwork}. Once the cross-chain transaction with
                   the message is processed you will be able to see it in the 
                   <strong>Events</strong> tab in 
                   <a
                     href={explorer}
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="font-medium text-primary underline underline-offset-4"
                   >
                     {extractDomain(explorer)}

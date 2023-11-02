@@ -18,7 +18,10 @@ export function SiteHeader() {
   const { bitcoinAddress, setBitcoinAddress } = useContext(AppContext)
 
   const connectBitcoin = async () => {
-    await setBitcoinAddress((await window?.xfi?.bitcoin.getAccounts())[0])
+    const w = window as any
+    if ("xfi" in w && w.xfi?.bitcoin) {
+      await setBitcoinAddress((await w.xfi.bitcoin.getAccounts())[0])
+    }
   }
 
   return (
