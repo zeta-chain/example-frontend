@@ -1,19 +1,15 @@
 "use client"
 
 import "@/styles/globals.css"
-import { useEffect, useState } from "react"
-
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
-import { SiteHeader } from "@/components/site-header"
-import { ThemeProvider } from "@/components/theme-provider"
 import Index from "@/app/index"
 
 import "@rainbow-me/rainbowkit/styles.css"
-import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit"
+import { getDefaultWallets } from "@rainbow-me/rainbowkit"
 // @ts-ignore
 import { getBalances } from "@zetachain/toolkit/helpers"
-import { WagmiConfig, configureChains, createConfig, useAccount } from "wagmi"
+import { WagmiConfig, configureChains, createConfig } from "wagmi"
 import {
   bscTestnet,
   goerli,
@@ -21,8 +17,6 @@ import {
   zetachainAthensTestnet,
 } from "wagmi/chains"
 import { publicProvider } from "wagmi/providers/public"
-
-import AppContext from "@/app/app"
 
 interface RootLayoutProps {
   children: React.ReactNode

@@ -1,11 +1,11 @@
 "use client"
 
-import { use, useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { getExplorers } from "@zetachain/networks"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
 import networks from "@zetachain/networks/dist/src/networks"
-import { BookOpen, Loader2, Send } from "lucide-react"
+import { AlertCircle, BookOpen, Loader2, Send } from "lucide-react"
 import { useDebounce } from "use-debounce"
 import {
   useContractWrite,
@@ -15,7 +15,7 @@ import {
 } from "wagmi"
 
 import { cn } from "@/lib/utils"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -55,7 +55,7 @@ const MessagingPage = () => {
       (networks as any)[destinationNetwork]?.chain_id ?? null
     )
   }, [destinationNetwork])
-  const { inbounds, setInbounds, foreignCoins } = useContext(AppContext)
+  const { inbounds, setInbounds } = useContext(AppContext)
 
   const {
     config,
@@ -90,6 +90,8 @@ const MessagingPage = () => {
       debouncedMessage,
     ],
   })
+
+  const isZeta = currentNetworkName === "zeta_testnet"
 
   const { data, write } = useContractWrite(config)
 
@@ -144,47 +146,67 @@ const MessagingPage = () => {
         Cross-Chain Message
       </h1>
       <div className="grid grid-cols-1 sm:grid-cols-6 gap-10 items-start">
-        <Card className="p-4 col-span-1 sm:col-span-2">
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              write?.()
-            }}
-          >
-            <Input disabled value={`${currentNetworkName}`} />
-            <Select onValueChange={(e) => setDestinationNetwork(e)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Destination network" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {availableNetworks.map((network) => (
-                    <SelectItem key={network} value={network}>
-                      {network}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Message"
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <Button
-              type="submit"
-              variant="outline"
-              disabled={isLoading || !write || !message || !currentNetworkName}
+        <div className="col-span-1 sm:col-span-2">
+          <Card className="p-4">
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault()
+                write?.()
+              }}
             >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Send message
-            </Button>
-          </form>
-        </Card>
+              <Input disabled value={`${currentNetworkName}`} />
+              <Alert variant="destructive" className="text-sm">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  The protocol currently does not support sending cross-chain
+                  messages to/from ZetaChain. Please, switch to another network.
+                </AlertDescription>
+              </Alert>
+              <Select
+                onValueChange={(e) => setDestinationNetwork(e)}
+                disabled={isZeta}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Destination network" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {availableNetworks.map((network) => (
+                      <SelectItem key={network} value={network}>
+                        {network}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Message"
+                disabled={isZeta}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={
+                  isZeta ||
+                  isLoading ||
+                  !write ||
+                  !message ||
+                  !currentNetworkName
+                }
+              >
+                {isLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                Send message
+              </Button>
+            </form>
+          </Card>
+        </div>
+
         <div className="text-sm col-span-1 sm:col-span-3">
           <div className="max-w-prose leading-6 space-y-2">
             <p>

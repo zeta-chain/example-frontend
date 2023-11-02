@@ -6,8 +6,6 @@ import { use, useCallback, useEffect, useRef, useState } from "react"
 import { trackCCTX } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
 
-import { fontSans } from "@/lib/fonts"
-import { cn } from "@/lib/utils"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -15,7 +13,7 @@ import "@rainbow-me/rainbowkit/styles.css"
 import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit"
 // @ts-ignore
 import { getBalances } from "@zetachain/toolkit/helpers"
-import { WagmiConfig, configureChains, createConfig, useAccount } from "wagmi"
+import { configureChains, createConfig, useAccount } from "wagmi"
 import {
   bscTestnet,
   goerli,
@@ -89,7 +87,7 @@ export default function Index({ children }: RootLayoutProps) {
       }
     }
     fetchForeignCoins()
-  }, [isConnected])
+  }, [isConnected, address])
 
   const [inbounds, setInbounds] = useState<any>([])
   const [cctxs, setCCTXs] = useState<any>([])

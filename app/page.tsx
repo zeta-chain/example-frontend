@@ -23,8 +23,7 @@ import AppContext from "@/app/app"
 export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
     useContext(AppContext)
-  const { address, isConnected } = useAccount()
-  const { cctxs, setCCTXs, foreignCoins } = useContext(AppContext)
+  const { isConnected } = useAccount()
 
   const refreshBalances = async () => {
     await fetchBalances(true)

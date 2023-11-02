@@ -9,7 +9,7 @@ import { AlertCircle, Loader2, Send } from "lucide-react"
 import { useAccount, useNetwork } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,15 +42,11 @@ const Transfer = () => {
   const [isSending, setIsSending] = useState(false)
 
   const { address, isConnected } = useAccount()
-  const { cctxs, setCCTXs, foreignCoins, inbounds, setInbounds } =
-    useContext(AppContext)
+  const { foreignCoins, inbounds, setInbounds } = useContext(AppContext)
   const { chain } = useNetwork()
   const signer = useEthersSigner()
 
   const sourceNetwork = chain ? getNetworkName(chain.network) : undefined
-
-  const destinationNetworkChainID =
-    networks[destinationNetwork as keyof typeof networks]?.chain_id
 
   const sourceNetworkChainID =
     networks[sourceNetwork as keyof typeof networks]?.chain_id
