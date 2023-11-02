@@ -59,6 +59,8 @@ export default function Index({ children }: RootLayoutProps) {
   const [foreignCoins, setForeignCoins] = useState([])
   const [balancesLoading, setBalancesLoading] = useState(true)
   const [balancesRefreshing, setBalancesRefreshing] = useState(false)
+  const [bitcoinAddress, setBitcoinAddress] = useState("")
+
   const { address, isConnected } = useAccount()
 
   const fetchBalances = useCallback(async (refresh: Boolean = false) => {
@@ -174,6 +176,8 @@ export default function Index({ children }: RootLayoutProps) {
           inbounds,
           setInbounds,
           balances,
+          bitcoinAddress,
+          setBitcoinAddress,
           setBalances,
           balancesLoading,
           balancesRefreshing,

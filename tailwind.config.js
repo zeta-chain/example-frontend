@@ -13,7 +13,14 @@ module.exports = {
       },
     },
     extend: {
+      boxShadow: {
+        rainbowkit: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+      },
+      scale: {
+        1025: "1.025",
+      },
       colors: {
+        bitcoin: "#f89414",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

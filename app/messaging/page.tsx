@@ -38,17 +38,23 @@ const contracts: any = {
 
 const MessagingPage = () => {
   const [message, setMessage] = useState("")
+  const [destinationNetwork, setDestinationNetwork] = useState("")
+  const [destinationChainID, setDestinationChainID] = useState(null)
+  const [isZeta, setIsZeta] = useState(false)
+  const [currentNetworkName, setCurrentNetworkName] = useState<any>("")
+  const [completed, setCompleted] = useState(false)
+
   const [debouncedMessage] = useDebounce(message, 500)
 
   const allNetworks = Object.keys(contracts)
 
-  const [destinationNetwork, setDestinationNetwork] = useState("")
-
-  const [destinationChainID, setDestinationChainID] = useState(null)
-  const [completed, setCompleted] = useState(false)
-
   const { chain } = useNetwork()
-  const currentNetworkName = chain ? getNetworkName(chain.network) : undefined
+  useEffect(() => {
+    setCurrentNetworkName(chain ? getNetworkName(chain.network) : undefined)
+    if (chain) {
+      setIsZeta(getNetworkName(chain.network) === "zeta_testnet")
+    }
+  }, [chain])
 
   useEffect(() => {
     setDestinationChainID(
@@ -90,8 +96,6 @@ const MessagingPage = () => {
       debouncedMessage,
     ],
   })
-
-  const isZeta = currentNetworkName === "zeta_testnet"
 
   const { data, write } = useContractWrite(config)
 
@@ -155,14 +159,20 @@ const MessagingPage = () => {
                 write?.()
               }}
             >
-              <Input disabled value={`${currentNetworkName}`} />
-              <Alert variant="destructive" className="text-sm">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  The protocol currently does not support sending cross-chain
-                  messages to/from ZetaChain. Please, switch to another network.
-                </AlertDescription>
-              </Alert>
+              <Input
+                disabled
+                value={currentNetworkName || "Please, connect wallet"}
+              />
+              {isZeta && (
+                <Alert variant="destructive" className="text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    The protocol currently does not support sending cross-chain
+                    messages to/from ZetaChain. Please, switch to another
+                    network.
+                  </AlertDescription>
+                </Alert>
+              )}
               <Select
                 onValueChange={(e) => setDestinationNetwork(e)}
                 disabled={isZeta}
