@@ -1,12 +1,17 @@
 "use client"
 
 import "@/styles/globals.css"
+import { injectedWallet, metaMaskWallet } from "@rainbow-me/rainbowkit/wallets"
+
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import Index from "@/app/index"
 
 import "@rainbow-me/rainbowkit/styles.css"
-import { getDefaultWallets } from "@rainbow-me/rainbowkit"
+import {
+  RainbowKitProvider,
+  connectorsForWallets,
+} from "@rainbow-me/rainbowkit"
 // @ts-ignore
 import { getBalances } from "@zetachain/toolkit/helpers"
 import { WagmiConfig, configureChains, createConfig } from "wagmi"
@@ -26,20 +31,24 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
     goerli,
     polygonMumbai,
+    bscTestnet,
     {
       ...zetachainAthensTestnet,
       iconUrl: "https://www.zetachain.com/favicon/favicon.png",
     },
-    bscTestnet,
   ],
   [publicProvider()]
 )
 
-const { connectors } = getDefaultWallets({
-  appName: "RainbowKit App",
-  projectId: "YOUR_PROJECT_ID",
-  chains,
-})
+const connectors = connectorsForWallets([
+  {
+    groupName: "Recommended",
+    wallets: [
+      injectedWallet({ chains }),
+      metaMaskWallet({ projectId: "PROJECT_ID", chains }),
+    ],
+  },
+])
 
 const wagmiConfig = createConfig({
   autoConnect: true,
@@ -60,7 +69,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
           )}
         >
           <WagmiConfig config={wagmiConfig}>
-            <Index>{children}</Index>
+            <RainbowKitProvider chains={chains}>
+              <Index>{children}</Index>
+            </RainbowKitProvider>
           </WagmiConfig>
         </body>
       </html>

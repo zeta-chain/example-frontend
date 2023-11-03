@@ -6,6 +6,7 @@ import networks from "@zetachain/networks/dist/src/networks"
 // @ts-ignore
 import { fetchFees, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
 import { AlertCircle, Loader2, Send } from "lucide-react"
+import { set } from "react-hook-form"
 import { useAccount, useNetwork } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
@@ -37,6 +38,7 @@ const Transfer = () => {
   const [sourceToken, setSourceToken] = useState("")
   const [fees, setFees] = useState<any>(null)
   const [amountLessThanFees, setAmountLessThanFees] = useState(false)
+  const [foreignCoinsList, setForeignCoinsList] = useState<any>([])
 
   const [amount, setAmount] = useState("")
   const [isSending, setIsSending] = useState(false)
@@ -105,6 +107,20 @@ const Transfer = () => {
       .map((token: any) => token.symbol),
     "ZETA",
   ]
+
+  useEffect(() => {
+    const list = [
+      ...foreignCoins
+        .filter(
+          (token: any) =>
+            token.foreign_chain_id == sourceNetworkChainID &&
+            token.coin_type === "Gas"
+        )
+        .map((token: any) => token.symbol),
+      "ZETA",
+    ]
+    setForeignCoinsList(list)
+  }, [foreignCoins])
 
   const handleSend = async () => {
     setIsSending(true)
