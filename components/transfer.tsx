@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext, useEffect, useState } from "react"
+import { use, useContext, useEffect, useState } from "react"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
 import networks from "@zetachain/networks/dist/src/networks"
 // @ts-ignore
@@ -25,26 +25,43 @@ import {
 import AppContext from "@/app/app"
 
 const Transfer = () => {
-  const networkList = [
-    "goerli_testnet",
-    "mumbai_testnet",
-    "bsc_testnet",
-    "zeta_testnet",
-  ]
+  const supportedTransfers = {
+    ZETA: ["zeta_testnet", "bsc_testnet", "goerli_testnet", "mumbai_testnet"],
+    gETH: ["zeta_testnet", "goerli_testnet"],
+    tBNB: ["zeta_testnet", "bsc_testnet"],
+    tMATIC: ["zeta_testnet", "mumbai_testnet"],
+    tBTC: ["zeta_testnet", "btc_testnet"],
+  }
+
+  function isValidTransfer(token: string, network: string) {
+    const t = token as keyof typeof supportedTransfers
+    if (!supportedTransfers[t]) {
+      return false
+    }
+    return supportedTransfers[t].includes(network)
+  }
+
+  const networkList = Object.values(supportedTransfers)
+    .reduce((acc, networks) => acc.concat(networks), [])
+    .filter((value, index, self) => self.indexOf(value) === index)
 
   const [networkListFiltered, setNetworkListFiltered] = useState([])
-  const [destinationNetwork, setDestinationNetwork] = useState("")
+  const [destinationNetwork, setDestinationNetwork] = useState<any>("")
   const [destinationAddress, setDestinationAddress] = useState("")
+  const [destinationNetworkList, setDestinationNetworkList] = useState<any>([])
   const [sourceToken, setSourceToken] = useState("")
   const [fees, setFees] = useState<any>(null)
   const [amountLessThanFees, setAmountLessThanFees] = useState(false)
   const [foreignCoinsList, setForeignCoinsList] = useState<any>([])
+  const [sourceNetworkSelected, setSourceNetworkSelected] = useState<any>("")
+  const [sourceNetworkList, setSourceNetworkList] = useState<any>([])
 
   const [amount, setAmount] = useState("")
   const [isSending, setIsSending] = useState(false)
 
   const { address, isConnected } = useAccount()
-  const { foreignCoins, inbounds, setInbounds } = useContext(AppContext)
+  const { foreignCoins, inbounds, setInbounds, bitcoinAddress } =
+    useContext(AppContext)
   const { chain } = useNetwork()
   const signer = useEthersSigner()
 
@@ -66,6 +83,35 @@ const Transfer = () => {
   }, [address])
 
   useEffect(() => {
+    let list = [sourceNetwork]
+    if (bitcoinAddress) {
+      list.push("btc_testnet")
+    }
+    setSourceNetworkList(list)
+  }, [bitcoinAddress, sourceNetwork])
+
+  useEffect(() => {
+    setDestinationNetwork("")
+  }, [sourceNetworkSelected])
+
+  useEffect(() => {
+    const transferrableTokens = []
+
+    for (let token in supportedTransfers) {
+      let t = token as keyof typeof supportedTransfers
+      if (
+        supportedTransfers[t].includes(sourceNetworkSelected) &&
+        supportedTransfers[t].includes(destinationNetwork) &&
+        sourceNetworkSelected !== destinationNetwork
+      ) {
+        transferrableTokens.push(token)
+      }
+    }
+    setSourceToken("")
+    setForeignCoinsList(transferrableTokens)
+  }, [sourceNetworkSelected, destinationNetwork])
+
+  useEffect(() => {
     if (
       sourceNetwork &&
       sourceNetwork !== "zeta_testnet" &&
@@ -82,46 +128,6 @@ const Transfer = () => {
     }
   }, [amount, destinationNetwork, sourceToken])
 
-  useEffect(() => {
-    setDestinationAddress(address || "")
-  }, [address])
-
-  useEffect(() => {
-    if (sourceToken === "ZETA") {
-      const n = networkList.filter((network) => network !== sourceNetwork)
-      setNetworkListFiltered(n as any)
-      setDestinationNetwork(n[0])
-    } else {
-      setNetworkListFiltered(["zeta_testnet"] as any)
-      setDestinationNetwork("zeta_testnet")
-    }
-  }, [sourceNetwork, sourceToken])
-
-  const foreignCoinsFiltered = [
-    ...foreignCoins
-      .filter(
-        (token: any) =>
-          token.foreign_chain_id == sourceNetworkChainID &&
-          token.coin_type === "Gas"
-      )
-      .map((token: any) => token.symbol),
-    "ZETA",
-  ]
-
-  useEffect(() => {
-    const list = [
-      ...foreignCoins
-        .filter(
-          (token: any) =>
-            token.foreign_chain_id == sourceNetworkChainID &&
-            token.coin_type === "Gas"
-        )
-        .map((token: any) => token.symbol),
-      "ZETA",
-    ]
-    setForeignCoinsList(list)
-  }, [foreignCoins])
-
   const handleSend = async () => {
     setIsSending(true)
 
@@ -137,7 +143,55 @@ const Transfer = () => {
 
     if (signer && destinationNetwork && amount) {
       try {
-        if (sourceToken === "ZETA") {
+        if (sourceToken === "tBTC" && destinationNetwork === "zeta_testnet") {
+          const a = parseFloat(amount) * 1e8
+          const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
+          const memo = `hex::${address.replace(/^0x/, "")}`
+          window.xfi.bitcoin.request(
+            {
+              method: "transfer",
+              params: [
+                {
+                  feeRate: 10,
+                  from: bitcoinAddress,
+                  recipient: bitcoinTSSAddress,
+                  amount: {
+                    amount: a,
+                    decimals: 8,
+                  },
+                  memo,
+                },
+              ],
+            },
+            (error: any, hash: any) => {
+              if (!error) {
+                const inbound = {
+                  inboundHash: hash,
+                  desc: `Sent ${a} tBTC from ${sourceNetworkSelected} to ${destinationNetwork}`,
+                }
+                setInbounds([...inbounds, inbound])
+              }
+            }
+          )
+          return
+        } else if (
+          sourceToken === "tBTC" &&
+          destinationNetwork === "btc_testnet"
+        ) {
+          const tx = await sendZRC20(
+            signer,
+            amount,
+            sourceNetwork,
+            destinationNetwork,
+            bitcoinAddress,
+            sourceToken
+          )
+          const inbound = {
+            inboundHash: tx.hash,
+            desc: `Sent ${amount} ${sourceToken} from ${sourceNetworkSelected} to ${destinationNetwork}`,
+          }
+          setInbounds([...inbounds, inbound])
+        } else if (sourceToken === "ZETA") {
           const tx = await sendZETA(
             signer,
             amount,
@@ -147,7 +201,7 @@ const Transfer = () => {
           )
           const inbound = {
             inboundHash: tx.hash,
-            desc: `Sent ${amount} ZETA from ${sourceNetwork} to ${destinationNetwork}`,
+            desc: `Sent ${amount} ZETA from ${sourceNetworkSelected} to ${destinationNetwork}`,
           }
           setInbounds([...inbounds, inbound])
         } else {
@@ -161,7 +215,7 @@ const Transfer = () => {
           )
           const inbound = {
             inboundHash: tx.hash,
-            desc: `Sent ${amount} ${sourceToken} from ${sourceNetwork} to ${destinationNetwork}`,
+            desc: `Sent ${amount} ${sourceToken} from ${sourceNetworkSelected} to ${destinationNetwork}`,
           }
           setInbounds([...inbounds, inbound])
         }
@@ -184,7 +238,24 @@ const Transfer = () => {
       >
         <div>
           <Label>From</Label>
-          <Input disabled value={sourceNetwork || "Please, connect wallet"} />
+          <Select
+            disabled={isSending}
+            onValueChange={(e) => setSourceNetworkSelected(e)}
+            value={sourceNetworkSelected}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Source network" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {sourceNetworkList.map((network: any) => (
+                  <SelectItem key={network} value={network}>
+                    {network}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <Input
@@ -197,7 +268,13 @@ const Transfer = () => {
             step="any"
           />{" "}
           <Select
-            disabled={!isConnected || isSending}
+            disabled={
+              !isConnected ||
+              isSending ||
+              !sourceNetworkSelected ||
+              !destinationNetwork ||
+              foreignCoinsList.length === 0
+            }
             onValueChange={(e) => setSourceToken(e)}
             value={sourceToken}
           >
@@ -206,7 +283,7 @@ const Transfer = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {foreignCoinsFiltered.map((token: any) => (
+                {foreignCoinsList.map((token: any) => (
                   <SelectItem key={token} value={token}>
                     {token}
                   </SelectItem>
@@ -218,7 +295,7 @@ const Transfer = () => {
         <div>
           <Label>Destination</Label>
           <Select
-            disabled={!sourceToken || isSending}
+            disabled={isSending}
             onValueChange={(e) => setDestinationNetwork(e)}
             value={destinationNetwork}
           >
@@ -227,11 +304,13 @@ const Transfer = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {networkListFiltered.map((network) => (
-                  <SelectItem key={network} value={network}>
-                    {network}
-                  </SelectItem>
-                ))}
+                {networkList
+                  .filter((n: any) => n !== sourceNetworkSelected)
+                  .map((n: any) => (
+                    <SelectItem key={n} value={n}>
+                      {n}
+                    </SelectItem>
+                  ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -242,6 +321,7 @@ const Transfer = () => {
           disabled={
             !isConnected ||
             !destinationNetwork ||
+            !sourceToken ||
             !amount ||
             isSending ||
             amountLessThanFees
