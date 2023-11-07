@@ -29,6 +29,44 @@ export default function IndexPage() {
     await fetchBalances(true)
   }
 
+  function convertData(data: any[]): any[] {
+    const result = {} as any
+
+    for (const item of data) {
+      const networkName = item.chain_name
+      if (!result[networkName]) {
+        result[networkName] = { networkName, native: "", zeta: "", zrc20: [] }
+      }
+
+      if (item.coin_type === "Gas") {
+        result[networkName].native = parseFloat(item.balance).toFixed(2)
+      }
+
+      if (item.symbol === "ZETA" && item.coin_type === "ERC20") {
+        result[networkName].zeta = parseFloat(item.balance).toFixed(2)
+      }
+
+      if (item.coin_type === "ZRC20") {
+        const symbol = item.symbol.replace(`-${networkName}`, "")
+        if (parseFloat(item.balance) > 0) {
+          result[networkName].zrc20.push(
+            `${parseFloat(item.balance).toFixed(2)} ${symbol}`
+          )
+        }
+      }
+    }
+
+    for (const network of Object.keys(result)) {
+      if (result[network].zrc20.length > 0) {
+        result[network].zrc20 = result[network].zrc20.join(", ")
+      } else {
+        delete result[network].zrc20
+      }
+    }
+
+    return Object.values(result)
+  }
+
   return (
     <div>
       <div className="grid sm:grid-cols-3 gap-x-10">
@@ -72,10 +110,10 @@ export default function IndexPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {balances.map((balance: any, index: any) => (
+                      {convertData(balances).map((balance: any, index: any) => (
                         <TableRow key={index}>
                           <TableCell>{balance.networkName}</TableCell>
-                          <TableCell>{balance.native}</TableCell>
+                          <TableCell>{balance.native || "N/A"}</TableCell>
                           <TableCell>{balance.zeta || "N/A"}</TableCell>
                           <TableCell>{balance.zrc20 || "N/A"}</TableCell>
                         </TableRow>
