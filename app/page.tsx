@@ -42,7 +42,7 @@ export default function IndexPage() {
         result[networkName].native = parseFloat(item.balance).toFixed(2)
       }
 
-      if (item.symbol === "ZETA" && item.coin_type === "ERC20") {
+      if (item.symbol === "WZETA" && item.coin_type === "ERC20") {
         result[networkName].zeta = parseFloat(item.balance).toFixed(2)
       }
 

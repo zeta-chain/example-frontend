@@ -3,7 +3,7 @@
 import "@/styles/globals.css"
 import { useCallback, useEffect, useState } from "react"
 // @ts-ignore
-import { getBalances, trackCCTX } from "@zetachain/toolkit/helpers"
+import { fetchFees, getBalances, trackCCTX } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
 import { useAccount } from "wagmi"
 
@@ -21,22 +21,39 @@ export default function Index({ children }: RootLayoutProps) {
   const [balancesLoading, setBalancesLoading] = useState(true)
   const [balancesRefreshing, setBalancesRefreshing] = useState(false)
   const [bitcoinAddress, setBitcoinAddress] = useState("")
+  const [fees, setFees] = useState<any>([])
 
   const { address, isConnected } = useAccount()
 
-  const fetchBalances = useCallback(async (refresh: Boolean = false) => {
-    refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
-    try {
-      const result = await getBalances(address)
-      setBalances(result as any)
-    } catch (err) {
-      console.log(err)
-    }
-    refresh ? setBalancesRefreshing(false) : setBalancesLoading(false)
-  }, [])
+  const fetchBalances = useCallback(
+    async (refresh: Boolean = false, btc: any = null) => {
+      refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
+      try {
+        const result = await getBalances(address, btc)
+        setBalances(result as any)
+      } catch (err) {
+        console.log(err)
+      }
+      refresh ? setBalancesRefreshing(false) : setBalancesLoading(false)
+    },
+    []
+  )
+
+  const fetchFeesList = useCallback(
+    async (refresh: Boolean = false, btc: any = null) => {
+      try {
+        const result = await fetchFees(500000)
+        setFees(result as any)
+      } catch (err) {
+        console.log(err)
+      }
+    },
+    []
+  )
 
   useEffect(() => {
     fetchBalances()
+    fetchFeesList()
 
     const fetchForeignCoins = async () => {
       try {
@@ -51,6 +68,10 @@ export default function Index({ children }: RootLayoutProps) {
     }
     fetchForeignCoins()
   }, [isConnected, address])
+
+  useEffect(() => {
+    fetchBalances(true, bitcoinAddress)
+  }, [bitcoinAddress])
 
   const [inbounds, setInbounds] = useState<any>([])
   const [cctxs, setCCTXs] = useState<any>([])
@@ -144,6 +165,7 @@ export default function Index({ children }: RootLayoutProps) {
           balancesRefreshing,
           fetchBalances,
           foreignCoins,
+          fees,
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>

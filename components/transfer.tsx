@@ -1,229 +1,366 @@
 "use client"
 
 import { use, useContext, useEffect, useState } from "react"
-import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
-import networks from "@zetachain/networks/dist/src/networks"
 // @ts-ignore
-import { fetchFees, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
-import { AlertCircle, Loader2, Send } from "lucide-react"
-import { set } from "react-hook-form"
-import { useAccount, useNetwork } from "wagmi"
+import { sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
+import { ethers } from "ethers"
+import {
+  Check,
+  ChevronsUpDown,
+  Coins,
+  Loader2,
+  RefreshCcw,
+  Send,
+  UserCircle2,
+} from "lucide-react"
+import { useDebounce } from "use-debounce"
+import { parseEther } from "viem"
+import {
+  useAccount,
+  useNetwork,
+  usePrepareSendTransaction,
+  useSendTransaction,
+  useSwitchNetwork,
+} from "wagmi"
+import { custom } from "zod"
 
 import { useEthersSigner } from "@/lib/ethers"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import AppContext from "@/app/app"
 
 const Transfer = () => {
-  const supportedTransfers = {
-    ZETA: ["zeta_testnet", "bsc_testnet", "goerli_testnet", "mumbai_testnet"],
-    gETH: ["zeta_testnet", "goerli_testnet"],
-    tBNB: ["zeta_testnet", "bsc_testnet"],
-    tMATIC: ["zeta_testnet", "mumbai_testnet"],
-    tBTC: ["zeta_testnet", "btc_testnet"],
-  }
-
-  function isValidTransfer(token: string, network: string) {
-    const t = token as keyof typeof supportedTransfers
-    if (!supportedTransfers[t]) {
-      return false
-    }
-    return supportedTransfers[t].includes(network)
-  }
-
-  const networkList = Object.values(supportedTransfers)
-    .reduce((acc, networks) => acc.concat(networks), [])
-    .filter((value, index, self) => self.indexOf(value) === index)
-
-  const [networkListFiltered, setNetworkListFiltered] = useState([])
-  const [destinationNetwork, setDestinationNetwork] = useState<any>("")
-  const [destinationAddress, setDestinationAddress] = useState("")
-  const [destinationNetworkList, setDestinationNetworkList] = useState<any>([])
-  const [sourceToken, setSourceToken] = useState("")
-  const [fees, setFees] = useState<any>(null)
-  const [amountLessThanFees, setAmountLessThanFees] = useState(false)
-  const [foreignCoinsList, setForeignCoinsList] = useState<any>([])
-  const [sourceNetworkSelected, setSourceNetworkSelected] = useState<any>("")
-  const [sourceNetworkList, setSourceNetworkList] = useState<any>([])
-
-  const [amount, setAmount] = useState("")
-  const [isSending, setIsSending] = useState(false)
-
-  const { address, isConnected } = useAccount()
-  const { foreignCoins, inbounds, setInbounds, bitcoinAddress } =
+  const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
+  const [open, setOpen] = useState(false)
+  const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
     useContext(AppContext)
   const { chain } = useNetwork()
+
   const signer = useEthersSigner()
 
-  const sourceNetwork = chain ? getNetworkName(chain.network) : undefined
+  const [sourceToken, setSourceToken] = useState<any>()
+  const [sourceTokenSelected, setSourceTokenSelected] = useState<any>()
+  const [destinationToken, setDestinationToken] = useState<any>()
+  const [destinationTokenSelected, setDestinationTokenSelected] =
+    useState<any>()
+  const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
+  const [destinationAmount, setDestinationAmount] = useState("")
+  const [isRightChain, setIsRightChain] = useState(true)
+  const [sendType, setSendType] = useState<any>()
+  const [crossChainFee, setCrossChainFee] = useState<any>()
+  const [amount, setAmount] = useState("")
+  const [isSending, setIsSending] = useState(false)
+  const [canChangeAddress, setCanChangeAddress] = useState(false)
+  const [customAddress, setCustomAddress] = useState("")
+  const [customAddressSelected, setCustomAddressSelected] = useState("")
+  const [addressSelected, setAddressSelected] = useState<any>(null)
+  const [customAddressOpen, setCustomAddressOpen] = useState(false)
+  const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
+  const [isFeeOpen, setIsFeeOpen] = useState(false)
 
-  const sourceNetworkChainID =
-    networks[sourceNetwork as keyof typeof networks]?.chain_id
+  const [debouncedAmount] = useDebounce(amount, 500)
+  const { address } = useAccount()
 
-  useEffect(() => {
-    const fetchFee = async () => {
-      try {
-        const result = await fetchFees(500000)
-        setFees(result as any)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    fetchFee()
-  }, [address])
+  const { config } = usePrepareSendTransaction({
+    to: addressSelected,
+    value: debouncedAmount ? parseEther(debouncedAmount) : undefined,
+  })
+  const { sendTransaction } = useSendTransaction(config)
 
-  useEffect(() => {
-    let list = [sourceNetwork]
-    if (bitcoinAddress) {
-      list.push("btc_testnet")
-    }
-    setSourceNetworkList(list)
-  }, [bitcoinAddress, sourceNetwork])
-
-  useEffect(() => {
-    setDestinationNetwork("")
-  }, [sourceNetworkSelected])
-
-  useEffect(() => {
-    const transferrableTokens = []
-
-    for (let token in supportedTransfers) {
-      let t = token as keyof typeof supportedTransfers
-      if (
-        supportedTransfers[t].includes(sourceNetworkSelected) &&
-        supportedTransfers[t].includes(destinationNetwork) &&
-        sourceNetworkSelected !== destinationNetwork
-      ) {
-        transferrableTokens.push(token)
-      }
-    }
-    setSourceToken("")
-    setForeignCoinsList(transferrableTokens)
-  }, [sourceNetworkSelected, destinationNetwork])
+  const formatAddress = (address: any) => {
+    return `${address.slice(0, 4)}...${address.slice(-4)}`
+  }
 
   useEffect(() => {
-    if (
-      sourceNetwork &&
-      sourceNetwork !== "zeta_testnet" &&
-      destinationNetwork &&
-      destinationNetwork !== "zeta_testnet" &&
-      sourceToken === "ZETA" &&
-      amount &&
-      parseFloat(amount) <
-        parseFloat(fees?.feesCCM[destinationNetwork]?.totalFee)
-    ) {
-      setAmountLessThanFees(true)
+    const token = balancesFrom.find((b: any) => b.id === sourceToken)
+    setSourceTokenSelected(token ? token : null)
+  }, [sourceToken])
+
+  useEffect(() => {
+    const token = balances.find((b: any) => b.id === destinationToken)
+    setDestinationTokenSelected(token ? token : null)
+  }, [destinationToken])
+
+  useEffect(() => {
+    if (fees && sendType === "crossChainZeta") {
+      setCrossChainFee(
+        fees?.["feesCCM"][destinationTokenSelected.chain_name]?.totalFee
+      )
     } else {
-      setAmountLessThanFees(false)
+      setCrossChainFee(null)
     }
-  }, [amount, destinationNetwork, sourceToken])
+
+    if (sendType === "transferEVM") {
+      setCanChangeAddress(true)
+    } else {
+      setCanChangeAddress(false)
+    }
+
+    switch (sendType) {
+      case "depositBTC":
+        setDestinationAmount(amount)
+        break
+      default:
+        setDestinationAmount(amount)
+        break
+    }
+  }, [amount, sendType])
+
+  useEffect(() => {
+    setAddressSelected(customAddressSelected || address)
+  }, [customAddressSelected, address])
+
+  const saveCustomAddress = () => {
+    const isValid = ethers.utils.isAddress(customAddress)
+    if (isValid) {
+      setCustomAddressSelected(customAddress)
+      setCustomAddress(customAddress)
+      setCustomAddressOpen(false)
+    }
+  }
+
+  useEffect(() => {
+    setIsCustomAddressValid(ethers.utils.isAddress(customAddress))
+  }, [customAddress])
+
+  useEffect(() => {
+    if (chain && sourceTokenSelected) {
+      setIsRightChain(chain.id.toString() === sourceTokenSelected.chain_id)
+    }
+  }, [chain, sourceTokenSelected])
+
+  useEffect(() => {
+    const s = sourceTokenSelected
+    const d = destinationTokenSelected
+    if (s && d) {
+      const sourceTokenIsZeta = /\bzeta\b/i.test(s?.symbol)
+      const destinationTokenIsZeta = /\bzeta\b/i.test(d?.symbol)
+      const sourceTokenIsZetaOrWZeta = /\bw?zeta\b/i.test(s?.symbol)
+      const destinationTokenIsZetaOrWZeta = /\bw?zeta\b/i.test(d?.symbol)
+      const sourceChainIsZetaChain = s.chain_name === "zeta_testnet"
+      const destinationChainIsZetaChain = d.chain_name === "zeta_testnet"
+      const sameToken = s.symbol === d.symbol
+      const sameChain = s.chain_name === d.chain_name
+      const sourceTokenIsBTC = s.symbol === "tBTC"
+      const sourceChainIsBitcoin = s.chain_name === "btc_testnet"
+      const destinationChainIsBitcoin = d.chain_name === "btc_testnet"
+      if (
+        sourceTokenIsZetaOrWZeta &&
+        destinationTokenIsZetaOrWZeta &&
+        !sameChain
+      ) {
+        setSendType("crossChainZeta")
+      } else if (sourceTokenIsZeta && d.symbol === "WZETA") {
+        setSendType("wrapZeta")
+      } else if (s.symbol === "ZETA" && d.symbol === "WZETA") {
+        setSendType("unwrapZeta")
+      } else if (
+        sameToken &&
+        !sourceChainIsZetaChain &&
+        destinationChainIsZetaChain &&
+        !sourceTokenIsBTC
+      ) {
+        setSendType("depositZRC20")
+      } else if (sameChain && !sameToken) {
+        setSendType("singleChainSwap")
+      } else if (
+        sameToken &&
+        sourceChainIsZetaChain &&
+        !destinationChainIsZetaChain &&
+        !sourceTokenIsBTC
+      ) {
+        setSendType("withdrawZRC20")
+      } else if (
+        sameToken &&
+        sameChain &&
+        !sourceChainIsBitcoin &&
+        !destinationChainIsBitcoin
+      ) {
+        setSendType("transferEVM")
+      } else if (
+        !sourceChainIsZetaChain &&
+        !destinationChainIsZetaChain &&
+        !sourceTokenIsZetaOrWZeta &&
+        !destinationTokenIsZetaOrWZeta &&
+        !sameChain
+      ) {
+        setSendType("crossChainSwap")
+      } else if (
+        sourceTokenIsBTC &&
+        !sourceChainIsZetaChain &&
+        destinationChainIsZetaChain
+      ) {
+        setSendType("depositBTC")
+      } else if (
+        sourceTokenIsBTC &&
+        sourceChainIsZetaChain &&
+        !destinationChainIsZetaChain
+      ) {
+        setSendType("withdrawBTC")
+      } else {
+        setSendType(null)
+      }
+    } else {
+      setSendType(null)
+    }
+  }, [sourceTokenSelected, destinationTokenSelected])
+
+  const amountGTBalance =
+    parseFloat(amount) > parseFloat(sourceTokenSelected?.balance)
+
+  const balancesFrom = balances
+    .filter((b: any) => b.balance > 0)
+    .sort((a: any, b: any) => {
+      if (a.chain_name < b.chain_name) {
+        return -1
+      }
+      if (a.chain_name > b.chain_name) {
+        return 1
+      }
+      return 0
+    })
+
+  const depositBTC = () => {
+    if (!address) {
+      console.error("EVM address undefined.")
+      return
+    }
+    if (!bitcoinAddress) {
+      console.error("Bitcoin address undefined.")
+      return
+    }
+    const a = parseFloat(amount) * 1e8
+    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
+    const memo = `hex::${address.replace(/^0x/, "")}`
+    window.xfi.bitcoin.request(
+      {
+        method: "transfer",
+        params: [
+          {
+            feeRate: 10,
+            from: bitcoinAddress,
+            recipient: bitcoinTSSAddress,
+            amount: {
+              amount: a,
+              decimals: 8,
+            },
+            memo,
+          },
+        ],
+      },
+      (error: any, hash: any) => {
+        if (!error) {
+          const inbound = {
+            inboundHash: hash,
+            desc: `Sent ${a} tBTC`,
+          }
+          setInbounds([...inbounds, inbound])
+        }
+      }
+    )
+  }
+
+  const transferEVM = async () => {
+    console.log("transferEVM", BigInt(debouncedAmount), config)
+
+    sendTransaction?.()
+  }
+
+  const crossChainZeta = async () => {
+    const from = sourceTokenSelected.chain_name
+    const to = destinationTokenSelected.chain_name
+    const tx = await sendZETA(signer, amount, from, to, address as string)
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${amount} ZETA from ${from} to ${to}`,
+    }
+    setInbounds([...inbounds, inbound])
+  }
+
+  const withdrawBTC = async () => {
+    const from = sourceTokenSelected.chain_name
+    const to = destinationTokenSelected.chain_name
+    const btc = bitcoinAddress
+    const token = sourceTokenSelected.symbol
+    const tx = await sendZRC20(signer, amount, from, to, btc, token)
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${amount} ${token} from ${from} to ${to}`,
+    }
+    setInbounds([...inbounds, inbound])
+  }
+
+  const depositZRC20 = async () => {
+    const from = sourceTokenSelected.chain_name
+    const to = destinationTokenSelected.chain_name
+    const token = sourceTokenSelected.symbol
+    const tx = await sendZRC20(
+      signer,
+      amount,
+      from,
+      to,
+      address as string,
+      token
+    )
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${amount} ${token} from ${from} to ${to}`,
+    }
+    setInbounds([...inbounds, inbound])
+  }
 
   const handleSend = async () => {
     setIsSending(true)
-
-    if (!sourceNetwork) {
-      setIsSending(false)
-      throw new Error("Current network is not defined.")
-    }
 
     if (!address) {
       setIsSending(false)
       throw new Error("Address undefined.")
     }
 
-    if (signer && destinationNetwork && amount) {
-      try {
-        if (sourceToken === "tBTC" && destinationNetwork === "zeta_testnet") {
-          const a = parseFloat(amount) * 1e8
-          const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
-          const memo = `hex::${address.replace(/^0x/, "")}`
-          window.xfi.bitcoin.request(
-            {
-              method: "transfer",
-              params: [
-                {
-                  feeRate: 10,
-                  from: bitcoinAddress,
-                  recipient: bitcoinTSSAddress,
-                  amount: {
-                    amount: a,
-                    decimals: 8,
-                  },
-                  memo,
-                },
-              ],
-            },
-            (error: any, hash: any) => {
-              if (!error) {
-                const inbound = {
-                  inboundHash: hash,
-                  desc: `Sent ${a} tBTC from ${sourceNetworkSelected} to ${destinationNetwork}`,
-                }
-                setInbounds([...inbounds, inbound])
-              }
-            }
-          )
-          return
-        } else if (
-          sourceToken === "tBTC" &&
-          destinationNetwork === "btc_testnet"
-        ) {
-          const tx = await sendZRC20(
-            signer,
-            amount,
-            sourceNetwork,
-            destinationNetwork,
-            bitcoinAddress,
-            sourceToken
-          )
-          const inbound = {
-            inboundHash: tx.hash,
-            desc: `Sent ${amount} ${sourceToken} from ${sourceNetworkSelected} to ${destinationNetwork}`,
-          }
-          setInbounds([...inbounds, inbound])
-        } else if (sourceToken === "ZETA") {
-          const tx = await sendZETA(
-            signer,
-            amount,
-            sourceNetwork,
-            destinationNetwork,
-            address
-          )
-          const inbound = {
-            inboundHash: tx.hash,
-            desc: `Sent ${amount} ZETA from ${sourceNetworkSelected} to ${destinationNetwork}`,
-          }
-          setInbounds([...inbounds, inbound])
-        } else {
-          const tx = await sendZRC20(
-            signer,
-            amount,
-            sourceNetwork,
-            destinationNetwork,
-            destinationAddress,
-            sourceToken
-          )
-          const inbound = {
-            inboundHash: tx.hash,
-            desc: `Sent ${amount} ${sourceToken} from ${sourceNetworkSelected} to ${destinationNetwork}`,
-          }
-          setInbounds([...inbounds, inbound])
-        }
-      } catch (error) {
-        console.error("Error sending tokens:", error)
-      } finally {
-        setIsSending(false)
+    try {
+      switch (sendType) {
+        case "depositBTC":
+          await depositBTC()
+          break
+        case "crossChainZeta":
+          await crossChainZeta()
+          break
+        case "withdrawBTC":
+          await withdrawBTC()
+          break
+        case "depositZRC20":
+          await depositZRC20()
+          break
+        case "transferEVM":
+          await transferEVM()
+          break
       }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const handleSwitchNetwork = async () => {
+    const chain_id = sourceTokenSelected?.chain_id
+    if (chain_id) {
+      switchNetwork?.(chain_id)
     }
   }
 
@@ -236,114 +373,246 @@ const Transfer = () => {
           handleSend()
         }}
       >
-        <div>
-          <Label>From</Label>
-          <Select
-            disabled={isSending}
-            onValueChange={(e) => setSourceNetworkSelected(e)}
-            value={sourceNetworkSelected}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Source network" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {sourceNetworkList.map((network: any) => (
-                  <SelectItem key={network} value={network}>
-                    {network}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <Input
-            className="col-span-2"
+            className="col-span-2 h-full text-xl"
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount"
+            placeholder="0"
             value={amount}
             disabled={isSending}
             type="number"
             step="any"
-          />{" "}
-          <Select
-            disabled={
-              !isConnected ||
-              isSending ||
-              !sourceNetworkSelected ||
-              !destinationNetwork ||
-              foreignCoinsList.length === 0
-            }
-            onValueChange={(e) => setSourceToken(e)}
-            value={sourceToken}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Token" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {foreignCoinsList.map((token: any) => (
-                  <SelectItem key={token} value={token}>
-                    {token}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Destination</Label>
-          <Select
-            disabled={isSending}
-            onValueChange={(e) => setDestinationNetwork(e)}
-            value={destinationNetwork}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Destination network" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {networkList
-                  .filter((n: any) => n !== sourceNetworkSelected)
-                  .map((n: any) => (
-                    <SelectItem key={n} value={n}>
-                      {n}
-                    </SelectItem>
+          />
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="justify-between col-span-2 h-full overflow-x-hidden"
+              >
+                <div className="flex flex-col w-full items-start">
+                  <div className="text-xs w-full flex justify-between">
+                    <div>
+                      {sourceTokenSelected
+                        ? sourceTokenSelected.symbol
+                        : "Token"}
+                    </div>
+                    <div>
+                      {sourceTokenSelected &&
+                        parseFloat(sourceTokenSelected.balance).toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {sourceTokenSelected
+                      ? sourceTokenSelected.chain_name
+                      : "Please, select token"}
+                  </div>
+                </div>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Search tokens..." />
+                <CommandEmpty>No balances found.</CommandEmpty>
+                <CommandGroup className="max-h-[400px] overflow-y-scroll">
+                  {balancesFrom.map((balances: any) => (
+                    <CommandItem
+                      key={balances.id}
+                      value={balances.id}
+                      onSelect={(c) => {
+                        setSourceToken(c === sourceToken ? null : c)
+                        setOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          sourceToken === balances.id
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      <div className="w-full">
+                        <div className="flex justify-between">
+                          <div>{balances.symbol}</div>
+                          <div>{parseFloat(balances.balance).toFixed(2)}</div>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {balances.chain_name}
+                        </div>
+                      </div>
+                    </CommandItem>
                   ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
-        <Button
-          variant="outline"
-          type="submit"
-          disabled={
-            !isConnected ||
-            !destinationNetwork ||
-            !sourceToken ||
-            !amount ||
-            isSending ||
-            amountLessThanFees
-          }
-        >
-          {isSending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="mr-2 h-4 w-4" />
+        <div className="grid grid-cols-4 gap-4">
+          <Input
+            className="col-span-2 h-full text-xl"
+            type="number"
+            placeholder=""
+            value={destinationAmount}
+            disabled={true}
+          />
+          <Popover
+            open={destinationTokenOpen}
+            onOpenChange={setDestinationTokenOpen}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="justify-between col-span-2 h-full overflow-x-hidden"
+              >
+                <div className="flex flex-col w-full items-start">
+                  <div className="text-xs">
+                    {destinationTokenSelected
+                      ? destinationTokenSelected.symbol
+                      : "Token"}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {destinationTokenSelected
+                      ? destinationTokenSelected.chain_name
+                      : "Please, select token"}
+                  </div>
+                </div>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Search tokens..." />
+                <CommandEmpty>No balances found.</CommandEmpty>
+                <CommandGroup className="max-h-[400px] overflow-y-scroll">
+                  {balances.map((balances: any) => (
+                    <CommandItem
+                      key={balances.id}
+                      value={balances.id}
+                      onSelect={(c) => {
+                        setDestinationToken(c === destinationToken ? null : c)
+                        setDestinationTokenOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          destinationToken === balances.id
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      <div className="w-full">
+                        <div className="flex justify-between">
+                          <div>{balances.symbol}</div>
+                          <div>{parseFloat(balances.balance).toFixed(2)}</div>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {balances.chain_name}
+                        </div>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-x-2 flex">
+          {addressSelected && (
+            <Popover
+              open={customAddressOpen}
+              onOpenChange={setCustomAddressOpen}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  // disabled={!canChangeAddress}
+                  variant="outline"
+                  className="rounded-full w-[100px] text-xs h-6 px-3"
+                >
+                  {/* <UserCircle2 className="h-3 w-3 mr-1" /> */}
+                  {formatAddress(addressSelected)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="rounded-xl flex p-2 space-x-2 w-[390px]">
+                <Input
+                  className="grow border-none text-xs px-2"
+                  placeholder="Recipient address"
+                  onChange={(e) => setCustomAddress(e.target.value)}
+                  value={customAddress}
+                />
+                <div>
+                  <Button
+                    disabled={!isCustomAddressValid}
+                    size="icon"
+                    variant="outline"
+                    onClick={saveCustomAddress}
+                  >
+                    <Check className="h-4 w-4" strokeWidth={3} />
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
-          Send Tokens
-        </Button>
-        {amountLessThanFees && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Amount should be more than the fee: <br />
-              {fees?.feesCCM[destinationNetwork]?.totalFee}
-            </AlertDescription>
-          </Alert>
+          {crossChainFee && (
+            <Popover open={isFeeOpen} onOpenChange={setIsFeeOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  // disabled={true}
+                  variant="outline"
+                  className="rounded-full text-xs h-6 px-3"
+                >
+                  {parseFloat(crossChainFee).toFixed(0)}&nbsp;
+                  {destinationTokenSelected.symbol}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="rounded-xl w-auto text-sm">
+                Cross-Chain Fee
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+
+        {isRightChain ? (
+          <div>
+            <Button
+              variant="outline"
+              type="submit"
+              disabled={!sendType || amountGTBalance || isSending}
+            >
+              {isSending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Send Tokens
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={handleSwitchNetwork}
+            disabled={
+              isLoading && pendingChainId === sourceTokenSelected.chain_id
+            }
+          >
+            {isLoading && pendingChainId === sourceTokenSelected.chain_id ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4 mr-2" />
+            )}
+            Switch Network
+          </Button>
         )}
       </form>
+      {/* <div className="text-xs text-slate-300">
+        <br />
+        {JSON.stringify(sendType)}
+      </div> */}
     </div>
   )
 }
