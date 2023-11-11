@@ -6,6 +6,7 @@ import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
+import bech32 from "bech32"
 import { ethers, utils } from "ethers"
 import {
   Check,
@@ -76,16 +77,11 @@ const Transfer = () => {
   const [addressSelected, setAddressSelected] = useState<any>(null)
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
+  const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
 
   const [debouncedAmount] = useDebounce(amount, 500)
   const { address } = useAccount()
-
-  const { config } = usePrepareSendTransaction({
-    to: addressSelected,
-    value: debouncedAmount ? parseEther(debouncedAmount) : undefined,
-  })
-  const { sendTransaction } = useSendTransaction(config)
 
   const formatAddress = (address: any) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
@@ -111,7 +107,9 @@ const Transfer = () => {
     }
 
     setCanChangeAddress(
-      ["transferEVM", "transferERC20EVM", "crossChainSwap"].includes(sendType)
+      ["transferNativeEVM", "transferERC20EVM", "crossChainSwap"].includes(
+        sendType
+      )
     )
 
     switch (sendType) {
@@ -129,8 +127,7 @@ const Transfer = () => {
   }, [customAddressSelected, address])
 
   const saveCustomAddress = () => {
-    const isValid = ethers.utils.isAddress(customAddress)
-    if (isValid) {
+    if (isCustomAddressValid) {
       setCustomAddressSelected(customAddress)
       setCustomAddress(customAddress)
       setCustomAddressOpen(false)
@@ -138,8 +135,46 @@ const Transfer = () => {
   }
 
   useEffect(() => {
-    setIsCustomAddressValid(ethers.utils.isAddress(customAddress))
-  }, [customAddress])
+    let isValidBech32 = false
+    try {
+      if (bech32.decode(customAddress)) {
+        const bech32address = utils.solidityPack(
+          ["bytes"],
+          [utils.toUtf8Bytes(customAddress)]
+        )
+        if (bech32address) {
+          isValidBech32 = true
+        }
+      }
+    } catch (e) {}
+    const isValidEVMAddress = ethers.utils.isAddress(customAddress)
+    if (destinationTokenSelected?.chain_name === "btc_testnet") {
+      setIsCustomAddressValid(isValidBech32)
+    } else {
+      setIsCustomAddressValid(isValidEVMAddress)
+    }
+  }, [customAddress, destinationTokenSelected])
+
+  useEffect(() => {
+    let isValidBech32 = false
+    try {
+      if (bech32.decode(addressSelected)) {
+        const bech32address = utils.solidityPack(
+          ["bytes"],
+          [utils.toUtf8Bytes(addressSelected)]
+        )
+        if (bech32address) {
+          isValidBech32 = true
+        }
+      }
+    } catch (e) {}
+    const isValidEVMAddress = ethers.utils.isAddress(addressSelected)
+    if (destinationTokenSelected?.chain_name === "btc_testnet") {
+      setIsAddressSelectedValid(isValidBech32)
+    } else {
+      setIsAddressSelectedValid(isValidEVMAddress)
+    }
+  }, [addressSelected, destinationTokenSelected])
 
   useEffect(() => {
     if (chain && sourceTokenSelected) {
@@ -292,7 +327,10 @@ const Transfer = () => {
   }
 
   const transferNativeEVM = async () => {
-    sendTransaction?.()
+    await signer?.sendTransaction({
+      to: addressSelected,
+      value: parseEther(amount),
+    })
   }
 
   const crossChainZeta = async () => {
@@ -375,18 +413,6 @@ const Transfer = () => {
   }
 
   const crossChainSwap = async () => {
-    // let recipient
-    // try {
-    //   if (bech32.decode(args.recipient)) {
-    //     recipient = utils.solidityPack(
-    //       ["bytes"],
-    //       [utils.toUtf8Bytes(args.recipient)]
-    //     )
-    //   }
-    // } catch (e) {
-    //   recipient = args.recipient
-    // }
-
     const data = prepareData(
       omnichainSwapContractAddress,
       ["address", "bytes"],
@@ -657,7 +683,7 @@ const Transfer = () => {
               </PopoverContent>
             </Popover>
           )}
-          {crossChainFee && (
+          {crossChainFee && destinationTokenSelected && (
             <Popover open={isFeeOpen} onOpenChange={setIsFeeOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -681,7 +707,12 @@ const Transfer = () => {
             <Button
               variant="outline"
               type="submit"
-              disabled={!sendType || amountGTBalance || isSending}
+              disabled={
+                !sendType ||
+                amountGTBalance ||
+                isSending ||
+                !isAddressSelectedValid
+              }
             >
               {isSending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -710,7 +741,7 @@ const Transfer = () => {
       </form>
       <div className="text-xs text-slate-300">
         <br />
-        {JSON.stringify(sendType)}
+        {JSON.stringify([sendType, addressSelected])}
       </div>
     </div>
   )
