@@ -1,6 +1,8 @@
 "use client"
 
 import { use, useContext, useEffect, useState } from "react"
+import { getAddress } from "@zetachain/protocol-contracts"
+import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 // @ts-ignore
 import { sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
 import { ethers } from "ethers"
@@ -105,11 +107,7 @@ const Transfer = () => {
       setCrossChainFee(null)
     }
 
-    if (sendType === "transferEVM") {
-      setCanChangeAddress(true)
-    } else {
-      setCanChangeAddress(false)
-    }
+    setCanChangeAddress(["transferEVM"].includes(sendType))
 
     switch (sendType) {
       case "depositBTC":
@@ -140,7 +138,9 @@ const Transfer = () => {
 
   useEffect(() => {
     if (chain && sourceTokenSelected) {
-      setIsRightChain(chain.id.toString() === sourceTokenSelected.chain_id)
+      setIsRightChain(
+        chain.id.toString() === sourceTokenSelected.chain_id.toString()
+      )
     }
   }, [chain, sourceTokenSelected])
 
@@ -167,7 +167,7 @@ const Transfer = () => {
         setSendType("crossChainZeta")
       } else if (sourceTokenIsZeta && d.symbol === "WZETA") {
         setSendType("wrapZeta")
-      } else if (s.symbol === "ZETA" && d.symbol === "WZETA") {
+      } else if (s.symbol === "WZETA" && d.symbol === "ZETA") {
         setSendType("unwrapZeta")
       } else if (
         sameToken &&
@@ -188,10 +188,21 @@ const Transfer = () => {
       } else if (
         sameToken &&
         sameChain &&
+        s.coin_type === "Gas" &&
+        d.coin_type === "Gas" &&
         !sourceChainIsBitcoin &&
         !destinationChainIsBitcoin
       ) {
-        setSendType("transferEVM")
+        setSendType("transferNativeEVM")
+      } else if (
+        sameToken &&
+        sameChain &&
+        s.coin_type === "ERC20" &&
+        d.coin_type === "ERC20" &&
+        !sourceChainIsBitcoin &&
+        !destinationChainIsBitcoin
+      ) {
+        setSendType("transferERC20EVM")
       } else if (
         !sourceChainIsZetaChain &&
         !destinationChainIsZetaChain &&
@@ -275,9 +286,7 @@ const Transfer = () => {
     )
   }
 
-  const transferEVM = async () => {
-    console.log("transferEVM", BigInt(debouncedAmount), config)
-
+  const transferNativeEVM = async () => {
     sendTransaction?.()
   }
 
@@ -303,6 +312,24 @@ const Transfer = () => {
       desc: `Sent ${amount} ${token} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
+  }
+
+  const wrapZeta = async () => {
+    signer?.sendTransaction({
+      to: getAddress("zetaToken", "zeta_testnet"),
+      value: parseEther(amount),
+    })
+  }
+
+  const unwrapZeta = async () => {
+    if (signer) {
+      const contract = new ethers.Contract(
+        getAddress("zetaToken", "zeta_testnet"),
+        WETH9.abi,
+        signer
+      )
+      contract.withdraw(parseEther(amount))
+    }
   }
 
   const depositZRC20 = async () => {
@@ -346,8 +373,14 @@ const Transfer = () => {
         case "depositZRC20":
           await depositZRC20()
           break
-        case "transferEVM":
-          await transferEVM()
+        case "transferNativeEVM":
+          await transferNativeEVM()
+          break
+        case "wrapZeta":
+          await wrapZeta()
+          break
+        case "unwrapZeta":
+          await unwrapZeta()
           break
       }
     } catch (e) {
@@ -530,7 +563,7 @@ const Transfer = () => {
             >
               <PopoverTrigger asChild>
                 <Button
-                  // disabled={!canChangeAddress}
+                  disabled={!canChangeAddress}
                   variant="outline"
                   className="rounded-full w-[100px] text-xs h-6 px-3"
                 >
@@ -609,10 +642,10 @@ const Transfer = () => {
           </Button>
         )}
       </form>
-      {/* <div className="text-xs text-slate-300">
+      <div className="text-xs text-slate-300">
         <br />
         {JSON.stringify(sendType)}
-      </div> */}
+      </div>
     </div>
   )
 }

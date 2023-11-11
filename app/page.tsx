@@ -69,6 +69,7 @@ export default function IndexPage() {
 
   return (
     <div>
+      {/* {JSON.stringify(balances)} */}
       <div className="grid sm:grid-cols-3 gap-x-10">
         <div className="sm:col-span-2 overflow-x-scroll">
           <div className="flex items-center justify-between">
