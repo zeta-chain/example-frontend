@@ -1,6 +1,7 @@
 "use client"
 
 import { use, useContext, useEffect, useState } from "react"
+import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 // @ts-ignore
@@ -16,7 +17,7 @@ import {
   UserCircle2,
 } from "lucide-react"
 import { useDebounce } from "use-debounce"
-import { parseEther } from "viem"
+import { parseEther, parseUnits } from "viem"
 import {
   useAccount,
   useNetwork,
@@ -107,7 +108,7 @@ const Transfer = () => {
       setCrossChainFee(null)
     }
 
-    setCanChangeAddress(["transferEVM"].includes(sendType))
+    setCanChangeAddress(["transferEVM", "transferERC20EVM"].includes(sendType))
 
     switch (sendType) {
       case "depositBTC":
@@ -332,6 +333,24 @@ const Transfer = () => {
     }
   }
 
+  const transferERC20EVM = async () => {
+    const contract = new ethers.Contract(
+      sourceTokenSelected.contract,
+      ERC20_ABI.abi,
+      signer
+    )
+    const approve = await contract.approve(
+      addressSelected,
+      parseUnits(amount, sourceTokenSelected.decimals)
+    )
+    approve.wait()
+    const tx = await contract.transfer(
+      addressSelected,
+      parseUnits(amount, sourceTokenSelected.decimals)
+    )
+    console.log(tx)
+  }
+
   const depositZRC20 = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
@@ -381,6 +400,9 @@ const Transfer = () => {
           break
         case "unwrapZeta":
           await unwrapZeta()
+          break
+        case "transferERC20EVM":
+          await transferERC20EVM()
           break
       }
     } catch (e) {
