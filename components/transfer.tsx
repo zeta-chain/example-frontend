@@ -1,12 +1,12 @@
 "use client"
 
+// @ts-ignore
 import { use, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
-// @ts-ignore
-import { sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
-import { ethers } from "ethers"
+import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
+import { ethers, utils } from "ethers"
 import {
   Check,
   ChevronsUpDown,
@@ -48,6 +48,8 @@ import {
 import AppContext from "@/app/app"
 
 const Transfer = () => {
+  const omnichainSwapContractAddress =
+    "0xAfF0C16fE4bcD78E9AD931Fc2E1Ade2911431E89"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const [open, setOpen] = useState(false)
   const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
@@ -108,7 +110,9 @@ const Transfer = () => {
       setCrossChainFee(null)
     }
 
-    setCanChangeAddress(["transferEVM", "transferERC20EVM"].includes(sendType))
+    setCanChangeAddress(
+      ["transferEVM", "transferERC20EVM", "crossChainSwap"].includes(sendType)
+    )
 
     switch (sendType) {
       case "depositBTC":
@@ -370,6 +374,43 @@ const Transfer = () => {
     setInbounds([...inbounds, inbound])
   }
 
+  const crossChainSwap = async () => {
+    // let recipient
+    // try {
+    //   if (bech32.decode(args.recipient)) {
+    //     recipient = utils.solidityPack(
+    //       ["bytes"],
+    //       [utils.toUtf8Bytes(args.recipient)]
+    //     )
+    //   }
+    // } catch (e) {
+    //   recipient = args.recipient
+    // }
+
+    const data = prepareData(
+      omnichainSwapContractAddress,
+      ["address", "bytes"],
+      [destinationTokenSelected.zrc20, addressSelected]
+    )
+
+    const to = getAddress("tss", sourceTokenSelected.chain_name)
+    const value = parseEther(amount)
+
+    const tx = await signer?.sendTransaction({ data, to, value })
+
+    const tiker = sourceTokenSelected.ticker
+    const from = sourceTokenSelected.chain_name
+    const dest = destinationTokenSelected.chain_name
+
+    if (tx) {
+      const inbound = {
+        inboundHash: tx.hash,
+        desc: `Sent ${amount} ${tiker} from ${from} to ${dest}`,
+      }
+      setInbounds([...inbounds, inbound])
+    }
+  }
+
   const handleSend = async () => {
     setIsSending(true)
 
@@ -403,6 +444,9 @@ const Transfer = () => {
           break
         case "transferERC20EVM":
           await transferERC20EVM()
+          break
+        case "crossChainSwap":
+          await crossChainSwap()
           break
       }
     } catch (e) {
