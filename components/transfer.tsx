@@ -19,14 +19,7 @@ import {
 } from "lucide-react"
 import { useDebounce } from "use-debounce"
 import { parseEther, parseUnits } from "viem"
-import {
-  useAccount,
-  useNetwork,
-  usePrepareSendTransaction,
-  useSendTransaction,
-  useSwitchNetwork,
-} from "wagmi"
-import { custom } from "zod"
+import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
 import { cn } from "@/lib/utils"
@@ -177,7 +170,10 @@ const Transfer = () => {
   }, [addressSelected, destinationTokenSelected])
 
   useEffect(() => {
-    if (chain && sourceTokenSelected) {
+    if (sourceTokenSelected?.chain_name === "btc_testnet") {
+      console.log(sourceTokenSelected.chain_name === "btc_testnet")
+      setIsRightChain(true)
+    } else if (chain && sourceTokenSelected) {
       setIsRightChain(
         chain.id.toString() === sourceTokenSelected.chain_id.toString()
       )
@@ -216,8 +212,8 @@ const Transfer = () => {
         !sourceTokenIsBTC
       ) {
         setSendType("depositZRC20")
-      } else if (sameChain && !sameToken) {
-        setSendType("singleChainSwap")
+        // } else if (sameChain && !sameToken) {
+        //   setSendType("singleChainSwap")
       } else if (
         sameToken &&
         sourceChainIsZetaChain &&
@@ -741,7 +737,7 @@ const Transfer = () => {
       </form>
       <div className="text-xs text-slate-300">
         <br />
-        {JSON.stringify([sendType, addressSelected])}
+        {/* {JSON.stringify([sendType, addressSelected, isRightChain])} */}
       </div>
     </div>
   )
