@@ -5,6 +5,7 @@ import { use, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
+import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
 import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
 import bech32 from "bech32"
 import { ethers, utils } from "ethers"
@@ -389,6 +390,30 @@ const Transfer = () => {
     console.log(tx)
   }
 
+  const withdrawZRC20 = async () => {
+    const destination = destinationTokenSelected.chain_name
+    const ZRC20Address = getAddress("zrc20", destination)
+    const contract = new ethers.Contract(ZRC20Address, ZRC20.abi, signer)
+    const value = ethers.utils.parseUnits(
+      amount,
+      destinationTokenSelected.decimals
+    )
+    await contract.approve(ZRC20Address, value)
+    const to =
+      destination === "btc_testnet"
+        ? ethers.utils.toUtf8Bytes(bitcoinAddress)
+        : addressSelected
+    const tx = await contract.withdraw(to, value)
+    const token = sourceTokenSelected.symbol
+    const from = sourceTokenSelected.chain_name
+    const dest = destinationTokenSelected.chain_name
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${amount} ${token} from ${from} to ${dest}`,
+    }
+    setInbounds([...inbounds, inbound])
+  }
+
   const depositZRC20 = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
@@ -469,6 +494,9 @@ const Transfer = () => {
           break
         case "crossChainSwap":
           await crossChainSwap()
+          break
+        case "withdrawZRC20":
+          await withdrawZRC20()
           break
       }
     } catch (e) {
