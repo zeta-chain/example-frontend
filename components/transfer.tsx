@@ -10,6 +10,7 @@ import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
 import bech32 from "bech32"
 import { ethers, utils } from "ethers"
 import {
+  AlertCircle,
   Check,
   ChevronsUpDown,
   Coins,
@@ -117,6 +118,16 @@ const Transfer = () => {
   }, [amount, sendType])
 
   useEffect(() => {
+    if (!isAddressSelectedValid && destinationTokenSelected) {
+      if (destinationTokenSelected.chain_name === "btc_testnet") {
+        setAddressSelected(bitcoinAddress)
+      } else {
+        setAddressSelected(address)
+      }
+    }
+  }, [destinationTokenSelected, isAddressSelectedValid])
+
+  useEffect(() => {
     setAddressSelected(customAddressSelected || address)
   }, [customAddressSelected, address])
 
@@ -142,7 +153,9 @@ const Transfer = () => {
       }
     } catch (e) {}
     const isValidEVMAddress = ethers.utils.isAddress(customAddress)
-    if (destinationTokenSelected?.chain_name === "btc_testnet") {
+    if (!destinationTokenSelected) {
+      setIsCustomAddressValid(true)
+    } else if (destinationTokenSelected?.chain_name === "btc_testnet") {
       setIsCustomAddressValid(isValidBech32)
     } else {
       setIsCustomAddressValid(isValidEVMAddress)
@@ -163,7 +176,9 @@ const Transfer = () => {
       }
     } catch (e) {}
     const isValidEVMAddress = ethers.utils.isAddress(addressSelected)
-    if (destinationTokenSelected?.chain_name === "btc_testnet") {
+    if (!destinationTokenSelected) {
+      setIsAddressSelectedValid(true)
+    } else if (destinationTokenSelected?.chain_name === "btc_testnet") {
       setIsAddressSelectedValid(isValidBech32)
     } else {
       setIsAddressSelectedValid(isValidEVMAddress)
@@ -172,7 +187,6 @@ const Transfer = () => {
 
   useEffect(() => {
     if (sourceTokenSelected?.chain_name === "btc_testnet") {
-      console.log(sourceTokenSelected.chain_name === "btc_testnet")
       setIsRightChain(true)
     } else if (chain && sourceTokenSelected) {
       setIsRightChain(
@@ -273,6 +287,24 @@ const Transfer = () => {
 
   const balancesFrom = balances
     .filter((b: any) => b.balance > 0)
+    .sort((a: any, b: any) => {
+      if (a.chain_name < b.chain_name) {
+        return -1
+      }
+      if (a.chain_name > b.chain_name) {
+        return 1
+      }
+      return 0
+    })
+
+  const destinationBalances = balances
+    .filter((b: any) => {
+      if (b.chain_name === "btc_testnet") {
+        return bitcoinAddress
+      } else {
+        return true
+      }
+    })
     .sort((a: any, b: any) => {
       if (a.chain_name < b.chain_name) {
         return -1
@@ -387,7 +419,6 @@ const Transfer = () => {
       addressSelected,
       parseUnits(amount, sourceTokenSelected.decimals)
     )
-    console.log(tx)
   }
 
   const withdrawZRC20 = async () => {
@@ -638,7 +669,7 @@ const Transfer = () => {
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
-                  {balances.map((balances: any) => (
+                  {destinationBalances.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
                       value={balances.id}
@@ -681,9 +712,13 @@ const Transfer = () => {
                 <Button
                   disabled={!canChangeAddress}
                   variant="outline"
-                  className="rounded-full w-[100px] text-xs h-6 px-3"
+                  className="rounded-full w-[110px] text-xs h-6 px-3"
                 >
-                  {/* <UserCircle2 className="h-3 w-3 mr-1" /> */}
+                  {isAddressSelectedValid ? (
+                    <UserCircle2 className="h-3 w-3 mr-1" />
+                  ) : (
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                  )}
                   {formatAddress(addressSelected)}
                 </Button>
               </PopoverTrigger>
