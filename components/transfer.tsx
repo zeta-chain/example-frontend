@@ -102,9 +102,12 @@ const Transfer = () => {
     }
 
     setCanChangeAddress(
-      ["transferNativeEVM", "transferERC20EVM", "crossChainSwap"].includes(
-        sendType
-      )
+      [
+        "transferNativeEVM",
+        "transferERC20EVM",
+        "crossChainSwap",
+        "transferBTC",
+      ].includes(sendType)
     )
 
     switch (sendType) {
@@ -262,6 +265,8 @@ const Transfer = () => {
         !sameChain
       ) {
         setSendType("crossChainSwap")
+      } else if (sourceChainIsBitcoin && destinationChainIsBitcoin) {
+        setSendType("transferBTC")
       } else if (
         sourceTokenIsBTC &&
         !sourceChainIsZetaChain &&
@@ -464,6 +469,30 @@ const Transfer = () => {
     setInbounds([...inbounds, inbound])
   }
 
+  const transferBTC = () => {
+    if (!bitcoinAddress) {
+      console.error("Bitcoin address undefined.")
+      return
+    }
+    const a = parseFloat(amount) * 1e8
+    const memo = ""
+    window.xfi.bitcoin.request({
+      method: "transfer",
+      params: [
+        {
+          feeRate: 10,
+          from: bitcoinAddress,
+          recipient: addressSelected,
+          amount: {
+            amount: a,
+            decimals: 8,
+          },
+          memo,
+        },
+      ],
+    })
+  }
+
   const crossChainSwap = async () => {
     const data = prepareData(
       omnichainSwapContractAddress,
@@ -528,6 +557,9 @@ const Transfer = () => {
           break
         case "withdrawZRC20":
           await withdrawZRC20()
+          break
+        case "transferBTC":
+          await transferBTC()
           break
       }
     } catch (e) {
@@ -800,7 +832,7 @@ const Transfer = () => {
       </form>
       <div className="text-xs text-slate-300">
         <br />
-        {/* {JSON.stringify([sendType, addressSelected, isRightChain])} */}
+        {JSON.stringify([sendType, addressSelected, isRightChain])}
       </div>
     </div>
   )
