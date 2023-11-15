@@ -45,7 +45,7 @@ import AppContext from "@/app/app"
 
 const Transfer = () => {
   const omnichainSwapContractAddress =
-    "0xAfF0C16fE4bcD78E9AD931Fc2E1Ade2911431E89"
+    "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const [open, setOpen] = useState(false)
   const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
@@ -262,9 +262,31 @@ const Transfer = () => {
         !destinationChainIsZetaChain &&
         !sourceTokenIsZetaOrWZeta &&
         !destinationTokenIsZetaOrWZeta &&
-        !sameChain
+        !sameChain &&
+        !sourceTokenIsBTC
       ) {
         setSendType("crossChainSwap")
+      } else if (
+        sourceTokenIsBTC &&
+        !destinationChainIsBitcoin &&
+        !sourceChainIsZetaChain &&
+        !destinationChainIsZetaChain &&
+        !destinationTokenIsZetaOrWZeta
+      ) {
+        setSendType("crossChainSwapBTC")
+      } else if (
+        sourceTokenIsBTC &&
+        !sourceChainIsZetaChain &&
+        destinationChainIsZetaChain &&
+        d.coin_type === "ZRC20"
+      ) {
+        setSendType("crossChainSwapBTCTransfer")
+      } else if (
+        !sourceChainIsZetaChain &&
+        destinationChainIsZetaChain &&
+        d.coin_type === "ZRC20"
+      ) {
+        setSendType("crossChainSwapTransfer")
       } else if (sourceChainIsBitcoin && destinationChainIsBitcoin) {
         setSendType("transferBTC")
       } else if (
@@ -353,6 +375,49 @@ const Transfer = () => {
           const inbound = {
             inboundHash: hash,
             desc: `Sent ${a} tBTC`,
+          }
+          setInbounds([...inbounds, inbound])
+        }
+      }
+    )
+  }
+
+  const crossChainSwapBTC = (action: string) => {
+    if (!address) {
+      console.error("EVM address undefined.")
+      return
+    }
+    if (!bitcoinAddress) {
+      console.error("Bitcoin address undefined.")
+      return
+    }
+    const a = parseFloat(amount) * 1e8
+    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
+    const contract = omnichainSwapContractAddress.replace(/^0x/, "")
+    const zrc20 = destinationTokenSelected.zrc20.replace(/^0x/, "")
+    const dest = address.replace(/^0x/, "")
+    const memo = `hex::${contract}${action}${zrc20}${dest}`
+    window.xfi.bitcoin.request(
+      {
+        method: "transfer",
+        params: [
+          {
+            feeRate: 10,
+            from: bitcoinAddress,
+            recipient: bitcoinTSSAddress,
+            amount: {
+              amount: a,
+              decimals: 8,
+            },
+            memo,
+          },
+        ],
+      },
+      (error: any, hash: any) => {
+        if (!error) {
+          const inbound = {
+            inboundHash: hash,
+            desc: `Sent ${amount} tBTC`,
           }
           setInbounds([...inbounds, inbound])
         }
@@ -493,11 +558,25 @@ const Transfer = () => {
     })
   }
 
-  const crossChainSwap = async () => {
+  const crossChainSwap = async (action: string) => {
+    const d = destinationTokenSelected
+    const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+    let recipient
+    try {
+      if (bech32.decode(addressSelected)) {
+        recipient = utils.solidityPack(
+          ["bytes"],
+          [utils.toUtf8Bytes(addressSelected)]
+        )
+      }
+    } catch (e) {
+      recipient = addressSelected
+    }
+
     const data = prepareData(
       omnichainSwapContractAddress,
-      ["address", "bytes"],
-      [destinationTokenSelected.zrc20, addressSelected]
+      ["uint8", "address", "bytes"],
+      [action, zrc20, recipient]
     )
 
     const to = getAddress("tss", sourceTokenSelected.chain_name)
@@ -553,13 +632,22 @@ const Transfer = () => {
           await transferERC20EVM()
           break
         case "crossChainSwap":
-          await crossChainSwap()
+          await crossChainSwap("1")
           break
         case "withdrawZRC20":
           await withdrawZRC20()
           break
         case "transferBTC":
           await transferBTC()
+          break
+        case "crossChainSwapTransfer":
+          await crossChainSwap("2")
+          break
+        case "crossChainSwapBTCTransfer":
+          await crossChainSwapBTC("02")
+          break
+        case "crossChainSwapBTC":
+          await crossChainSwapBTC("01")
           break
       }
     } catch (e) {
@@ -832,7 +920,7 @@ const Transfer = () => {
       </form>
       <div className="text-xs text-slate-300">
         <br />
-        {JSON.stringify([sendType, addressSelected, isRightChain])}
+        {JSON.stringify([sendType, amountGTBalance])}
       </div>
     </div>
   )

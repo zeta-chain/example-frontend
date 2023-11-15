@@ -118,7 +118,7 @@ const MessagingPage = () => {
         desc: `Message sent to ${destinationNetwork}`,
       }
       setCompleted(true)
-      setInbounds([...inbounds, inbound])
+      setInbounds([inbound, ...inbounds])
     }
   }, [isSuccess, data])
 

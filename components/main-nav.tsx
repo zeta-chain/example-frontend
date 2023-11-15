@@ -67,7 +67,7 @@ export function MainNav({ items }: MainNavProps) {
                 </Button>
               </SheetTrigger>
               <SheetContent className="bg-transparent w-full max-w-full sm:w-[500px] sm:max-w-full border-none shadow-none flex">
-                <div className="p-7 bg-white rounded-lg shadow-xl height-100 w-full">
+                <div className="p-7 bg-white rounded-lg shadow-xl height-100 w-full overflow-y-scroll">
                   <SheetHeader>
                     <SheetDescription></SheetDescription>
                   </SheetHeader>
