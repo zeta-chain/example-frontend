@@ -36,7 +36,7 @@ export default function Index({ children }: RootLayoutProps) {
       }
       refresh ? setBalancesRefreshing(false) : setBalancesLoading(false)
     },
-    []
+    [isConnected, address]
   )
 
   const fetchFeesList = useCallback(

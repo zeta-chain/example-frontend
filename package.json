@@ -27,6 +27,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@rainbow-me/rainbowkit": "^1.1.2",
+    "@uniswap/sdk": "^3.0.3",
     "@zetachain/networks": "^2.5.0",
     "@zetachain/toolkit": "5.0.0-rc3",
     "class-variance-authority": "^0.4.0",

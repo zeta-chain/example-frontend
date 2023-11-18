@@ -1,17 +1,26 @@
 "use client"
 
 // @ts-ignore
-import { use, useContext, useEffect, useState } from "react"
+import { parse } from "path"
+import { use, useCallback, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
+import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
+import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
+import {
+  getForeignCoins,
+  prepareData,
+  sendZETA,
+  sendZRC20,
+} from "@zetachain/toolkit/helpers"
 import bech32 from "bech32"
 import { ethers, utils } from "ethers"
 import {
   AlertCircle,
   Check,
+  ChevronDown,
   ChevronsUpDown,
   Coins,
   Loader2,
@@ -19,6 +28,7 @@ import {
   Send,
   UserCircle2,
 } from "lucide-react"
+import { set } from "react-hook-form"
 import { useDebounce } from "use-debounce"
 import { parseEther, parseUnits } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
@@ -48,8 +58,14 @@ const Transfer = () => {
     "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const [open, setOpen] = useState(false)
-  const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
-    useContext(AppContext)
+  const {
+    balances,
+    bitcoinAddress,
+    setInbounds,
+    inbounds,
+    fees,
+    foreignCoins,
+  } = useContext(AppContext)
   const { chain } = useNetwork()
 
   const signer = useEthersSigner()
@@ -73,6 +89,7 @@ const Transfer = () => {
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
   const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
+  const [isAmountValid, setIsAmountValid] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
 
   const [debouncedAmount] = useDebounce(amount, 500)
@@ -93,12 +110,36 @@ const Transfer = () => {
   }, [destinationToken])
 
   useEffect(() => {
-    if (fees && sendType === "crossChainZeta") {
-      setCrossChainFee(
-        fees?.["feesCCM"][destinationTokenSelected.chain_name]?.totalFee
-      )
-    } else {
-      setCrossChainFee(null)
+    if (fees) {
+      if (sendType === "crossChainZeta") {
+        const amount = parseFloat(
+          fees?.["feesCCM"][destinationTokenSelected.chain_name]?.totalFee
+        )
+        setCrossChainFee({
+          amount,
+          symbol: "ZETA",
+          formatted: `~${amount.toFixed(2)} ZETA`,
+        })
+      } else if (sendType === "crossChainSwap") {
+        const fee =
+          fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
+        const amount = parseFloat(fee)
+        const symbol = foreignCoins.find((c: any) => {
+          if (
+            c?.foreign_chain_id === destinationTokenSelected?.chain_id &&
+            c?.coin_type === "Gas"
+          ) {
+            return c
+          }
+        })?.symbol
+        setCrossChainFee({
+          amount,
+          symbol,
+          formatted: `~${amount.toFixed(2)} ${symbol}`,
+        })
+      } else {
+        setCrossChainFee(null)
+      }
     }
 
     setCanChangeAddress(
@@ -109,16 +150,89 @@ const Transfer = () => {
         "transferBTC",
       ].includes(sendType)
     )
+  }, [amount, sendType, destinationTokenSelected])
 
-    switch (sendType) {
-      case "depositBTC":
-        setDestinationAmount(amount)
-        break
-      default:
-        setDestinationAmount(amount)
-        break
+  const getQuoteCrossChainSwap = useCallback(async () => {
+    if (
+      amount &&
+      parseFloat(amount) > 0 &&
+      (destinationTokenSelected?.zrc20 ||
+        (destinationTokenSelected?.coin_type === "ZRC20" &&
+          destinationTokenSelected?.contract)) &&
+      sourceTokenSelected?.zrc20
+    ) {
+      const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
+      const provider = new ethers.providers.JsonRpcProvider(rpc)
+      const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
+      const router = new ethers.Contract(
+        routerAddress,
+        UniswapV2Factory.abi,
+        provider
+      )
+
+      const amountIn = ethers.utils.parseEther(amount)
+      const zetaToken = "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf"
+      const srcToken = sourceTokenSelected.zrc20
+      const dstToken =
+        destinationTokenSelected.coin_type === "ZRC20"
+          ? destinationTokenSelected.contract
+          : destinationTokenSelected.zrc20
+      let zetaOut
+      try {
+        zetaOut = await router.getAmountsOut(
+          parseUnits(amount, sourceTokenSelected.decimals),
+          [srcToken, zetaToken]
+        )
+      } catch (e) {
+        console.error(e)
+      }
+      let dstOut
+      try {
+        dstOut = await router.getAmountsOut(zetaOut[1], [zetaToken, dstToken])
+        setDestinationAmount(
+          parseFloat(
+            ethers.utils.formatUnits(
+              dstOut[1],
+              destinationTokenSelected.decimals
+            )
+          ).toFixed(2)
+        )
+      } catch (e) {
+        console.error(e)
+      }
     }
-  }, [amount, sendType])
+  }, [amount, sourceTokenSelected, destinationTokenSelected])
+
+  useEffect(() => {
+    setDestinationAmount("")
+    if (
+      [
+        "crossChainSwap",
+        "crossChainSwapBTC",
+        "crossChainSwapBTCTransfer",
+        "crossChainSwapTransfer",
+      ].includes(sendType)
+    ) {
+      getQuoteCrossChainSwap()
+    } else if (["crossChainZeta"].includes(sendType)) {
+      const delta = parseFloat(amount) - crossChainFee?.amount
+      if (amount && delta > 0) {
+        setDestinationAmount(delta.toFixed(2).toString())
+      }
+    }
+  }, [amount, sourceTokenSelected, destinationTokenSelected, crossChainFee])
+
+  useEffect(() => {
+    const gtBalance =
+      parseFloat(amount) > 0 &&
+      parseFloat(amount) <= parseFloat(sourceTokenSelected?.balance)
+    if (["crossChainZeta"].includes(sendType)) {
+      const gtFee = parseFloat(amount) > parseFloat(crossChainFee?.amount)
+      setIsAmountValid(gtBalance && gtFee)
+    } else {
+      setIsAmountValid(gtBalance)
+    }
+  }, [amount, crossChainFee, sendType])
 
   useEffect(() => {
     if (!isAddressSelectedValid && destinationTokenSelected) {
@@ -213,97 +327,121 @@ const Transfer = () => {
       const sourceTokenIsBTC = s.symbol === "tBTC"
       const sourceChainIsBitcoin = s.chain_name === "btc_testnet"
       const destinationChainIsBitcoin = d.chain_name === "btc_testnet"
-      if (
-        sourceTokenIsZetaOrWZeta &&
-        destinationTokenIsZetaOrWZeta &&
-        !sameChain
-      ) {
-        setSendType("crossChainZeta")
-      } else if (sourceTokenIsZeta && d.symbol === "WZETA") {
-        setSendType("wrapZeta")
-      } else if (s.symbol === "WZETA" && d.symbol === "ZETA") {
-        setSendType("unwrapZeta")
-      } else if (
-        sameToken &&
-        !sourceChainIsZetaChain &&
-        destinationChainIsZetaChain &&
-        !sourceTokenIsBTC
-      ) {
-        setSendType("depositZRC20")
-        // } else if (sameChain && !sameToken) {
-        //   setSendType("singleChainSwap")
-      } else if (
-        sameToken &&
-        sourceChainIsZetaChain &&
-        !destinationChainIsZetaChain &&
-        !sourceTokenIsBTC
-      ) {
-        setSendType("withdrawZRC20")
-      } else if (
-        sameToken &&
-        sameChain &&
-        s.coin_type === "Gas" &&
-        d.coin_type === "Gas" &&
-        !sourceChainIsBitcoin &&
-        !destinationChainIsBitcoin
-      ) {
-        setSendType("transferNativeEVM")
-      } else if (
-        sameToken &&
-        sameChain &&
-        s.coin_type === "ERC20" &&
-        d.coin_type === "ERC20" &&
-        !sourceChainIsBitcoin &&
-        !destinationChainIsBitcoin
-      ) {
-        setSendType("transferERC20EVM")
-      } else if (
-        !sourceChainIsZetaChain &&
-        !destinationChainIsZetaChain &&
-        !sourceTokenIsZetaOrWZeta &&
-        !destinationTokenIsZetaOrWZeta &&
-        !sameChain &&
-        !sourceTokenIsBTC
-      ) {
-        setSendType("crossChainSwap")
-      } else if (
-        sourceTokenIsBTC &&
-        !destinationChainIsBitcoin &&
-        !sourceChainIsZetaChain &&
-        !destinationChainIsZetaChain &&
-        !destinationTokenIsZetaOrWZeta
-      ) {
-        setSendType("crossChainSwapBTC")
-      } else if (
-        sourceTokenIsBTC &&
-        !sourceChainIsZetaChain &&
-        destinationChainIsZetaChain &&
-        d.coin_type === "ZRC20"
-      ) {
-        setSendType("crossChainSwapBTCTransfer")
-      } else if (
-        !sourceChainIsZetaChain &&
-        destinationChainIsZetaChain &&
-        d.coin_type === "ZRC20"
-      ) {
-        setSendType("crossChainSwapTransfer")
-      } else if (sourceChainIsBitcoin && destinationChainIsBitcoin) {
-        setSendType("transferBTC")
-      } else if (
-        sourceTokenIsBTC &&
-        !sourceChainIsZetaChain &&
-        destinationChainIsZetaChain
-      ) {
-        setSendType("depositBTC")
-      } else if (
-        sourceTokenIsBTC &&
-        sourceChainIsZetaChain &&
-        !destinationChainIsZetaChain
-      ) {
-        setSendType("withdrawBTC")
-      } else {
-        setSendType(null)
+
+      const sendTypeConditions = [
+        {
+          c: () =>
+            sourceTokenIsZetaOrWZeta &&
+            destinationTokenIsZetaOrWZeta &&
+            !sameChain,
+          t: "crossChainZeta",
+        },
+        {
+          c: () => sourceTokenIsZeta && d.symbol === "WZETA",
+          t: "wrapZeta",
+        },
+        {
+          c: () => s.symbol === "WZETA" && d.symbol === "ZETA",
+          t: "unwrapZeta",
+        },
+        {
+          c: () =>
+            sameToken &&
+            !sourceChainIsZetaChain &&
+            destinationChainIsZetaChain &&
+            !sourceTokenIsBTC,
+          t: "depositZRC20",
+        },
+        {
+          c: () =>
+            sameToken &&
+            sourceChainIsZetaChain &&
+            !destinationChainIsZetaChain &&
+            !sourceTokenIsBTC,
+          t: "withdrawZRC20",
+        },
+        {
+          c: () =>
+            sameToken &&
+            sameChain &&
+            s.coin_type === "Gas" &&
+            d.coin_type === "Gas" &&
+            !sourceChainIsBitcoin &&
+            !destinationChainIsBitcoin,
+          t: "transferNativeEVM",
+        },
+        {
+          c: () =>
+            sameToken &&
+            sameChain &&
+            s.coin_type === "ERC20" &&
+            d.coin_type === "ERC20" &&
+            !sourceChainIsBitcoin &&
+            !destinationChainIsBitcoin,
+          t: "transferERC20EVM",
+        },
+        {
+          c: () =>
+            !sourceChainIsZetaChain &&
+            !destinationChainIsZetaChain &&
+            !sourceTokenIsZetaOrWZeta &&
+            !destinationTokenIsZetaOrWZeta &&
+            !sameChain &&
+            !sourceTokenIsBTC,
+          t: "crossChainSwap",
+        },
+        {
+          c: () =>
+            sourceTokenIsBTC &&
+            !destinationChainIsBitcoin &&
+            !sourceChainIsZetaChain &&
+            !destinationChainIsZetaChain &&
+            !destinationTokenIsZetaOrWZeta,
+          t: "crossChainSwapBTC",
+        },
+        {
+          c: () =>
+            sourceTokenIsBTC &&
+            !sourceChainIsZetaChain &&
+            destinationChainIsZetaChain &&
+            d.coin_type === "ZRC20",
+          t: "crossChainSwapBTCTransfer",
+        },
+        {
+          c: () =>
+            !sourceChainIsZetaChain &&
+            destinationChainIsZetaChain &&
+            d.coin_type === "ZRC20",
+          t: "crossChainSwapTransfer",
+        },
+        {
+          c: () => sourceChainIsBitcoin && destinationChainIsBitcoin,
+          t: "transferBTC",
+        },
+        {
+          c: () =>
+            sourceTokenIsBTC &&
+            !sourceChainIsZetaChain &&
+            destinationChainIsZetaChain,
+          t: "depositBTC",
+        },
+        {
+          c: () =>
+            sourceTokenIsBTC &&
+            sourceChainIsZetaChain &&
+            !destinationChainIsZetaChain,
+          t: "withdrawBTC",
+        },
+      ]
+
+      const determineSendType = () => {
+        for (const condition of sendTypeConditions) {
+          if (condition.c()) return condition.t
+        }
+        return null
       }
+
+      setSendType(determineSendType())
     } else {
       setSendType(null)
     }
@@ -709,7 +847,7 @@ const Transfer = () => {
                       : "Please, select token"}
                   </div>
                 </div>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[300px] p-0">
@@ -781,7 +919,7 @@ const Transfer = () => {
                       : "Please, select token"}
                   </div>
                 </div>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[300px] p-0">
@@ -862,7 +1000,7 @@ const Transfer = () => {
               </PopoverContent>
             </Popover>
           )}
-          {crossChainFee && destinationTokenSelected && (
+          {crossChainFee?.formatted && (
             <Popover open={isFeeOpen} onOpenChange={setIsFeeOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -870,8 +1008,7 @@ const Transfer = () => {
                   variant="outline"
                   className="rounded-full text-xs h-6 px-3"
                 >
-                  {parseFloat(crossChainFee).toFixed(0)}&nbsp;
-                  {destinationTokenSelected.symbol}
+                  {crossChainFee.formatted}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="rounded-xl w-auto text-sm">
@@ -888,7 +1025,7 @@ const Transfer = () => {
               type="submit"
               disabled={
                 !sendType ||
-                amountGTBalance ||
+                !isAmountValid ||
                 isSending ||
                 !isAddressSelectedValid
               }
@@ -920,7 +1057,7 @@ const Transfer = () => {
       </form>
       <div className="text-xs text-slate-300">
         <br />
-        {JSON.stringify([sendType, amountGTBalance])}
+        {JSON.stringify([sendType])}
       </div>
     </div>
   )
