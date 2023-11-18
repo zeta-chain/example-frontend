@@ -316,127 +316,79 @@ const Transfer = () => {
     const s = sourceTokenSelected
     const d = destinationTokenSelected
     if (s && d) {
-      const sourceTokenIsZeta = /\bzeta\b/i.test(s?.symbol)
-      const destinationTokenIsZeta = /\bzeta\b/i.test(d?.symbol)
-      const sourceTokenIsZetaOrWZeta = /\bw?zeta\b/i.test(s?.symbol)
-      const destinationTokenIsZetaOrWZeta = /\bw?zeta\b/i.test(d?.symbol)
-      const sourceChainIsZetaChain = s.chain_name === "zeta_testnet"
-      const destinationChainIsZetaChain = d.chain_name === "zeta_testnet"
+      const fromZETA = /\bzeta\b/i.test(s?.symbol)
+      const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
+      const fromZetaChain = s.chain_name === "zeta_testnet"
+      const fromBTC = s.symbol === "tBTC"
+      const fromBitcoin = s.chain_name === "btc_testnet"
+      const fromWZETA = s.symbol === "WZETA"
+      const fromGas = s.coin_type === "Gas"
+      const fromERC20 = s.coin_type === "ERC20"
+      const toZETAorWZETA = /\bw?zeta\b/i.test(d?.symbol)
+      const toWZETA = d.symbol === "WZETA"
+      const toZETA = d.symbol === "ZETA"
+      const toZetaChain = d.chain_name === "zeta_testnet"
+      const toGas = d.coin_type === "Gas"
+      const toERC20 = d.coin_type === "ERC20"
+      const toZRC20 = d.coin_type === "ZRC20"
+      const toBitcoin = d.chain_name === "btc_testnet"
       const sameToken = s.symbol === d.symbol
       const sameChain = s.chain_name === d.chain_name
-      const sourceTokenIsBTC = s.symbol === "tBTC"
-      const sourceChainIsBitcoin = s.chain_name === "btc_testnet"
-      const destinationChainIsBitcoin = d.chain_name === "btc_testnet"
+      const fromToBitcoin = fromBitcoin && toBitcoin
+      const fromToZetaChain = fromZetaChain && toZetaChain
+      const fromToZETAorWZETA = fromZETAorWZETA && toZETAorWZETA
 
       const sendTypeConditions = [
-        {
-          c: () =>
-            sourceTokenIsZetaOrWZeta &&
-            destinationTokenIsZetaOrWZeta &&
-            !sameChain,
-          t: "crossChainZeta",
-        },
-        {
-          c: () => sourceTokenIsZeta && d.symbol === "WZETA",
-          t: "wrapZeta",
-        },
-        {
-          c: () => s.symbol === "WZETA" && d.symbol === "ZETA",
-          t: "unwrapZeta",
-        },
-        {
-          c: () =>
-            sameToken &&
-            !sourceChainIsZetaChain &&
-            destinationChainIsZetaChain &&
-            !sourceTokenIsBTC,
-          t: "depositZRC20",
-        },
-        {
-          c: () =>
-            sameToken &&
-            sourceChainIsZetaChain &&
-            !destinationChainIsZetaChain &&
-            !sourceTokenIsBTC,
-          t: "withdrawZRC20",
-        },
-        {
-          c: () =>
-            sameToken &&
-            sameChain &&
-            s.coin_type === "Gas" &&
-            d.coin_type === "Gas" &&
-            !sourceChainIsBitcoin &&
-            !destinationChainIsBitcoin,
-          t: "transferNativeEVM",
-        },
-        {
-          c: () =>
-            sameToken &&
-            sameChain &&
-            s.coin_type === "ERC20" &&
-            d.coin_type === "ERC20" &&
-            !sourceChainIsBitcoin &&
-            !destinationChainIsBitcoin,
-          t: "transferERC20EVM",
-        },
-        {
-          c: () =>
-            !sourceChainIsZetaChain &&
-            !destinationChainIsZetaChain &&
-            !sourceTokenIsZetaOrWZeta &&
-            !destinationTokenIsZetaOrWZeta &&
-            !sameChain &&
-            !sourceTokenIsBTC,
-          t: "crossChainSwap",
-        },
-        {
-          c: () =>
-            sourceTokenIsBTC &&
-            !destinationChainIsBitcoin &&
-            !sourceChainIsZetaChain &&
-            !destinationChainIsZetaChain &&
-            !destinationTokenIsZetaOrWZeta,
-          t: "crossChainSwapBTC",
-        },
-        {
-          c: () =>
-            sourceTokenIsBTC &&
-            !sourceChainIsZetaChain &&
-            destinationChainIsZetaChain &&
-            d.coin_type === "ZRC20",
-          t: "crossChainSwapBTCTransfer",
-        },
-        {
-          c: () =>
-            !sourceChainIsZetaChain &&
-            destinationChainIsZetaChain &&
-            d.coin_type === "ZRC20",
-          t: "crossChainSwapTransfer",
-        },
-        {
-          c: () => sourceChainIsBitcoin && destinationChainIsBitcoin,
-          t: "transferBTC",
-        },
-        {
-          c: () =>
-            sourceTokenIsBTC &&
-            !sourceChainIsZetaChain &&
-            destinationChainIsZetaChain,
-          t: "depositBTC",
-        },
-        {
-          c: () =>
-            sourceTokenIsBTC &&
-            sourceChainIsZetaChain &&
-            !destinationChainIsZetaChain,
-          t: "withdrawBTC",
-        },
+        [
+          () => fromZETAorWZETA && toZETAorWZETA && !sameChain,
+          "crossChainZeta",
+        ],
+        [() => fromZETA && toWZETA, "wrapZeta"],
+        [() => fromWZETA && toZETA, "unwrapZeta"],
+        [
+          () => sameToken && !fromZetaChain && toZetaChain && !fromBTC,
+          "depositZRC20",
+        ],
+        [
+          () => sameToken && fromZetaChain && !toZetaChain && !fromBTC,
+          "withdrawZRC20",
+        ],
+        [
+          () => sameToken && sameChain && fromGas && toGas && !fromToBitcoin,
+          "transferNativeEVM",
+        ],
+        [
+          () =>
+            sameToken && sameChain && fromERC20 && toERC20 && !fromToBitcoin,
+          "transferERC20EVM",
+        ],
+        [
+          () =>
+            !fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC,
+          "crossChainSwap",
+        ],
+        [
+          () => fromBTC && !toBitcoin && !fromToZetaChain && !toZETAorWZETA,
+          "crossChainSwapBTC",
+        ],
+        [
+          () => fromBTC && !fromZetaChain && toZetaChain && toZRC20,
+          "crossChainSwapBTCTransfer",
+        ],
+        [
+          () => !fromZetaChain && toZetaChain && toZRC20,
+          "crossChainSwapTransfer",
+        ],
+        [() => fromToBitcoin, "transferBTC"],
+        [() => fromBTC && !fromZetaChain && toZetaChain, "depositBTC"],
+        [() => fromBTC && fromZetaChain && !toZetaChain, "withdrawBTC"],
       ]
 
       const determineSendType = () => {
         for (const condition of sendTypeConditions) {
-          if (condition.c()) return condition.t
+          if (typeof condition[0] === "function" && condition[0]()) {
+            return condition[1]
+          }
         }
         return null
       }
