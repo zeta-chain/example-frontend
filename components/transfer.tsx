@@ -1,41 +1,30 @@
 "use client"
 
 // @ts-ignore
-import { parse } from "path"
-import { use, useCallback, useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import {
-  getForeignCoins,
-  prepareData,
-  sendZETA,
-  sendZRC20,
-} from "@zetachain/toolkit/helpers"
+import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
 import bech32 from "bech32"
 import { ethers, utils } from "ethers"
 import {
   AlertCircle,
   Check,
   ChevronDown,
-  ChevronsUpDown,
-  Coins,
   Loader2,
   RefreshCcw,
   Send,
   UserCircle2,
 } from "lucide-react"
-import { set } from "react-hook-form"
-import { useDebounce } from "use-debounce"
 import { parseEther, parseUnits } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -45,7 +34,6 @@ import {
   CommandItem,
 } from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Popover,
   PopoverContent,
@@ -57,7 +45,6 @@ const Transfer = () => {
   const omnichainSwapContractAddress =
     "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const [open, setOpen] = useState(false)
   const {
     balances,
     bitcoinAddress,
@@ -72,6 +59,7 @@ const Transfer = () => {
 
   const [sourceAmount, setSourceAmount] = useState("")
   const [sourceToken, setSourceToken] = useState<any>()
+  const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [sourceTokenSelected, setSourceTokenSelected] = useState<any>()
   const [destinationToken, setDestinationToken] = useState<any>()
   const [destinationTokenSelected, setDestinationTokenSelected] =
@@ -716,12 +704,12 @@ const Transfer = () => {
             type="number"
             step="any"
           />
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={sourceTokenOpen} onOpenChange={setSourceTokenOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 role="combobox"
-                aria-expanded={open}
+                aria-expanded={sourceTokenOpen}
                 className="justify-between col-span-2 h-full overflow-x-hidden"
               >
                 <div className="flex flex-col w-full items-start">
@@ -756,7 +744,7 @@ const Transfer = () => {
                       value={balances.id}
                       onSelect={(c) => {
                         setSourceToken(c === sourceToken ? null : c)
-                        setOpen(false)
+                        setSourceTokenOpen(false)
                       }}
                     >
                       <Check
@@ -799,7 +787,7 @@ const Transfer = () => {
               <Button
                 variant="outline"
                 role="combobox"
-                aria-expanded={open}
+                aria-expanded={sourceTokenOpen}
                 className="justify-between col-span-2 h-full overflow-x-hidden"
               >
                 <div className="flex flex-col w-full items-start">
