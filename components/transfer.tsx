@@ -8,6 +8,7 @@ import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
+// @ts-ignore
 import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
 import bech32 from "bech32"
 import { ethers, utils } from "ethers"
