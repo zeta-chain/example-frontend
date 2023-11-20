@@ -1,7 +1,7 @@
 "use client"
 
 // @ts-ignore
-import { useCallback, useContext, useEffect, useState } from "react"
+import { use, useCallback, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
@@ -61,11 +61,13 @@ const Transfer = () => {
   const [sourceToken, setSourceToken] = useState<any>()
   const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [sourceTokenSelected, setSourceTokenSelected] = useState<any>()
+  const [sourceBalances, setSourceBalances] = useState<any>()
   const [destinationToken, setDestinationToken] = useState<any>()
   const [destinationTokenSelected, setDestinationTokenSelected] =
     useState<any>()
   const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [destinationAmount, setDestinationAmount] = useState("")
+  const [destinationBalances, setDestinationBalances] = useState<any>()
   const [isRightChain, setIsRightChain] = useState(true)
   const [sendType, setSendType] = useState<any>()
   const [crossChainFee, setCrossChainFee] = useState<any>()
@@ -88,7 +90,7 @@ const Transfer = () => {
 
   // Set source token details
   useEffect(() => {
-    const token = balancesFrom.find((b: any) => b.id === sourceToken)
+    const token = sourceBalances?.find((b: any) => b.id === sourceToken)
     setSourceTokenSelected(token ? token : null)
   }, [sourceToken])
 
@@ -369,35 +371,40 @@ const Transfer = () => {
     t(null)
   }, [sourceTokenSelected, destinationTokenSelected])
 
-  const balancesFrom = balances
-    .filter((b: any) => b.balance > 0)
-    .sort((a: any, b: any) => {
-      if (a.chain_name < b.chain_name) {
-        return -1
-      }
-      if (a.chain_name > b.chain_name) {
-        return 1
-      }
-      return 0
-    })
-
-  const destinationBalances = balances
-    .filter((b: any) => {
-      if (b.chain_name === "btc_testnet") {
-        return bitcoinAddress
-      } else {
-        return true
-      }
-    })
-    .sort((a: any, b: any) => {
-      if (a.chain_name < b.chain_name) {
-        return -1
-      }
-      if (a.chain_name > b.chain_name) {
-        return 1
-      }
-      return 0
-    })
+  useEffect(() => {
+    setSourceBalances(
+      balances
+        .filter((b: any) => b.balance > 0)
+        .sort((a: any, b: any) => {
+          if (a.chain_name < b.chain_name) {
+            return -1
+          }
+          if (a.chain_name > b.chain_name) {
+            return 1
+          }
+          return 0
+        })
+    )
+    setDestinationBalances(
+      balances
+        .filter((b: any) => {
+          if (b.chain_name === "btc_testnet") {
+            return bitcoinAddress
+          } else {
+            return true
+          }
+        })
+        .sort((a: any, b: any) => {
+          if (a.chain_name < b.chain_name) {
+            return -1
+          }
+          if (a.chain_name > b.chain_name) {
+            return 1
+          }
+          return 0
+        })
+    )
+  }, [balances])
 
   let m = {} as any
 
@@ -738,7 +745,7 @@ const Transfer = () => {
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
-                  {balancesFrom.map((balances: any) => (
+                  {sourceBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
                       value={balances.id}
@@ -810,7 +817,7 @@ const Transfer = () => {
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
-                  {destinationBalances.map((balances: any) => (
+                  {destinationBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
                       value={balances.id}
