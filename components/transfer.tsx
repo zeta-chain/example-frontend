@@ -70,6 +70,7 @@ const Transfer = () => {
 
   const signer = useEthersSigner()
 
+  const [sourceAmount, setSourceAmount] = useState("")
   const [sourceToken, setSourceToken] = useState<any>()
   const [sourceTokenSelected, setSourceTokenSelected] = useState<any>()
   const [destinationToken, setDestinationToken] = useState<any>()
@@ -80,35 +81,36 @@ const Transfer = () => {
   const [isRightChain, setIsRightChain] = useState(true)
   const [sendType, setSendType] = useState<any>()
   const [crossChainFee, setCrossChainFee] = useState<any>()
-  const [amount, setAmount] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [addressSelected, setAddressSelected] = useState<any>(null)
+  const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
   const [canChangeAddress, setCanChangeAddress] = useState(false)
   const [customAddress, setCustomAddress] = useState("")
   const [customAddressSelected, setCustomAddressSelected] = useState("")
-  const [addressSelected, setAddressSelected] = useState<any>(null)
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
-  const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
   const [isAmountValid, setIsAmountValid] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
 
-  const [debouncedAmount] = useDebounce(amount, 500)
   const { address } = useAccount()
 
   const formatAddress = (address: any) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
 
+  // Set source token details
   useEffect(() => {
     const token = balancesFrom.find((b: any) => b.id === sourceToken)
     setSourceTokenSelected(token ? token : null)
   }, [sourceToken])
 
+  // Set destination token details
   useEffect(() => {
     const token = balances.find((b: any) => b.id === destinationToken)
     setDestinationTokenSelected(token ? token : null)
   }, [destinationToken])
 
+  // Set cross-chain fee and whether address can be changed
   useEffect(() => {
     if (fees) {
       if (sendType === "crossChainZeta") {
@@ -150,12 +152,13 @@ const Transfer = () => {
         "transferBTC",
       ].includes(sendType)
     )
-  }, [amount, sendType, destinationTokenSelected])
+  }, [sourceAmount, sendType, destinationTokenSelected])
 
+  // Set destination amount for a cross-chain swap
   const getQuoteCrossChainSwap = useCallback(async () => {
     if (
-      amount &&
-      parseFloat(amount) > 0 &&
+      sourceAmount &&
+      parseFloat(sourceAmount) > 0 &&
       (destinationTokenSelected?.zrc20 ||
         (destinationTokenSelected?.coin_type === "ZRC20" &&
           destinationTokenSelected?.contract)) &&
@@ -170,7 +173,7 @@ const Transfer = () => {
         provider
       )
 
-      const amountIn = ethers.utils.parseEther(amount)
+      const amountIn = ethers.utils.parseEther(sourceAmount)
       const zetaToken = "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf"
       const srcToken = sourceTokenSelected.zrc20
       const dstToken =
@@ -180,7 +183,7 @@ const Transfer = () => {
       let zetaOut
       try {
         zetaOut = await router.getAmountsOut(
-          parseUnits(amount, sourceTokenSelected.decimals),
+          parseUnits(sourceAmount, sourceTokenSelected.decimals),
           [srcToken, zetaToken]
         )
       } catch (e) {
@@ -201,8 +204,9 @@ const Transfer = () => {
         console.error(e)
       }
     }
-  }, [amount, sourceTokenSelected, destinationTokenSelected])
+  }, [sourceAmount, sourceTokenSelected, destinationTokenSelected])
 
+  // Set destination amount
   useEffect(() => {
     setDestinationAmount("")
     if (
@@ -215,25 +219,32 @@ const Transfer = () => {
     ) {
       getQuoteCrossChainSwap()
     } else if (["crossChainZeta"].includes(sendType)) {
-      const delta = parseFloat(amount) - crossChainFee?.amount
-      if (amount && delta > 0) {
+      const delta = parseFloat(sourceAmount) - crossChainFee?.amount
+      if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
       }
     }
-  }, [amount, sourceTokenSelected, destinationTokenSelected, crossChainFee])
+  }, [
+    sourceAmount,
+    sourceTokenSelected,
+    destinationTokenSelected,
+    crossChainFee,
+  ])
 
+  // Set whether amount is valid
   useEffect(() => {
     const gtBalance =
-      parseFloat(amount) > 0 &&
-      parseFloat(amount) <= parseFloat(sourceTokenSelected?.balance)
+      parseFloat(sourceAmount) > 0 &&
+      parseFloat(sourceAmount) <= parseFloat(sourceTokenSelected?.balance)
     if (["crossChainZeta"].includes(sendType)) {
-      const gtFee = parseFloat(amount) > parseFloat(crossChainFee?.amount)
+      const gtFee = parseFloat(sourceAmount) > parseFloat(crossChainFee?.amount)
       setIsAmountValid(gtBalance && gtFee)
     } else {
       setIsAmountValid(gtBalance)
     }
-  }, [amount, crossChainFee, sendType])
+  }, [sourceAmount, crossChainFee, sendType])
 
+  // Set destination address
   useEffect(() => {
     if (!isAddressSelectedValid && destinationTokenSelected) {
       if (destinationTokenSelected.chain_name === "btc_testnet") {
@@ -256,6 +267,7 @@ const Transfer = () => {
     }
   }
 
+  // Set whether the destination address is valid
   useEffect(() => {
     let isValidBech32 = false
     try {
@@ -279,6 +291,7 @@ const Transfer = () => {
     }
   }, [customAddress, destinationTokenSelected])
 
+  // Set whether the destination address is valid
   useEffect(() => {
     let isValidBech32 = false
     try {
@@ -302,6 +315,7 @@ const Transfer = () => {
     }
   }, [addressSelected, destinationTokenSelected])
 
+  // Set whether the chain currently selected is the right one
   useEffect(() => {
     if (sourceTokenSelected?.chain_name === "btc_testnet") {
       setIsRightChain(true)
@@ -312,6 +326,7 @@ const Transfer = () => {
     }
   }, [chain, sourceTokenSelected])
 
+  // Set send type
   useEffect(() => {
     const s = sourceTokenSelected
     const d = destinationTokenSelected
@@ -366,9 +381,6 @@ const Transfer = () => {
     t(null)
   }, [sourceTokenSelected, destinationTokenSelected])
 
-  const amountGTBalance =
-    parseFloat(amount) > parseFloat(sourceTokenSelected?.balance)
-
   const balancesFrom = balances
     .filter((b: any) => b.balance > 0)
     .sort((a: any, b: any) => {
@@ -399,7 +411,9 @@ const Transfer = () => {
       return 0
     })
 
-  const depositBTC = () => {
+  let m = {} as any
+
+  m.crossChainSwapBTCHandle = (action: string) => {
     if (!address) {
       console.error("EVM address undefined.")
       return
@@ -408,7 +422,50 @@ const Transfer = () => {
       console.error("Bitcoin address undefined.")
       return
     }
-    const a = parseFloat(amount) * 1e8
+    const a = parseFloat(sourceAmount) * 1e8
+    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
+    const contract = omnichainSwapContractAddress.replace(/^0x/, "")
+    const zrc20 = destinationTokenSelected.zrc20.replace(/^0x/, "")
+    const dest = address.replace(/^0x/, "")
+    const memo = `hex::${contract}${action}${zrc20}${dest}`
+    window.xfi.bitcoin.request(
+      {
+        method: "transfer",
+        params: [
+          {
+            feeRate: 10,
+            from: bitcoinAddress,
+            recipient: bitcoinTSSAddress,
+            amount: {
+              amount: a,
+              decimals: 8,
+            },
+            memo,
+          },
+        ],
+      },
+      (error: any, hash: any) => {
+        if (!error) {
+          const inbound = {
+            inboundHash: hash,
+            desc: `Sent ${sourceAmount} tBTC`,
+          }
+          setInbounds([...inbounds, inbound])
+        }
+      }
+    )
+  }
+
+  m.depositBTC = () => {
+    if (!address) {
+      console.error("EVM address undefined.")
+      return
+    }
+    if (!bitcoinAddress) {
+      console.error("Bitcoin address undefined.")
+      return
+    }
+    const a = parseFloat(sourceAmount) * 1e8
     const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
     const memo = `hex::${address.replace(/^0x/, "")}`
     window.xfi.bitcoin.request(
@@ -439,99 +496,56 @@ const Transfer = () => {
     )
   }
 
-  const crossChainSwapBTC = (action: string) => {
-    if (!address) {
-      console.error("EVM address undefined.")
-      return
-    }
-    if (!bitcoinAddress) {
-      console.error("Bitcoin address undefined.")
-      return
-    }
-    const a = parseFloat(amount) * 1e8
-    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
-    const contract = omnichainSwapContractAddress.replace(/^0x/, "")
-    const zrc20 = destinationTokenSelected.zrc20.replace(/^0x/, "")
-    const dest = address.replace(/^0x/, "")
-    const memo = `hex::${contract}${action}${zrc20}${dest}`
-    window.xfi.bitcoin.request(
-      {
-        method: "transfer",
-        params: [
-          {
-            feeRate: 10,
-            from: bitcoinAddress,
-            recipient: bitcoinTSSAddress,
-            amount: {
-              amount: a,
-              decimals: 8,
-            },
-            memo,
-          },
-        ],
-      },
-      (error: any, hash: any) => {
-        if (!error) {
-          const inbound = {
-            inboundHash: hash,
-            desc: `Sent ${amount} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
-        }
-      }
-    )
-  }
-
-  const transferNativeEVM = async () => {
+  m.transferNativeEVM = async () => {
     await signer?.sendTransaction({
       to: addressSelected,
-      value: parseEther(amount),
+      value: parseEther(sourceAmount),
     })
   }
 
-  const crossChainZeta = async () => {
+  m.crossChainZeta = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
-    const tx = await sendZETA(signer, amount, from, to, address as string)
+    const tx = await sendZETA(signer, sourceAmount, from, to, address as string)
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${amount} ZETA from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
-  const withdrawBTC = async () => {
+  m.withdrawBTC = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const btc = bitcoinAddress
     const token = sourceTokenSelected.symbol
-    const tx = await sendZRC20(signer, amount, from, to, btc, token)
+    const tx = await sendZRC20(signer, sourceAmount, from, to, btc, token)
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${amount} ${token} from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
-  const wrapZeta = async () => {
+  m.wrapZeta = async () => {
     signer?.sendTransaction({
       to: getAddress("zetaToken", "zeta_testnet"),
-      value: parseEther(amount),
+      value: parseEther(sourceAmount),
     })
   }
 
-  const unwrapZeta = async () => {
+  m.unwrapZeta = async () => {
     if (signer) {
       const contract = new ethers.Contract(
         getAddress("zetaToken", "zeta_testnet"),
         WETH9.abi,
         signer
       )
-      contract.withdraw(parseEther(amount))
+      contract.withdraw(parseEther(sourceAmount))
     }
   }
 
-  const transferERC20EVM = async () => {
+  m.transferERC20EVM = async () => {
     const contract = new ethers.Contract(
       sourceTokenSelected.contract,
       ERC20_ABI.abi,
@@ -539,21 +553,21 @@ const Transfer = () => {
     )
     const approve = await contract.approve(
       addressSelected,
-      parseUnits(amount, sourceTokenSelected.decimals)
+      parseUnits(sourceAmount, sourceTokenSelected.decimals)
     )
     approve.wait()
     const tx = await contract.transfer(
       addressSelected,
-      parseUnits(amount, sourceTokenSelected.decimals)
+      parseUnits(sourceAmount, sourceTokenSelected.decimals)
     )
   }
 
-  const withdrawZRC20 = async () => {
+  m.withdrawZRC20 = async () => {
     const destination = destinationTokenSelected.chain_name
     const ZRC20Address = getAddress("zrc20", destination)
     const contract = new ethers.Contract(ZRC20Address, ZRC20.abi, signer)
     const value = ethers.utils.parseUnits(
-      amount,
+      sourceAmount,
       destinationTokenSelected.decimals
     )
     await contract.approve(ZRC20Address, value)
@@ -567,18 +581,18 @@ const Transfer = () => {
     const dest = destinationTokenSelected.chain_name
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${amount} ${token} from ${from} to ${dest}`,
+      desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
-  const depositZRC20 = async () => {
+  m.depositZRC20 = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
     const tx = await sendZRC20(
       signer,
-      amount,
+      sourceAmount,
       from,
       to,
       address as string,
@@ -586,17 +600,17 @@ const Transfer = () => {
     )
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${amount} ${token} from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
-  const transferBTC = () => {
+  m.transferBTC = () => {
     if (!bitcoinAddress) {
       console.error("Bitcoin address undefined.")
       return
     }
-    const a = parseFloat(amount) * 1e8
+    const a = parseFloat(sourceAmount) * 1e8
     const memo = ""
     window.xfi.bitcoin.request({
       method: "transfer",
@@ -615,7 +629,7 @@ const Transfer = () => {
     })
   }
 
-  const crossChainSwap = async (action: string) => {
+  m.crossChainSwapHandle = async (action: string) => {
     const d = destinationTokenSelected
     const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
     let recipient
@@ -637,7 +651,7 @@ const Transfer = () => {
     )
 
     const to = getAddress("tss", sourceTokenSelected.chain_name)
-    const value = parseEther(amount)
+    const value = parseEther(sourceAmount)
 
     const tx = await signer?.sendTransaction({ data, to, value })
 
@@ -648,11 +662,16 @@ const Transfer = () => {
     if (tx) {
       const inbound = {
         inboundHash: tx.hash,
-        desc: `Sent ${amount} ${tiker} from ${from} to ${dest}`,
+        desc: `Sent ${sourceAmount} ${tiker} from ${from} to ${dest}`,
       }
       setInbounds([...inbounds, inbound])
     }
   }
+
+  m.crossChainSwap = () => m.crossChainSwapHandle("1")
+  m.crossChainSwapTransfer = () => m.crossChainSwapHandle("2")
+  m.crossChainSwapBTC = () => m.crossChainSwapBTCHandle("01")
+  m.crossChainSwapBTCTransfer = () => m.crossChainSwapBTCHandle("02")
 
   const handleSend = async () => {
     setIsSending(true)
@@ -663,50 +682,7 @@ const Transfer = () => {
     }
 
     try {
-      switch (sendType) {
-        case "depositBTC":
-          await depositBTC()
-          break
-        case "crossChainZeta":
-          await crossChainZeta()
-          break
-        case "withdrawBTC":
-          await withdrawBTC()
-          break
-        case "depositZRC20":
-          await depositZRC20()
-          break
-        case "transferNativeEVM":
-          await transferNativeEVM()
-          break
-        case "wrapZeta":
-          await wrapZeta()
-          break
-        case "unwrapZeta":
-          await unwrapZeta()
-          break
-        case "transferERC20EVM":
-          await transferERC20EVM()
-          break
-        case "crossChainSwap":
-          await crossChainSwap("1")
-          break
-        case "withdrawZRC20":
-          await withdrawZRC20()
-          break
-        case "transferBTC":
-          await transferBTC()
-          break
-        case "crossChainSwapTransfer":
-          await crossChainSwap("2")
-          break
-        case "crossChainSwapBTCTransfer":
-          await crossChainSwapBTC("02")
-          break
-        case "crossChainSwapBTC":
-          await crossChainSwapBTC("01")
-          break
-      }
+      m[sendType as keyof typeof m]()
     } catch (e) {
       console.error(e)
     } finally {
@@ -733,9 +709,9 @@ const Transfer = () => {
         <div className="grid grid-cols-4 gap-4">
           <Input
             className="col-span-2 h-full text-xl"
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setSourceAmount(e.target.value)}
             placeholder="0"
-            value={amount}
+            value={sourceAmount}
             disabled={isSending}
             type="number"
             step="any"
