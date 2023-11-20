@@ -12,8 +12,6 @@ import {
   RainbowKitProvider,
   connectorsForWallets,
 } from "@rainbow-me/rainbowkit"
-// @ts-ignore
-import { getBalances } from "@zetachain/toolkit/helpers"
 import { WagmiConfig, configureChains, createConfig } from "wagmi"
 import {
   bscTestnet,

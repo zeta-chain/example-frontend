@@ -257,7 +257,7 @@ const Transfer = () => {
     }
   }
 
-  // Set whether the destination address is valid
+  // Set whether the custom destination address is valid
   useEffect(() => {
     let isValidBech32 = false
     try {
@@ -281,7 +281,7 @@ const Transfer = () => {
     }
   }, [customAddress, destinationTokenSelected])
 
-  // Set whether the destination address is valid
+  // Set whether the selected destination address is valid
   useEffect(() => {
     let isValidBech32 = false
     try {
@@ -341,7 +341,7 @@ const Transfer = () => {
       const sameToken = s.symbol === d.symbol
       const sameChain = s.chain_name === d.chain_name
       const fromToBitcoin = fromBitcoin && toBitcoin
-      const fromToZetaChain = fromZetaChain && toZetaChain
+      const fromToZetaChain = fromZetaChain || toZetaChain
       const fromToZETAorWZETA = fromZETAorWZETA || toZETAorWZETA
 
       if (fromZETAorWZETA && toZETAorWZETA && !sameChain)
@@ -371,38 +371,19 @@ const Transfer = () => {
     t(null)
   }, [sourceTokenSelected, destinationTokenSelected])
 
+  // Set source and destination balances
   useEffect(() => {
     setSourceBalances(
       balances
         .filter((b: any) => b.balance > 0)
-        .sort((a: any, b: any) => {
-          if (a.chain_name < b.chain_name) {
-            return -1
-          }
-          if (a.chain_name > b.chain_name) {
-            return 1
-          }
-          return 0
-        })
+        .sort((a: any, b: any) => (a.chain_name < b.chain_name ? -1 : 1))
     )
     setDestinationBalances(
       balances
-        .filter((b: any) => {
-          if (b.chain_name === "btc_testnet") {
-            return bitcoinAddress
-          } else {
-            return true
-          }
-        })
-        .sort((a: any, b: any) => {
-          if (a.chain_name < b.chain_name) {
-            return -1
-          }
-          if (a.chain_name > b.chain_name) {
-            return 1
-          }
-          return 0
-        })
+        .filter((b: any) =>
+          b.chain_name === "btc_testnet" ? bitcoinAddress : true
+        )
+        .sort((a: any, b: any) => (a.chain_name < b.chain_name ? -1 : 1))
     )
   }, [balances])
 
@@ -945,10 +926,6 @@ const Transfer = () => {
           </Button>
         )}
       </form>
-      <div className="text-xs text-slate-300">
-        <br />
-        {JSON.stringify([sendType])}
-      </div>
     </div>
   )
 }
