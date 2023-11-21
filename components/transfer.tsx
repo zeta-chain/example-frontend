@@ -388,6 +388,29 @@ const Transfer = () => {
     )
   }, [balances])
 
+  const bitcoinXDEFITransfer = (
+    from: string,
+    recipient: string,
+    amount: number,
+    memo: string
+  ) => {
+    return {
+      method: "transfer",
+      params: [
+        {
+          feeRate: 10,
+          from,
+          recipient,
+          amount: {
+            amount,
+            decimals: 8,
+          },
+          memo,
+        },
+      ],
+    }
+  }
+
   let m = {} as any
 
   m.crossChainSwapBTCHandle = (action: string) => {
@@ -406,21 +429,7 @@ const Transfer = () => {
     const dest = address.replace(/^0x/, "")
     const memo = `hex::${contract}${action}${zrc20}${dest}`
     window.xfi.bitcoin.request(
-      {
-        method: "transfer",
-        params: [
-          {
-            feeRate: 10,
-            from: bitcoinAddress,
-            recipient: bitcoinTSSAddress,
-            amount: {
-              amount: a,
-              decimals: 8,
-            },
-            memo,
-          },
-        ],
-      },
+      bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
         if (!error) {
           const inbound = {
@@ -446,21 +455,7 @@ const Transfer = () => {
     const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
     const memo = `hex::${address.replace(/^0x/, "")}`
     window.xfi.bitcoin.request(
-      {
-        method: "transfer",
-        params: [
-          {
-            feeRate: 10,
-            from: bitcoinAddress,
-            recipient: bitcoinTSSAddress,
-            amount: {
-              amount: a,
-              decimals: 8,
-            },
-            memo,
-          },
-        ],
-      },
+      bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
         if (!error) {
           const inbound = {
@@ -589,21 +584,9 @@ const Transfer = () => {
     }
     const a = parseFloat(sourceAmount) * 1e8
     const memo = ""
-    window.xfi.bitcoin.request({
-      method: "transfer",
-      params: [
-        {
-          feeRate: 10,
-          from: bitcoinAddress,
-          recipient: addressSelected,
-          amount: {
-            amount: a,
-            decimals: 8,
-          },
-          memo,
-        },
-      ],
-    })
+    window.xfi.bitcoin.request(
+      bitcoinXDEFITransfer(bitcoinAddress, addressSelected, a, memo)
+    )
   }
 
   m.crossChainSwapHandle = async (action: string) => {
