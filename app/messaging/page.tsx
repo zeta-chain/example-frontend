@@ -123,7 +123,7 @@ const MessagingPage = () => {
       Quoter.abi,
       signer
     )
-
+    console.log(quoterContract)
     const quotedAmountOut =
       await quoterContract.callStatic.quoteExactInputSingle(
         "0x0000c9ec4042283e8139c74f4c64bcd1e0b9b54f", // WZETA
@@ -136,8 +136,9 @@ const MessagingPage = () => {
   }
 
   const getCCMFee = useCallback(async () => {
+    console.log("changing to", currentNetworkName)
     try {
-      if (!currentNetworkName) {
+      if (!currentNetworkName || !destinationNetwork) {
         throw new Error("Network is not selected")
       }
       const feeZETA = fees.feesCCM[destinationNetwork].totalFee
@@ -168,7 +169,7 @@ const MessagingPage = () => {
     } catch (error) {
       console.error(error)
     }
-  }, [currentNetworkName, message, destinationNetwork])
+  }, [currentNetworkName, destinationNetwork])
 
   useEffect(() => {
     try {
@@ -176,7 +177,7 @@ const MessagingPage = () => {
     } catch (error) {
       console.error(error)
     }
-  }, [currentNetworkName, message, destinationNetwork])
+  }, [currentNetworkName, destinationNetwork, signer])
 
   const explorer =
     destinationNetwork &&
