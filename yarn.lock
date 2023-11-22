@@ -3323,10 +3323,10 @@
   resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-3.0.1.tgz#fefbc93dfea7d50193831b541fd8b847f3db57c7"
   integrity sha512-F0ZY3z25TftUFHWjNP63gPh1ppFcTaATAqDX87Ld9ED2iDQ7tUEAN7R2A8BEzbcIi+n8dfLWQSPCFcgP1vFB/w==
 
-"@zetachain/toolkit@5.0.0-rc5":
-  version "5.0.0-rc5"
-  resolved "https://registry.yarnpkg.com/@zetachain/toolkit/-/toolkit-5.0.0-rc5.tgz#86097e24b5989ea0e337260fe37ff65360263c79"
-  integrity sha512-+GkicNs9e/xDZRLzCd28+Ry4GKgADxZKmCPaDy9Ip8z2xzB8UpGTuo2kigpOoGqSuLnYxuec1p8moijnh4OeJQ==
+"@zetachain/toolkit@5.0.0-rc6":
+  version "5.0.0-rc6"
+  resolved "https://registry.yarnpkg.com/@zetachain/toolkit/-/toolkit-5.0.0-rc6.tgz#6840f24d45389eea632469b2bd0406c9c7fb8ecc"
+  integrity sha512-KqLbGXBTlszPlmx1s0RBLiNHT4UM1MfnY3GfnSbf397O6MoatfRWXm0pJVy8Jicj6HKFBKZNibRJpGGCoXigKQ==
   dependencies:
     "@inquirer/prompts" "^2.1.1"
     "@inquirer/select" "1.1.3"
