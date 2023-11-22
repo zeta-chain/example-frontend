@@ -1,10 +1,20 @@
 "use client"
 
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
+import { Token } from "@uniswap/sdk-core"
+import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
+import { abi } from "@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json"
+import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json"
+import Quoter from "@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json"
+import { Pool, computePoolAddress, tickToPrice } from "@uniswap/v3-sdk"
 import { getExplorers } from "@zetachain/networks"
+import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
 import networks from "@zetachain/networks/dist/src/networks"
+import { getAddress, getNonZetaAddress } from "@zetachain/protocol-contracts"
+import { ethers } from "ethers"
+import { formatEther, parseEther } from "ethers/lib/utils"
 import { AlertCircle, BookOpen, Check, Loader2, Send } from "lucide-react"
 import { useDebounce } from "use-debounce"
 import { parseUnits } from "viem"
@@ -15,6 +25,7 @@ import {
   useWaitForTransaction,
 } from "wagmi"
 
+import { useEthersSigner } from "@/lib/ethers"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -44,11 +55,12 @@ const MessagingPage = () => {
   const [isZeta, setIsZeta] = useState(false)
   const [currentNetworkName, setCurrentNetworkName] = useState<any>("")
   const [completed, setCompleted] = useState(false)
-  const [fee, setFee] = useState("0.5")
+  const [fee, setFee] = useState("")
 
   const [debouncedMessage] = useDebounce(message, 500)
 
   const allNetworks = Object.keys(contracts)
+  const signer = useEthersSigner()
 
   const { chain } = useNetwork()
   useEffect(() => {
@@ -63,7 +75,7 @@ const MessagingPage = () => {
       (networks as any)[destinationNetwork]?.chain_id ?? null
     )
   }, [destinationNetwork])
-  const { inbounds, setInbounds } = useContext(AppContext)
+  const { inbounds, setInbounds, fees } = useContext(AppContext)
 
   const {
     config,
@@ -104,6 +116,67 @@ const MessagingPage = () => {
   const { isLoading, isSuccess } = useWaitForTransaction({
     hash: data?.hash,
   })
+
+  const convertZETAtoMATIC = async (amount: string) => {
+    const quoterContract = new ethers.Contract(
+      "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6",
+      Quoter.abi,
+      signer
+    )
+
+    const quotedAmountOut =
+      await quoterContract.callStatic.quoteExactInputSingle(
+        "0x0000c9ec4042283e8139c74f4c64bcd1e0b9b54f", // WZETA
+        "0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889", // WMATIC
+        500,
+        parseEther(amount),
+        0
+      )
+    return quotedAmountOut
+  }
+
+  const getCCMFee = useCallback(async () => {
+    try {
+      if (!currentNetworkName) {
+        throw new Error("Network is not selected")
+      }
+      const feeZETA = fees.feesCCM[destinationNetwork].totalFee
+      let fee
+      if (currentNetworkName === "mumbai_testnet") {
+        fee = await convertZETAtoMATIC(feeZETA)
+      } else {
+        const rpc = getEndpoints("evm", currentNetworkName)[0]?.url
+        const provider = new ethers.providers.JsonRpcProvider(rpc)
+        const routerAddress = getNonZetaAddress(
+          "uniswapV2Router02",
+          currentNetworkName
+        )
+        const router = new ethers.Contract(
+          routerAddress,
+          UniswapV2Factory.abi,
+          provider
+        )
+        const amountIn = ethers.utils.parseEther(feeZETA)
+        const zetaToken = getAddress("zetaToken", currentNetworkName)
+        const weth = getNonZetaAddress("weth9", currentNetworkName)
+        console.log(routerAddress, amountIn, [zetaToken, weth])
+        let zetaOut = await router.getAmountsOut(amountIn, [zetaToken, weth])
+        fee = zetaOut[1]
+      }
+      fee = Math.ceil(parseFloat(formatEther(fee)) * 1.01 * 100) / 100 // 1.01 is to ensure that the fee is enough
+      setFee(fee.toString())
+    } catch (error) {
+      console.error(error)
+    }
+  }, [currentNetworkName, message, destinationNetwork])
+
+  useEffect(() => {
+    try {
+      getCCMFee()
+    } catch (error) {
+      console.error(error)
+    }
+  }, [currentNetworkName, message, destinationNetwork])
 
   const explorer =
     destinationNetwork &&
