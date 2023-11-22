@@ -5,8 +5,9 @@ import Link from "next/link"
 import { getExplorers } from "@zetachain/networks"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
 import networks from "@zetachain/networks/dist/src/networks"
-import { AlertCircle, BookOpen, Loader2, Send } from "lucide-react"
+import { AlertCircle, BookOpen, Check, Loader2, Send } from "lucide-react"
 import { useDebounce } from "use-debounce"
+import { parseUnits } from "viem"
 import {
   useContractWrite,
   useNetwork,
@@ -43,6 +44,7 @@ const MessagingPage = () => {
   const [isZeta, setIsZeta] = useState(false)
   const [currentNetworkName, setCurrentNetworkName] = useState<any>("")
   const [completed, setCompleted] = useState(false)
+  const [fee, setFee] = useState("0.5")
 
   const [debouncedMessage] = useDebounce(message, 500)
 
@@ -89,7 +91,7 @@ const MessagingPage = () => {
         type: "function",
       },
     ],
-    value: BigInt("10000000000000000"),
+    value: BigInt(parseFloat(fee) * 1e18 || 0),
     functionName: "sendMessage",
     args: [
       BigInt(destinationChainID !== null ? destinationChainID : 0),
@@ -194,6 +196,12 @@ const MessagingPage = () => {
                 placeholder="Message"
                 disabled={isZeta}
                 onChange={(e) => setMessage(e.target.value)}
+              />
+              <Input
+                placeholder="Fee"
+                value={fee}
+                type="number"
+                onChange={(e) => setFee(e.target.value)}
               />
               <Button
                 type="submit"
