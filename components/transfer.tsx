@@ -934,7 +934,6 @@ const Transfer = () => {
           </Button>
         )}
       </form>
-      {JSON.stringify(sendType)}
     </div>
   )
 }
