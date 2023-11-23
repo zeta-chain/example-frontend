@@ -1,6 +1,7 @@
 "use client"
 
 // @ts-ignore
+import { send } from "process"
 import { use, useCallback, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
@@ -58,7 +59,7 @@ const Transfer = () => {
 
   const signer = useEthersSigner()
 
-  const [sourceAmount, setSourceAmount] = useState("")
+  const [sourceAmount, setSourceAmount] = useState<any>(false)
   const [sourceToken, setSourceToken] = useState<any>()
   const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [sourceTokenSelected, setSourceTokenSelected] = useState<any>()
@@ -85,6 +86,39 @@ const Transfer = () => {
   const [isAmountValid, setIsAmountValid] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
 
+  const [errors, setErrors] = useState<any>({
+    sendTypeUnsupported: {
+      message: "Transfer type not supported",
+      enabled: false,
+      priority: 4,
+    },
+    sourceTokenNotSelected: {
+      message: "Select source token",
+      enabled: true,
+      priority: 3,
+    },
+    destinationTokenNotSelected: {
+      message: "Select destination token",
+      enabled: true,
+      priority: 2,
+    },
+    enterAmount: {
+      message: "Enter an amount",
+      enabled: false,
+      priority: 1,
+    },
+    insufficientBalance: {
+      message: "Insufficient balance",
+      enabled: false,
+      priority: 0,
+    },
+  })
+
+  const priorityErrors = Object.entries(errors)
+    .filter(([key, value]: [string, any]) => value.enabled)
+    .sort((a: any, b: any) => b[1].priority - a[1].priority)
+    .map(([key, value]) => value)
+
   const { address } = useAccount()
 
   const formatAddress = (address: any) => {
@@ -94,13 +128,13 @@ const Transfer = () => {
   // Set source token details
   useEffect(() => {
     const token = sourceBalances?.find((b: any) => b.id === sourceToken)
-    setSourceTokenSelected(token ? token : null)
+    setSourceTokenSelected(token ? token : false)
   }, [sourceToken])
 
   // Set destination token details
   useEffect(() => {
     const token = balances.find((b: any) => b.id === destinationToken)
-    setDestinationTokenSelected(token ? token : null)
+    setDestinationTokenSelected(token ? token : false)
   }, [destinationToken])
 
   // Set cross-chain fee and whether address can be changed
@@ -160,7 +194,7 @@ const Transfer = () => {
           destinationTokenSelected?.contract)) &&
       sourceTokenSelected?.zrc20
     ) {
-      setDestinationAmountIsLoading(true)
+      parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
       const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
       const provider = new ethers.providers.JsonRpcProvider(rpc)
       const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
@@ -216,7 +250,6 @@ const Transfer = () => {
         "crossChainSwapTransfer",
       ].includes(st)
     ) {
-      console.log("getting a quote", st, destinationTokenSelected)
       getQuoteCrossChainSwap()
     } else if (["crossChainZeta"].includes(st)) {
       const delta = parseFloat(sourceAmount) - crossChainFee?.amount
@@ -230,6 +263,38 @@ const Transfer = () => {
     destinationTokenSelected,
     crossChainFee,
     sendType,
+  ])
+
+  const updateError = (errorKey: any, update: any) => {
+    setErrors((prevErrors: any) => ({
+      ...prevErrors,
+      [errorKey]: {
+        ...prevErrors[errorKey],
+        ...update,
+      },
+    }))
+  }
+
+  useEffect(() => {
+    if (sourceTokenSelected && destinationTokenSelected) {
+      updateError("sendTypeUnsupported", { enabled: !sendType })
+    }
+    updateError("sourceTokenNotSelected", { enabled: !sourceTokenSelected })
+    updateError("destinationTokenNotSelected", {
+      enabled: !destinationTokenSelected,
+    })
+    if (sourceAmount === false) {
+      updateError("enterAmount", { enabled: true })
+    } else {
+      updateError("enterAmount", { enabled: false })
+      updateError("insufficientBalance", { enabled: !isAmountValid })
+    }
+  }, [
+    sendType,
+    sourceTokenSelected,
+    destinationTokenSelected,
+    isAmountValid,
+    sourceAmount,
   ])
 
   // Set whether amount is valid
@@ -291,6 +356,9 @@ const Transfer = () => {
       setIsCustomAddressValid(isValidEVMAddress)
     }
   }, [customAddress, destinationTokenSelected])
+
+  const sendDisabled =
+    !sendType || !isAmountValid || isSending || !isAddressSelectedValid
 
   // Set whether the selected destination address is valid
   useEffect(() => {
@@ -902,22 +970,15 @@ const Transfer = () => {
 
         {isRightChain ? (
           <div>
-            <Button
-              variant="outline"
-              type="submit"
-              disabled={
-                !sendType ||
-                !isAmountValid ||
-                isSending ||
-                !isAddressSelectedValid
-              }
-            >
+            <Button variant="outline" type="submit" disabled={sendDisabled}>
               {isSending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Send className="h-4 w-4 mr-2" />
               )}
-              Send Tokens
+              {priorityErrors.length > 0
+                ? (priorityErrors as any)[0].message
+                : "Send Tokens"}
             </Button>
           </div>
         ) : (
