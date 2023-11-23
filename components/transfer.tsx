@@ -202,10 +202,11 @@ const Transfer = () => {
         console.error(e)
       }
     }
-  }, [sourceAmount, sourceTokenSelected, destinationTokenSelected])
+  }, [sourceAmount, sourceTokenSelected, destinationTokenSelected, sendType])
 
   // Set destination amount
   useEffect(() => {
+    const st = calculateSendType()
     setDestinationAmount("")
     if (
       [
@@ -213,10 +214,11 @@ const Transfer = () => {
         "crossChainSwapBTC",
         "crossChainSwapBTCTransfer",
         "crossChainSwapTransfer",
-      ].includes(sendType)
+      ].includes(st)
     ) {
+      console.log("getting a quote", st, destinationTokenSelected)
       getQuoteCrossChainSwap()
-    } else if (["crossChainZeta"].includes(sendType)) {
+    } else if (["crossChainZeta"].includes(st)) {
       const delta = parseFloat(sourceAmount) - crossChainFee?.amount
       if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
@@ -227,6 +229,7 @@ const Transfer = () => {
     sourceTokenSelected,
     destinationTokenSelected,
     crossChainFee,
+    sendType,
   ])
 
   // Set whether amount is valid
@@ -324,11 +327,13 @@ const Transfer = () => {
     }
   }, [chain, sourceTokenSelected])
 
-  // Set send type
-  useEffect(() => {
+  const calculateSendType = () => {
     const s = sourceTokenSelected
     const d = destinationTokenSelected
-    const t = (x: any) => setSendType(x)
+    const t = (x: any) => {
+      setSendType(x)
+      return x
+    }
     if (s && d) {
       const fromZETA = /\bzeta\b/i.test(s?.symbol)
       const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
@@ -377,6 +382,11 @@ const Transfer = () => {
       if (fromBTC && fromZetaChain && !toZetaChain) return t("withdrawBTC")
     }
     t(null)
+  }
+
+  // Set send type
+  useEffect(() => {
+    calculateSendType()
   }, [sourceTokenSelected, destinationTokenSelected])
 
   // Set source and destination balances
@@ -924,6 +934,7 @@ const Transfer = () => {
           </Button>
         )}
       </form>
+      {JSON.stringify(sendType)}
     </div>
   )
 }
