@@ -890,8 +890,11 @@ const Transfer = () => {
                   {crossChainFee.formatted}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="rounded-xl w-auto text-sm">
-                Cross-Chain Fee
+              <PopoverContent className="rounded-xl w-auto text-xs">
+                <div className="font-medium text-center">Cross-Chain Fee</div>
+                <div className="text-slate-400">
+                  {crossChainFee?.amount.toFixed(15)}
+                </div>
               </PopoverContent>
             </Popover>
           )}
