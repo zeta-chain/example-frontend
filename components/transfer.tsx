@@ -105,13 +105,16 @@ const Transfer = () => {
   useEffect(() => {
     if (fees) {
       if (sendType === "crossChainZeta") {
-        const amount = parseFloat(
-          fees?.["feesCCM"][destinationTokenSelected.chain_name]?.totalFee
-        )
+        const dest = destinationTokenSelected?.chain_name
+        const isZeta = dest === "zeta_testnet"
+        const amount = isZeta
+          ? 0
+          : parseFloat(fees?.["feesCCM"][dest]?.totalFee)
+        const formatted = amount === 0 ? "0 ZETA" : `~${amount.toFixed(2)} ZETA`
         setCrossChainFee({
           amount,
           symbol: "ZETA",
-          formatted: `~${amount.toFixed(2)} ZETA`,
+          formatted,
         })
       } else if (sendType === "crossChainSwap") {
         const fee =
