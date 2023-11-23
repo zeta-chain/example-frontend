@@ -68,6 +68,8 @@ const Transfer = () => {
     useState<any>()
   const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [destinationAmount, setDestinationAmount] = useState("")
+  const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
+    useState(false)
   const [destinationBalances, setDestinationBalances] = useState<any>()
   const [isRightChain, setIsRightChain] = useState(true)
   const [sendType, setSendType] = useState<any>()
@@ -158,6 +160,7 @@ const Transfer = () => {
           destinationTokenSelected?.contract)) &&
       sourceTokenSelected?.zrc20
     ) {
+      setDestinationAmountIsLoading(true)
       const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
       const provider = new ethers.providers.JsonRpcProvider(rpc)
       const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
@@ -186,6 +189,7 @@ const Transfer = () => {
       let dstOut
       try {
         dstOut = await router.getAmountsOut(zetaOut[1], [zetaToken, dstToken])
+        setDestinationAmountIsLoading(false)
         setDestinationAmount(
           parseFloat(
             ethers.utils.formatUnits(
@@ -747,13 +751,20 @@ const Transfer = () => {
           </Popover>
         </div>
         <div className="grid grid-cols-4 gap-4">
-          <Input
-            className="col-span-2 h-full text-xl"
-            type="number"
-            placeholder=""
-            value={destinationAmount}
-            disabled={true}
-          />
+          <div className="col-span-2 relative">
+            <Input
+              className="text-xl h-full"
+              type="number"
+              placeholder=""
+              value={destinationAmount}
+              disabled={true}
+            />
+            {destinationAmountIsLoading && (
+              <div className="translate-y-[-50%] absolute top-[50%] left-[1rem]">
+                <Loader2 className="h-6 w-6 animate-spin opacity-40" />
+              </div>
+            )}
+          </div>
           <Popover
             open={destinationTokenOpen}
             onOpenChange={setDestinationTokenOpen}
