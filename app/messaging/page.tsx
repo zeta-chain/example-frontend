@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -271,12 +272,19 @@ const MessagingPage = () => {
                 disabled={isZeta}
                 onChange={(e) => setMessage(e.target.value)}
               />
-              <Input
-                placeholder="Fee"
-                value={fee}
-                type="number"
-                onChange={(e) => setFee(e.target.value)}
-              />
+              <div>
+                <Label htmlFor="fee">
+                  Fee (in {chain?.nativeCurrency?.symbol})
+                </Label>
+                <Input
+                  id="fee"
+                  placeholder="Fee"
+                  value={fee}
+                  disabled={!destinationNetwork}
+                  type="number"
+                  onChange={(e) => setFee(e.target.value)}
+                />
+              </div>
               <Button
                 type="submit"
                 variant="outline"
