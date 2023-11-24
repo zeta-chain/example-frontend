@@ -2,12 +2,8 @@
 
 import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
-import { Token } from "@uniswap/sdk-core"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
-import { abi } from "@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json"
-import IUniswapV3PoolABI from "@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json"
 import Quoter from "@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json"
-import { Pool, computePoolAddress, tickToPrice } from "@uniswap/v3-sdk"
 import { getExplorers } from "@zetachain/networks"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getNetworkName } from "@zetachain/networks/dist/src/getNetworkName"
@@ -17,7 +13,6 @@ import { ethers } from "ethers"
 import { formatEther, parseEther } from "ethers/lib/utils"
 import { AlertCircle, BookOpen, Check, Loader2, Send } from "lucide-react"
 import { useDebounce } from "use-debounce"
-import { parseUnits } from "viem"
 import {
   useContractWrite,
   useNetwork,
@@ -274,7 +269,9 @@ const MessagingPage = () => {
               />
               <div>
                 <Label htmlFor="fee">
-                  Fee (in {chain?.nativeCurrency?.symbol})
+                  Fee{" "}
+                  {chain?.nativeCurrency &&
+                    `(in ${chain?.nativeCurrency?.symbol})`}
                 </Label>
                 <Input
                   id="fee"
