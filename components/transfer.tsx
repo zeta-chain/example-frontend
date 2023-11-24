@@ -313,22 +313,20 @@ const Transfer = () => {
 
   // Set whether amount is valid
   useEffect(() => {
+    const am = parseFloat(sourceAmount || "0")
+    const ltBalance = am >= 0 && am <= parseFloat(sourceTokenSelected?.balance)
     if (["crossChainZeta"].includes(sendType)) {
-      const ltBalance =
-        parseFloat(sourceAmount) > 0 &&
-        parseFloat(sourceAmount) <= parseFloat(sourceTokenSelected?.balance)
-      const gtFee = parseFloat(sourceAmount) > parseFloat(crossChainFee?.amount)
+      const gtFee = am > parseFloat(crossChainFee?.amount)
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
     } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-      const ltBalance =
-        parseFloat(sourceAmount) > 0 &&
-        parseFloat(sourceAmount) <= parseFloat(sourceTokenSelected?.balance)
       console.log("destinationAmount", destinationAmount)
       console.log("crossChainFee?.amount", crossChainFee?.amount)
       const gtFee =
         parseFloat(destinationAmount) > parseFloat(crossChainFee?.amount)
       setIsAmountGTFee(gtFee)
+      setIsAmountLTBalance(ltBalance)
+    } else {
       setIsAmountLTBalance(ltBalance)
     }
   }, [sourceAmount, crossChainFee, sendType, destinationAmount])
@@ -1033,6 +1031,13 @@ const Transfer = () => {
           </Button>
         )}
       </form>
+      {JSON.stringify({
+        sendType,
+        isAmountGTFee,
+        isAmountLTBalance,
+        isSending,
+        isAddressSelectedValid,
+      })}
     </div>
   )
 }
