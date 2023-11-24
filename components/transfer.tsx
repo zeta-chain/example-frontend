@@ -1,8 +1,6 @@
 "use client"
 
-// @ts-ignore
-import { send } from "process"
-import { use, useCallback, useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
