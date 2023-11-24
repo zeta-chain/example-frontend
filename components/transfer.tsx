@@ -1031,13 +1031,6 @@ const Transfer = () => {
           </Button>
         )}
       </form>
-      {JSON.stringify({
-        sendType,
-        isAmountGTFee,
-        isAmountLTBalance,
-        isSending,
-        isAddressSelectedValid,
-      })}
     </div>
   )
 }
