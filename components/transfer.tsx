@@ -84,30 +84,38 @@ const Transfer = () => {
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
   const [isAmountValid, setIsAmountValid] = useState(false)
+  const [isAmountGTFee, setIsAmountGTFee] = useState(false)
+  const [isAmountLTBalance, setIsAmountLTBalance] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
+  const [sendButtonText, setSendButtonText] = useState("Send tokens")
 
   const [errors, setErrors] = useState<any>({
     sendTypeUnsupported: {
       message: "Transfer type not supported",
       enabled: false,
-      priority: 4,
+      priority: 5,
     },
     sourceTokenNotSelected: {
       message: "Select source token",
       enabled: true,
-      priority: 3,
+      priority: 4,
     },
     destinationTokenNotSelected: {
       message: "Select destination token",
       enabled: true,
-      priority: 2,
+      priority: 3,
     },
     enterAmount: {
       message: "Enter an amount",
       enabled: false,
+      priority: 2,
+    },
+    amountLTFee: {
+      message: "Amount must be higher than fee",
+      enabled: false,
       priority: 1,
     },
-    insufficientBalance: {
+    amountGTBalance: {
       message: "Insufficient balance",
       enabled: false,
       priority: 0,
@@ -276,6 +284,7 @@ const Transfer = () => {
   }
 
   useEffect(() => {
+    console.log("recalc")
     if (sourceTokenSelected && destinationTokenSelected) {
       updateError("sendTypeUnsupported", { enabled: !sendType })
     }
@@ -284,31 +293,45 @@ const Transfer = () => {
       enabled: !destinationTokenSelected,
     })
     if (sourceAmount === false) {
+      // if the amount hasn't been set yet (i.e. the user hasn't typed anything)
       updateError("enterAmount", { enabled: true })
     } else {
       updateError("enterAmount", { enabled: false })
-      updateError("insufficientBalance", { enabled: !isAmountValid })
+      if (!destinationAmountIsLoading) {
+        updateError("amountLTFee", { enabled: !isAmountGTFee })
+        updateError("amountGTBalance", { enabled: !isAmountLTBalance })
+      }
     }
   }, [
     sendType,
     sourceTokenSelected,
     destinationTokenSelected,
-    isAmountValid,
+    isAmountGTFee,
+    isAmountLTBalance,
     sourceAmount,
   ])
 
   // Set whether amount is valid
   useEffect(() => {
-    const gtBalance =
-      parseFloat(sourceAmount) > 0 &&
-      parseFloat(sourceAmount) <= parseFloat(sourceTokenSelected?.balance)
     if (["crossChainZeta"].includes(sendType)) {
+      const ltBalance =
+        parseFloat(sourceAmount) > 0 &&
+        parseFloat(sourceAmount) <= parseFloat(sourceTokenSelected?.balance)
       const gtFee = parseFloat(sourceAmount) > parseFloat(crossChainFee?.amount)
-      setIsAmountValid(gtBalance && gtFee)
-    } else {
-      setIsAmountValid(gtBalance)
+      setIsAmountGTFee(gtFee)
+      setIsAmountLTBalance(ltBalance)
+    } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
+      const ltBalance =
+        parseFloat(sourceAmount) > 0 &&
+        parseFloat(sourceAmount) <= parseFloat(sourceTokenSelected?.balance)
+      console.log("destinationAmount", destinationAmount)
+      console.log("crossChainFee?.amount", crossChainFee?.amount)
+      const gtFee =
+        parseFloat(destinationAmount) > parseFloat(crossChainFee?.amount)
+      setIsAmountGTFee(gtFee)
+      setIsAmountLTBalance(ltBalance)
     }
-  }, [sourceAmount, crossChainFee, sendType])
+  }, [sourceAmount, crossChainFee, sendType, destinationAmount])
 
   // Set destination address
   useEffect(() => {
@@ -358,7 +381,21 @@ const Transfer = () => {
   }, [customAddress, destinationTokenSelected])
 
   const sendDisabled =
-    !sendType || !isAmountValid || isSending || !isAddressSelectedValid
+    !sendType ||
+    !isAmountGTFee ||
+    !isAmountLTBalance ||
+    isSending ||
+    !isAddressSelectedValid
+
+  useEffect(() => {
+    if (destinationAmountIsLoading) {
+      setSendButtonText("Calculating...")
+    } else if (sendDisabled && priorityErrors.length > 0) {
+      setSendButtonText((priorityErrors as any)[0].message)
+    } else {
+      setSendButtonText("Send Tokens")
+    }
+  }, [destinationAmountIsLoading, sendDisabled, priorityErrors])
 
   // Set whether the selected destination address is valid
   useEffect(() => {
@@ -976,9 +1013,7 @@ const Transfer = () => {
               ) : (
                 <Send className="h-4 w-4 mr-2" />
               )}
-              {priorityErrors.length > 0
-                ? (priorityErrors as any)[0].message
-                : "Send Tokens"}
+              {sendButtonText}
             </Button>
           </div>
         ) : (
