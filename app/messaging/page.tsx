@@ -52,6 +52,7 @@ const MessagingPage = () => {
   const [currentNetworkName, setCurrentNetworkName] = useState<any>("")
   const [completed, setCompleted] = useState(false)
   const [fee, setFee] = useState("")
+  const [currentChain, setCurrentChain] = useState<any>()
 
   const [debouncedMessage] = useDebounce(message, 500)
 
@@ -62,6 +63,7 @@ const MessagingPage = () => {
   useEffect(() => {
     setCurrentNetworkName(chain ? getNetworkName(chain.network) : undefined)
     if (chain) {
+      setCurrentChain(chain)
       setIsZeta(getNetworkName(chain.network) === "zeta_testnet")
     }
   }, [chain])
@@ -268,10 +270,11 @@ const MessagingPage = () => {
                 onChange={(e) => setMessage(e.target.value)}
               />
               <div>
-                <Label htmlFor="fee">
-                  Fee{" "}
-                  {chain?.nativeCurrency &&
-                    `(in ${chain?.nativeCurrency?.symbol})`}
+                <Label>
+                  Fee
+                  {currentChain?.nativeCurrency &&
+                    ` (in ${chain?.nativeCurrency?.symbol})`}
+                  :
                 </Label>
                 <Input
                   id="fee"
