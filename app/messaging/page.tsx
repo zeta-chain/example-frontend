@@ -219,7 +219,7 @@ const MessagingPage = () => {
   }
 
   return (
-    <div>
+    <div className="px-4">
       <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
         Cross-Chain Message
       </h1>

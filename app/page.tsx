@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext } from "react"
+import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { MessageCircle, RefreshCw } from "lucide-react"
 import { useAccount } from "wagmi"
@@ -23,57 +23,28 @@ import AppContext from "@/app/app"
 export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
     useContext(AppContext)
+  const [sortedBalances, setSortedBalances] = useState([])
+
   const { isConnected } = useAccount()
 
   const refreshBalances = async () => {
     await fetchBalances(true)
   }
 
-  function convertData(data: any[]): any[] {
-    const result = {} as any
-
-    for (const item of data) {
-      const networkName = item.chain_name
-      if (!result[networkName]) {
-        result[networkName] = { networkName, native: "", zeta: "", zrc20: [] }
-      }
-
-      if (item.coin_type === "Gas") {
-        result[networkName].native = parseFloat(item.balance).toFixed(2)
-      }
-
-      if (item.symbol === "WZETA" && item.coin_type === "ERC20") {
-        result[networkName].zeta = parseFloat(item.balance).toFixed(2)
-      }
-
-      if (item.coin_type === "ZRC20") {
-        const symbol = item.symbol.replace(`-${networkName}`, "")
-        if (parseFloat(item.balance) > 0) {
-          result[networkName].zrc20.push(
-            `${parseFloat(item.balance).toFixed(2)} ${symbol}`
-          )
-        }
-      }
-    }
-
-    for (const network of Object.keys(result)) {
-      if (result[network].zrc20.length > 0) {
-        result[network].zrc20 = result[network].zrc20.join(", ")
-      } else {
-        delete result[network].zrc20
-      }
-    }
-
-    return Object.values(result)
-  }
+  useEffect(() => {
+    const b = balances.sort((a: any, b: any) => {
+      return a.chain_name < b.chain_name ? -1 : 1
+    })
+    setSortedBalances(b)
+  }, [balances])
 
   return (
     <div>
       <div className="grid sm:grid-cols-3 gap-x-10">
         <div className="sm:col-span-2 overflow-x-scroll">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
-              Balances
+            <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4 pl-4">
+              Portfolio
             </h1>
             <Button
               size="icon"
@@ -99,28 +70,31 @@ export default function IndexPage() {
           ) : (
             <>
               {isConnected ? (
-                <Card>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Network Name</TableHead>
-                        <TableHead>Native</TableHead>
-                        <TableHead>Zeta</TableHead>
-                        <TableHead>ZRC20</TableHead>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-none hover:bg-transparent">
+                      <TableHead className="pl-4">Asset</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Balance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedBalances.map((b: any, index: any) => (
+                      <TableRow key={index} className="border-none">
+                        <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                          <div>{b.ticker}</div>
+                          <div className="text-xs text-slate-400">
+                            {b.chain_name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{b.coin_type}</TableCell>
+                        <TableCell className="rounded-br-xl rounded-tr-xl">
+                          {parseFloat(b.balance).toFixed(2) || "N/A"}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {convertData(balances).map((balance: any, index: any) => (
-                        <TableRow key={index}>
-                          <TableCell>{balance.networkName}</TableCell>
-                          <TableCell>{balance.native || "N/A"}</TableCell>
-                          <TableCell>{balance.zeta || "N/A"}</TableCell>
-                          <TableCell>{balance.zrc20 || "N/A"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
+                    ))}
+                  </TableBody>
+                </Table>
               ) : (
                 <Alert>
                   <AlertTitle>Connect wallet</AlertTitle>
