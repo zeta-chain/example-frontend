@@ -42,16 +42,11 @@ export default function IndexPage() {
     <div>
       <div className="grid sm:grid-cols-3 gap-x-10">
         <div className="sm:col-span-2 overflow-x-scroll">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4 pl-4">
+          <div className="flex items-center justify-start gap-2 mt-12 mb-6">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight pl-4">
               Portfolio
             </h1>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="mt-2"
-              onClick={refreshBalances}
-            >
+            <Button size="icon" variant="ghost" onClick={refreshBalances}>
               <RefreshCw
                 className={`h-4 w-4 ${
                   (balancesLoading || balancesRefreshing) && "animate-spin"
@@ -114,10 +109,7 @@ export default function IndexPage() {
             </Link>
           </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
-            Send
-          </h1>
+        <div className="mr-4">
           <Transfer />
         </div>
       </div>

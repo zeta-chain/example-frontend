@@ -171,7 +171,7 @@ export default function Index({ children }: RootLayoutProps) {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <div className="relative flex min-h-screen flex-col">
             <SiteHeader />
-            <section className="container px-4">{children}</section>
+            <section className="container px-4 mt-4">{children}</section>
           </div>
         </ThemeProvider>
       </AppContext.Provider>

@@ -776,17 +776,19 @@ const Transfer = () => {
   }
 
   return (
-    <div>
+    <div className="shadow-none md:shadow-xl p-0 md:px-5 md:py-7 rounded-2xl md:shadow-gray-100 mb-10">
+      <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
+        Swap
+      </h1>
       <form
-        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
           handleSend()
         }}
       >
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
           <Input
-            className="col-span-2 h-full text-xl"
+            className="col-span-2 h-full text-xl border-none"
             onChange={(e) => setSourceAmount(e.target.value)}
             placeholder="0"
             value={sourceAmount}
@@ -800,7 +802,7 @@ const Transfer = () => {
                 variant="outline"
                 role="combobox"
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden"
+                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
               >
                 <div className="flex flex-col w-full items-start">
                   <div className="text-xs w-full flex justify-between">
@@ -817,7 +819,7 @@ const Transfer = () => {
                   <div className="text-xs text-slate-400">
                     {sourceTokenSelected
                       ? sourceTokenSelected.chain_name
-                      : "Please, select token"}
+                      : "Select token"}
                   </div>
                 </div>
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
@@ -861,10 +863,10 @@ const Transfer = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
           <div className="col-span-2 relative">
             <Input
-              className="text-xl h-full"
+              className="text-xl h-full border-none"
               type="number"
               placeholder=""
               value={destinationAmount}
@@ -885,7 +887,7 @@ const Transfer = () => {
                 variant="outline"
                 role="combobox"
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden"
+                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
               >
                 <div className="flex flex-col w-full items-start">
                   <div className="text-xs">
@@ -896,7 +898,7 @@ const Transfer = () => {
                   <div className="text-xs text-slate-400">
                     {destinationTokenSelected
                       ? destinationTokenSelected.chain_name
-                      : "Please, select token"}
+                      : "Select token"}
                   </div>
                 </div>
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
@@ -940,7 +942,7 @@ const Transfer = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="space-x-2 flex">
+        <div className="space-x-2 flex ml-2 mt-6">
           {addressSelected && (
             <Popover
               open={customAddressOpen}
@@ -1001,33 +1003,35 @@ const Transfer = () => {
           )}
         </div>
 
-        {isRightChain ? (
-          <div>
-            <Button variant="outline" type="submit" disabled={sendDisabled}>
-              {isSending ? (
+        <div className="ml-2 mt-6">
+          {isRightChain ? (
+            <div>
+              <Button variant="outline" type="submit" disabled={sendDisabled}>
+                {isSending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                {sendButtonText}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handleSwitchNetwork}
+              disabled={
+                isLoading && pendingChainId === sourceTokenSelected.chain_id
+              }
+            >
+              {isLoading && pendingChainId === sourceTokenSelected.chain_id ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Send className="h-4 w-4 mr-2" />
+                <RefreshCcw className="h-4 w-4 mr-2" />
               )}
-              {sendButtonText}
+              Switch Network
             </Button>
-          </div>
-        ) : (
-          <Button
-            variant="outline"
-            onClick={handleSwitchNetwork}
-            disabled={
-              isLoading && pendingChainId === sourceTokenSelected.chain_id
-            }
-          >
-            {isLoading && pendingChainId === sourceTokenSelected.chain_id ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCcw className="h-4 w-4 mr-2" />
-            )}
-            Switch Network
-          </Button>
-        )}
+          )}
+        </div>
       </form>
     </div>
   )
