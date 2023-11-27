@@ -2,7 +2,7 @@
 
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
-import { MessageCircle, RefreshCw } from "lucide-react"
+import { ChevronDown, ChevronUp, MessageCircle, RefreshCw } from "lucide-react"
 import { useAccount } from "wagmi"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -24,6 +24,7 @@ export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
     useContext(AppContext)
   const [sortedBalances, setSortedBalances] = useState([])
+  const [showAll, setShowAll] = useState(false)
 
   const { isConnected } = useAccount()
 
@@ -31,11 +32,21 @@ export default function IndexPage() {
     await fetchBalances(true)
   }
 
+  const toggleShowAll = () => {
+    setShowAll(!showAll)
+  }
+
   useEffect(() => {
-    const b = balances.sort((a: any, b: any) => {
-      return a.chain_name < b.chain_name ? -1 : 1
-    })
-    setSortedBalances(b)
+    let balance = balances
+      .sort((a: any, b: any) => {
+        if (a.coin_type === "Gas" && b.coin_type !== "Gas") return -1
+        if (a.coin_type !== "Gas" && b.coin_type === "Gas") return 1
+        return a.chain_name < b.chain_name ? -1 : 1
+      })
+      .filter((b: any) => {
+        return b.balance > 0
+      })
+    setSortedBalances(balance)
   }, [balances])
 
   return (
@@ -65,31 +76,45 @@ export default function IndexPage() {
           ) : (
             <>
               {isConnected ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-none hover:bg-transparent">
-                      <TableHead className="pl-4">Asset</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Balance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedBalances.map((b: any, index: any) => (
-                      <TableRow key={index} className="border-none">
-                        <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
-                          <div>{b.ticker}</div>
-                          <div className="text-xs text-slate-400">
-                            {b.chain_name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{b.coin_type}</TableCell>
-                        <TableCell className="rounded-br-xl rounded-tr-xl">
-                          {parseFloat(b.balance).toFixed(2) || "N/A"}
-                        </TableCell>
+                <div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-none hover:bg-transparent">
+                        <TableHead className="pl-4">Asset</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Balance</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedBalances
+                        .slice(0, showAll ? sortedBalances.length : 5)
+                        .map((b: any, index: any) => (
+                          <TableRow key={index} className="border-none">
+                            <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                              <div>{b.ticker}</div>
+                              <div className="text-xs text-slate-400">
+                                {b.chain_name}
+                              </div>
+                            </TableCell>
+                            <TableCell>{b.coin_type}</TableCell>
+                            <TableCell className="rounded-br-xl rounded-tr-xl">
+                              {parseFloat(b.balance).toFixed(2) || "N/A"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                  <div className="my-4 flex justify-center">
+                    <Button variant="link" onClick={toggleShowAll}>
+                      {showAll ? "Collapse" : "Show all assets"}
+                      {showAll ? (
+                        <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-75" />
+                      ) : (
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <Alert>
                   <AlertTitle>Connect wallet</AlertTitle>
