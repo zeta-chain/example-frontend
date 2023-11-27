@@ -81,7 +81,6 @@ const Transfer = () => {
   const [customAddressSelected, setCustomAddressSelected] = useState("")
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
-  const [isAmountValid, setIsAmountValid] = useState(false)
   const [isAmountGTFee, setIsAmountGTFee] = useState(false)
   const [isAmountLTBalance, setIsAmountLTBalance] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
