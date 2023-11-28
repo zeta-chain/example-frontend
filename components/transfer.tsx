@@ -161,9 +161,9 @@ const Transfer = () => {
         const fee =
           fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
         const amount = parseFloat(fee)
-        const symbol = foreignCoins.find((c: any) => {
+        const symbol = balances.find((c: any) => {
           if (
-            c?.foreign_chain_id === destinationTokenSelected?.chain_id &&
+            c?.chain_id === destinationTokenSelected?.chain_id &&
             c?.coin_type === "Gas"
           ) {
             return c
@@ -201,7 +201,7 @@ const Transfer = () => {
     ) {
       parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
       const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
-      const provider = new ethers.providers.JsonRpcProvider(rpc)
+      const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
       const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
       const router = new ethers.Contract(
         routerAddress,

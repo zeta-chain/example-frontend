@@ -80,19 +80,6 @@ export default function Index({ children }: RootLayoutProps) {
     fetchBalances()
     fetchFeesList()
     fetchPools()
-
-    const fetchForeignCoins = async () => {
-      try {
-        const response = await fetch(
-          "https://zetachain-athens.blockpi.network/lcd/v1/public/zeta-chain/zetacore/fungible/foreign_coins"
-        )
-        const data = await response.json()
-        setForeignCoins(data.foreignCoins)
-      } catch (err) {
-        console.error("Error fetching foreign coins:", err)
-      }
-    }
-    fetchForeignCoins()
   }, [isConnected, address])
 
   const [inbounds, setInbounds] = useState<any>([])
