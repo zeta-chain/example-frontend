@@ -2,12 +2,12 @@
 
 import "@/styles/globals.css"
 import { useCallback, useEffect, useState } from "react"
-// @ts-ignore
 import {
   fetchFees,
   getBalances,
   getPools,
   trackCCTX,
+  // @ts-ignore
 } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
 import debounce from "lodash/debounce"
