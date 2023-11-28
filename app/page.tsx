@@ -54,7 +54,7 @@ export default function IndexPage() {
       <div className="grid sm:grid-cols-3 gap-x-10">
         <div className="sm:col-span-2 overflow-x-scroll">
           <div className="flex items-center justify-start gap-2 mt-12 mb-6">
-            <h1 className="text-2xl font-bold leading-tight tracking-tight pl-4">
+            <h1 className="leading-10 text-2xl font-bold leading-tight tracking-tight pl-4">
               Portfolio
             </h1>
             <Button size="icon" variant="ghost" onClick={refreshBalances}>
@@ -104,16 +104,18 @@ export default function IndexPage() {
                         ))}
                     </TableBody>
                   </Table>
-                  <div className="my-4 flex justify-center">
-                    <Button variant="link" onClick={toggleShowAll}>
-                      {showAll ? "Collapse" : "Show all assets"}
-                      {showAll ? (
-                        <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-75" />
-                      ) : (
-                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
-                      )}
-                    </Button>
-                  </div>
+                  {sortedBalances?.length > 5 && (
+                    <div className="my-4 flex justify-center">
+                      <Button variant="link" onClick={toggleShowAll}>
+                        {showAll ? "Collapse" : "Show all assets"}
+                        {showAll ? (
+                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-75" />
+                        ) : (
+                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Alert>

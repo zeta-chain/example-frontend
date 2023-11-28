@@ -15,19 +15,22 @@ import { MainNav } from "@/components/main-nav"
 import AppContext from "@/app/app"
 
 export function SiteHeader() {
-  const { bitcoinAddress, setBitcoinAddress } = useContext(AppContext)
+  const { bitcoinAddress, fetchBalances, setBitcoinAddress } =
+    useContext(AppContext)
 
   const connectBitcoin = async () => {
     const w = window as any
     if ("xfi" in w && w.xfi?.bitcoin) {
-      await setBitcoinAddress((await w.xfi.bitcoin.getAccounts())[0])
+      const btc = (await w.xfi.bitcoin.getAccounts())[0]
+      await setBitcoinAddress(btc)
+      fetchBalances(true, btc)
     }
   }
 
   return (
     <header className="bg-background sticky top-0 z-40 w-full">
       <div className="container px-4 pr-8 flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-        <MainNav items={siteConfig.mainNav} />
+        <MainNav />
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             <TooltipProvider>

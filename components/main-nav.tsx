@@ -26,11 +26,7 @@ import {
 import Transactions from "@/components/transactions"
 import AppContext from "@/app/app"
 
-interface MainNavProps {
-  items?: NavItem[]
-}
-
-export function MainNav({ items }: MainNavProps) {
+export function MainNav() {
   const pathname = usePathname()
   const { cctxs } = useContext(AppContext)
 
