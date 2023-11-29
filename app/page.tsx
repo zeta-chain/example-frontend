@@ -2,12 +2,18 @@
 
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
-import { ChevronDown, ChevronUp, MessageCircle, RefreshCw } from "lucide-react"
+import { divide } from "lodash"
+import {
+  ChevronDown,
+  ChevronUp,
+  FlaskRound,
+  MessageCircle,
+  RefreshCw,
+} from "lucide-react"
 import { useAccount } from "wagmi"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -127,11 +133,17 @@ export default function IndexPage() {
               )}
             </>
           )}
-          <div className="my-5">
+          <div className="my-5 flex space-x-2">
+            <Link href="/pools" legacyBehavior passHref>
+              <Button variant="outline">
+                <FlaskRound className="mr-1 h-5 w-5" strokeWidth={1.5} />
+                Liquidity Pools
+              </Button>
+            </Link>
             <Link href="/messaging" legacyBehavior passHref>
               <Button variant="outline">
                 <MessageCircle className="mr-1 h-5 w-5" strokeWidth={1.5} />
-                Cross-Chain Messaging Example
+                Cross-Chain Messaging
               </Button>
             </Link>
           </div>
