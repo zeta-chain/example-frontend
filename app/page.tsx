@@ -134,12 +134,12 @@ export default function IndexPage() {
             </>
           )}
           <div className="my-5 flex space-x-2">
-            <Link href="/pools" legacyBehavior passHref>
+            {/* <Link href="/pools" legacyBehavior passHref>
               <Button variant="outline">
                 <FlaskRound className="mr-1 h-5 w-5" strokeWidth={1.5} />
                 Liquidity Pools
               </Button>
-            </Link>
+            </Link> */}
             <Link href="/messaging" legacyBehavior passHref>
               <Button variant="outline">
                 <MessageCircle className="mr-1 h-5 w-5" strokeWidth={1.5} />

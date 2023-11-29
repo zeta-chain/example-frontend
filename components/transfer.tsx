@@ -5,6 +5,7 @@ import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
+import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
 // @ts-ignore
@@ -256,12 +257,14 @@ const Transfer = () => {
       ].includes(st)
     ) {
       getQuoteCrossChainSwap()
+      return
     } else if (["crossChainZeta"].includes(st)) {
       const delta = parseFloat(sourceAmount) - crossChainFee?.amount
       if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
       }
     }
+    setDestinationAmountIsLoading(false)
   }, [
     sourceAmount,
     sourceTokenSelected,
@@ -281,7 +284,6 @@ const Transfer = () => {
   }
 
   useEffect(() => {
-    console.log("recalc")
     if (sourceTokenSelected && destinationTokenSelected) {
       updateError("sendTypeUnsupported", { enabled: !sendType })
     }
@@ -324,6 +326,7 @@ const Transfer = () => {
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
     } else {
+      setIsAmountGTFee(true)
       setIsAmountLTBalance(ltBalance)
     }
   }, [sourceAmount, crossChainFee, sendType, destinationAmount])
@@ -451,7 +454,7 @@ const Transfer = () => {
       const toERC20 = d.coin_type === "ERC20"
       const toZRC20 = d.coin_type === "ZRC20"
       const toBitcoin = d.chain_name === "btc_testnet"
-      const sameToken = s.symbol === d.symbol
+      const sameToken = s.ticker === d.ticker
       const sameChain = s.chain_name === d.chain_name
       const fromToBitcoin = fromBitcoin && toBitcoin
       const fromToZetaChain = fromZetaChain || toZetaChain
@@ -461,8 +464,25 @@ const Transfer = () => {
         return t("crossChainZeta")
       if (fromZETA && toWZETA) return t("wrapZeta")
       if (fromWZETA && toZETA) return t("unwrapZeta")
-      if (sameToken && !fromZetaChain && toZetaChain && !fromBTC)
-        return t("depositZRC20")
+      if (
+        sameToken &&
+        !fromZetaChain &&
+        toZetaChain &&
+        fromGas &&
+        toZRC20 &&
+        !fromBTC
+      )
+        return t("depositNative")
+      if (
+        sameToken &&
+        !fromZetaChain &&
+        toZetaChain &&
+        fromERC20 &&
+        toZRC20 &&
+        !fromBTC &&
+        s.zrc20 === d.contract
+      )
+        return t("depositERC20")
       if (sameToken && fromZetaChain && !toZetaChain && !fromBTC)
         return t("withdrawZRC20")
       if (sameToken && sameChain && fromGas && toGas && !fromToBitcoin)
@@ -675,7 +695,7 @@ const Transfer = () => {
     setInbounds([...inbounds, inbound])
   }
 
-  m.depositZRC20 = async () => {
+  m.depositNative = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
@@ -692,6 +712,39 @@ const Transfer = () => {
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
+  }
+
+  m.depositERC20 = async () => {
+    console.log("depositing ERC20...")
+    const custodyAddress = getAddress(
+      "erc20Custody",
+      sourceTokenSelected.chain_name
+    )
+    const custodyContract = new ethers.Contract(
+      custodyAddress,
+      ERC20Custody.abi,
+      signer
+    )
+    const recipientBytes = ethers.utils.arrayify(addressSelected)
+    const assetAddress = sourceTokenSelected.contract
+    const amount = ethers.utils.parseUnits(
+      sourceAmount,
+      sourceTokenSelected.decimals
+    )
+    const messageBytes = ethers.utils.toUtf8Bytes("")
+    console.log({ recipientBytes, assetAddress, amount, messageBytes })
+    try {
+      const tx = await custodyContract.deposit(
+        recipientBytes,
+        assetAddress,
+        amount,
+        messageBytes
+      )
+      await tx.wait()
+      console.log("Deposit successful")
+    } catch (error) {
+      console.error("Error during deposit: ", error)
+    }
   }
 
   m.transferBTC = () => {
@@ -1031,6 +1084,7 @@ const Transfer = () => {
             </Button>
           )}
         </div>
+        {JSON.stringify([sendType, crossChainFee])}
       </form>
     </div>
   )
