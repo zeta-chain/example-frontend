@@ -313,8 +313,6 @@ const Transfer = () => {
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
     } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-      console.log("destinationAmount", destinationAmount)
-      console.log("crossChainFee?.amount", crossChainFee?.amount)
       const gtFee =
         parseFloat(destinationAmount) > parseFloat(crossChainFee?.amount)
       setIsAmountGTFee(gtFee)

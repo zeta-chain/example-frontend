@@ -37,9 +37,7 @@ export default function Index({ children }: RootLayoutProps) {
     debounce(async (refresh: Boolean = false, btc: any = null) => {
       refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
       try {
-        console.log("Loading balances...")
         const b = await getBalances(address, btc)
-        console.log(b)
         setBalances(b)
       } catch (e) {
         console.log(e)
@@ -53,7 +51,6 @@ export default function Index({ children }: RootLayoutProps) {
   const fetchFeesList = useCallback(
     debounce(async () => {
       try {
-        console.log("Fetching fees...")
         setFees(await fetchFees(500000))
       } catch (e) {
         console.log(e)

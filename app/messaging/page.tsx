@@ -121,7 +121,6 @@ const MessagingPage = () => {
       Quoter.abi,
       signer
     )
-    console.log(quoterContract)
     const quotedAmountOut =
       await quoterContract.callStatic.quoteExactInputSingle(
         "0x0000c9ec4042283e8139c74f4c64bcd1e0b9b54f", // WZETA
@@ -134,7 +133,6 @@ const MessagingPage = () => {
   }
 
   const getCCMFee = useCallback(async () => {
-    console.log("changing to", currentNetworkName)
     try {
       if (!currentNetworkName || !destinationNetwork) {
         throw new Error("Network is not selected")
@@ -158,7 +156,6 @@ const MessagingPage = () => {
         const amountIn = ethers.utils.parseEther(feeZETA)
         const zetaToken = getAddress("zetaToken", currentNetworkName)
         const weth = getNonZetaAddress("weth9", currentNetworkName)
-        console.log(routerAddress, amountIn, [zetaToken, weth])
         let zetaOut = await router.getAmountsOut(amountIn, [zetaToken, weth])
         fee = zetaOut[1]
       }
