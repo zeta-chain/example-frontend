@@ -24,7 +24,6 @@ export const AppContext = createContext<any>(null)
 
 export default function Index({ children }: RootLayoutProps) {
   const [balances, setBalances] = useState<any>([])
-  const [foreignCoins, setForeignCoins] = useState([])
   const [balancesLoading, setBalancesLoading] = useState(true)
   const [balancesRefreshing, setBalancesRefreshing] = useState(false)
   const [bitcoinAddress, setBitcoinAddress] = useState("")
@@ -174,7 +173,6 @@ export default function Index({ children }: RootLayoutProps) {
           balancesLoading,
           balancesRefreshing,
           fetchBalances,
-          foreignCoins,
           fees,
           pools,
           poolsLoading,

@@ -46,14 +46,8 @@ const Transfer = () => {
   const omnichainSwapContractAddress =
     "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const {
-    balances,
-    bitcoinAddress,
-    setInbounds,
-    inbounds,
-    fees,
-    foreignCoins,
-  } = useContext(AppContext)
+  const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
+    useContext(AppContext)
   const { chain } = useNetwork()
 
   const signer = useEthersSigner()
