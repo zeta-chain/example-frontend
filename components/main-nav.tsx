@@ -24,7 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import Transactions from "@/components/transactions"
-import AppContext from "@/app/app"
+import { AppContext } from "@/app/index"
 
 export function MainNav() {
   const pathname = usePathname()

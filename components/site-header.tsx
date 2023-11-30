@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { MainNav } from "@/components/main-nav"
-import AppContext from "@/app/app"
+import { AppContext } from "@/app/index"
 
 export function SiteHeader() {
   const { bitcoinAddress, fetchBalances, setBitcoinAddress } =

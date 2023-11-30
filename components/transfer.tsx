@@ -40,7 +40,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import AppContext from "@/app/app"
+import { AppContext } from "@/app/index"
 
 const Transfer = () => {
   const omnichainSwapContractAddress =

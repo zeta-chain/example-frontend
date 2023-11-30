@@ -1,7 +1,7 @@
 "use client"
 
 import "@/styles/globals.css"
-import { useCallback, useEffect, useState } from "react"
+import { createContext, useCallback, useEffect, useState } from "react"
 import {
   fetchFees,
   getBalances,
@@ -15,11 +15,12 @@ import { useAccount } from "wagmi"
 
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
-import AppContext from "@/app/app"
 
 interface RootLayoutProps {
   children: React.ReactNode
 }
+
+export const AppContext = createContext<any>(null)
 
 export default function Index({ children }: RootLayoutProps) {
   const [balances, setBalances] = useState<any>([])

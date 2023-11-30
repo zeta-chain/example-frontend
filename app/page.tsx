@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import Transfer from "@/components/transfer"
-import AppContext from "@/app/app"
+import { AppContext } from "@/app/index"
 
 export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
