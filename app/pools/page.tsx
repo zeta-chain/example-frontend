@@ -5,7 +5,7 @@ import { formatUnits } from "viem"
 
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import AppContext from "@/app/app"
+import { AppContext } from "@/app/index"
 
 const PoolsPage = () => {
   const { pools, balances, balancesLoading, poolsLoading } =
