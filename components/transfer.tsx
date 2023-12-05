@@ -803,6 +803,7 @@ const Transfer = () => {
 
     try {
       await m[sendType as keyof typeof m]()
+      setSourceAmount("")
     } catch (e) {
       console.error(e)
     } finally {
