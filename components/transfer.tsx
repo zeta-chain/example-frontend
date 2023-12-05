@@ -820,13 +820,6 @@ const Transfer = () => {
 
   return (
     <div className="shadow-none md:shadow-xl p-0 md:px-5 md:py-7 rounded-2xl md:shadow-gray-100 mb-10">
-      {JSON.stringify([
-        !sendType,
-        !isAmountGTFee,
-        !isAmountLTBalance,
-        isSending,
-        !isAddressSelectedValid,
-      ])}
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         Swap
       </h1>
