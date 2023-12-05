@@ -825,7 +825,6 @@ const Transfer = () => {
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          handleSend()
         }}
       >
         <div className="grid grid-cols-4 gap-4 mb-4">
@@ -1048,7 +1047,11 @@ const Transfer = () => {
         <div className="ml-2 mt-6">
           {isRightChain ? (
             <div>
-              <Button variant="outline" type="submit" disabled={sendDisabled}>
+              <Button
+                variant="outline"
+                onClick={handleSend}
+                disabled={sendDisabled}
+              >
                 {isSending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
