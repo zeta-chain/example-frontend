@@ -707,7 +707,6 @@ const Transfer = () => {
   }
 
   m.depositERC20 = async () => {
-    console.log("depositing ERC20...")
     const custodyAddress = getAddress(
       "erc20Custody",
       sourceTokenSelected.chain_name
