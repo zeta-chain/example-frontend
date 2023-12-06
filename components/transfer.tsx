@@ -465,16 +465,16 @@ const Transfer = () => {
         !fromBTC
       )
         return t("depositNative")
-      // if (
-      //   sameToken &&
-      //   !fromZetaChain &&
-      //   toZetaChain &&
-      //   fromERC20 &&
-      //   toZRC20 &&
-      //   !fromBTC &&
-      //   s.zrc20 === d.contract
-      // )
-      //   return t("depositERC20")
+      if (
+        sameToken &&
+        !fromZetaChain &&
+        toZetaChain &&
+        fromERC20 &&
+        toZRC20 &&
+        !fromBTC &&
+        s.zrc20 === d.contract
+      )
+        return t("depositERC20")
       if (sameToken && fromZetaChain && !toZetaChain && !fromBTC)
         return t("withdrawZRC20")
       if (sameToken && sameChain && fromGas && toGas && !fromToBitcoin)
@@ -706,36 +706,44 @@ const Transfer = () => {
     setInbounds([...inbounds, inbound])
   }
 
-  // m.depositERC20 = async () => {
-  //   console.log("depositing ERC20...")
-  //   const custodyAddress = getAddress(
-  //     "erc20Custody",
-  //     sourceTokenSelected.chain_name
-  //   )
-  //   const custodyContract = new ethers.Contract(
-  //     custodyAddress,
-  //     ERC20Custody.abi,
-  //     signer
-  //   )
-  //   // const recipientBytes = ethers.utils.arrayify(addressSelected)
-  //   const assetAddress = sourceTokenSelected.contract
-  //   const amount = ethers.utils.parseUnits(
-  //     sourceAmount,
-  //     sourceTokenSelected.decimals
-  //   )
-  //   try {
-  //     const tx = await custodyContract.deposit(
-  //       addressSelected,
-  //       assetAddress,
-  //       amount,
-  //       "0x00"
-  //     )
-  //     await tx.wait()
-  //     console.log("Deposit successful")
-  //   } catch (error) {
-  //     console.error("Error during deposit: ", error)
-  //   }
-  // }
+  m.depositERC20 = async () => {
+    console.log("depositing ERC20...")
+    const custodyAddress = getAddress(
+      "erc20Custody",
+      sourceTokenSelected.chain_name
+    )
+    const custodyContract = new ethers.Contract(
+      custodyAddress,
+      ERC20Custody.abi,
+      signer
+    )
+    const assetAddress = sourceTokenSelected.contract
+    const amount = ethers.utils.parseUnits(
+      sourceAmount,
+      sourceTokenSelected.decimals
+    )
+    try {
+      const contract = new ethers.Contract(assetAddress, ERC20_ABI.abi, signer)
+      await (await contract.approve(custodyAddress, amount)).wait()
+      const tx = await custodyContract.deposit(
+        addressSelected,
+        assetAddress,
+        amount,
+        "0x"
+      )
+      await tx.wait()
+      const token = sourceTokenSelected.symbol
+      const from = sourceTokenSelected.chain_name
+      const dest = destinationTokenSelected.chain_name
+      const inbound = {
+        inboundHash: tx.hash,
+        desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+      }
+      setInbounds([...inbounds, inbound])
+    } catch (error) {
+      console.error("Error during deposit: ", error)
+    }
+  }
 
   m.transferBTC = () => {
     if (!bitcoinAddress) {
