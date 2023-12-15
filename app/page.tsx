@@ -140,18 +140,14 @@ export default function IndexPage() {
           </div>
           {balancesLoading ? (
             <LoadingSkeleton />
+          ) : isConnected ? (
+            <BalancesTable
+              sortedBalances={sortedBalances}
+              showAll={showAll}
+              toggleShowAll={toggleShowAll}
+            />
           ) : (
-            <>
-              {isConnected ? (
-                <BalancesTable
-                  sortedBalances={sortedBalances}
-                  showAll={showAll}
-                  toggleShowAll={toggleShowAll}
-                />
-              ) : (
-                <ConnectWallet />
-              )}
-            </>
+            <ConnectWallet />
           )}
           <div className="my-5 flex space-x-2">
             <Link href="/messaging" legacyBehavior passHref>
