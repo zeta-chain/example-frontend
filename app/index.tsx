@@ -35,9 +35,8 @@ export default function Index({ children }: RootLayoutProps) {
 
   const fetchBalances = useCallback(
     debounce(async (refresh: Boolean = false, btc: any = null) => {
-      refresh
-        ? setBalancesRefreshing(true)
-        : setBalancesLoading(balancesLoading)
+      if (refresh) setBalancesRefreshing(true)
+      if (balances.length === 0) setBalancesLoading(true)
       try {
         const b = await getBalances(address, btc)
         setBalances(b)
