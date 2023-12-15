@@ -35,14 +35,17 @@ export default function Index({ children }: RootLayoutProps) {
 
   const fetchBalances = useCallback(
     debounce(async (refresh: Boolean = false, btc: any = null) => {
-      refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
+      refresh
+        ? setBalancesRefreshing(true)
+        : setBalancesLoading(balancesLoading)
       try {
         const b = await getBalances(address, btc)
         setBalances(b)
       } catch (e) {
         console.log(e)
       } finally {
-        refresh ? setBalancesRefreshing(false) : setBalancesLoading(false)
+        setBalancesRefreshing(false)
+        setBalancesLoading(false)
       }
     }, 500),
     [isConnected, address]
@@ -74,7 +77,7 @@ export default function Index({ children }: RootLayoutProps) {
   )
 
   useEffect(() => {
-    fetchBalances()
+    fetchBalances(true)
     fetchFeesList()
     fetchPools()
   }, [isConnected, address])
