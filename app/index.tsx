@@ -2,6 +2,7 @@
 
 import "@/styles/globals.css"
 import { createContext, useCallback, useEffect, useState } from "react"
+import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import {
   fetchFees,
   getBalances,
@@ -30,8 +31,60 @@ export default function Index({ children }: RootLayoutProps) {
   const [fees, setFees] = useState<any>([])
   const [pools, setPools] = useState<any>([])
   const [poolsLoading, setPoolsLoading] = useState(false)
+  const [validators, setValidators] = useState<any>([])
+  const [validatorsLoading, setValidatorsLoading] = useState(false)
 
   const { address, isConnected } = useAccount()
+
+  const fetchValidators = useCallback(
+    debounce(async () => {
+      setValidatorsLoading(true)
+      let allValidators: any[] = []
+      let nextKey: any = null
+
+      try {
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+
+        const fetchBonded = async () => {
+          const response = await fetch(`${api}/cosmos/staking/v1beta1/pool`)
+          const data = await response.json()
+          return data
+        }
+
+        const fetchPage = async (key: string) => {
+          const endpoint = "/cosmos/staking/v1beta1/validators"
+          const query = `pagination.key=${encodeURIComponent(key)}`
+          const url = `${api}${endpoint}?${key && query}`
+
+          const response = await fetch(url)
+          const data = await response.json()
+
+          allValidators = allValidators.concat(data.validators)
+
+          if (data.pagination && data.pagination.next_key) {
+            await fetchPage(data.pagination.next_key)
+          }
+        }
+
+        const bonded = (await fetchBonded())?.pool?.bonded_tokens
+        await fetchPage(nextKey)
+        allValidators = allValidators.map((v) => {
+          return {
+            ...v,
+            voting_power: bonded
+              ? (parseInt(v.tokens) / parseInt(bonded)) * 100
+              : 0,
+          }
+        })
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setValidators(allValidators)
+        setValidatorsLoading(false)
+      }
+    }, 500),
+    []
+  )
 
   const fetchBalances = useCallback(
     debounce(async (refresh: Boolean = false, btc: any = null) => {
@@ -173,6 +226,8 @@ export default function Index({ children }: RootLayoutProps) {
           fees,
           pools,
           poolsLoading,
+          validators,
+          fetchValidators,
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
