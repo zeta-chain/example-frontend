@@ -1,6 +1,7 @@
 "use client"
 
 import "@/styles/globals.css"
+import { parse } from "path"
 import { createContext, useCallback, useEffect, useState } from "react"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import {
@@ -14,6 +15,8 @@ import EventEmitter from "eventemitter3"
 import debounce from "lodash/debounce"
 import { useAccount } from "wagmi"
 
+import { hexToBech32Address } from "@/lib/hexToBech32Address"
+import { Toaster } from "@/components/ui/toaster"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -33,8 +36,26 @@ export default function Index({ children }: RootLayoutProps) {
   const [poolsLoading, setPoolsLoading] = useState(false)
   const [validators, setValidators] = useState<any>([])
   const [validatorsLoading, setValidatorsLoading] = useState(false)
+  const [stakingDelegations, setStakingDelegations] = useState<any>([])
 
   const { address, isConnected } = useAccount()
+
+  const fetchStakingDelegations = useCallback(
+    debounce(async () => {
+      console.log("fetching staking delegations")
+      try {
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const addr = hexToBech32Address(address as any, "zeta")
+        const url = `${api}/cosmos/staking/v1beta1/delegations/${addr}`
+        const response = await fetch(url)
+        const data = await response.json()
+        setStakingDelegations(data.delegation_responses)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500),
+    []
+  )
 
   const fetchValidators = useCallback(
     debounce(async () => {
@@ -65,15 +86,14 @@ export default function Index({ children }: RootLayoutProps) {
             await fetchPage(data.pagination.next_key)
           }
         }
-
-        const bonded = (await fetchBonded())?.pool?.bonded_tokens
+        const pool = (await fetchBonded())?.pool
+        const tokens =
+          parseInt(pool.bonded_tokens) + parseInt(pool.not_bonded_tokens)
         await fetchPage(nextKey)
         allValidators = allValidators.map((v) => {
           return {
             ...v,
-            voting_power: bonded
-              ? (parseInt(v.tokens) / parseInt(bonded)) * 100
-              : 0,
+            voting_power: tokens ? (parseInt(v.tokens) / tokens) * 100 : 0,
           }
         })
       } catch (e) {
@@ -213,21 +233,24 @@ export default function Index({ children }: RootLayoutProps) {
       <AppContext.Provider
         value={{
           cctxs,
-          setCCTXs,
           inbounds,
-          setInbounds,
           balances,
           bitcoinAddress,
-          setBitcoinAddress,
-          setBalances,
           balancesLoading,
           balancesRefreshing,
-          fetchBalances,
           fees,
           pools,
           poolsLoading,
           validators,
           fetchValidators,
+          validatorsLoading,
+          stakingDelegations,
+          setCCTXs,
+          setInbounds,
+          setBitcoinAddress,
+          setBalances,
+          fetchBalances,
+          fetchStakingDelegations,
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -235,6 +258,7 @@ export default function Index({ children }: RootLayoutProps) {
             <SiteHeader />
             <section className="container px-4 mt-4">{children}</section>
           </div>
+          <Toaster />
         </ThemeProvider>
       </AppContext.Provider>
     </>
