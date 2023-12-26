@@ -14,13 +14,14 @@ import {
 import { signatureToPubkey } from "@hanchon/signature-to-pubkey"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { set } from "lodash"
-import { Globe2 } from "lucide-react"
+import { AlertTriangle, Globe2 } from "lucide-react"
 import { parseUnits } from "viem"
 import { useAccount } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
 import { hexToBech32Address } from "@/lib/hexToBech32Address"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -40,6 +41,8 @@ const StakingPage = () => {
     fetchStakingDelegations,
     stakingDelegations,
     balances,
+    fetchStakingRewards,
+    stakingRewards,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -50,7 +53,18 @@ const StakingPage = () => {
   useEffect(() => {
     fetchStakingDelegations()
     fetchValidators()
+    fetchStakingRewards()
   }, [])
+
+  const stakingRewardsTotal = stakingRewards.reduce((accumulator, current) => {
+    if (current.reward && current.reward.length > 0) {
+      const azetaReward = current.reward.find((r) => r.denom === "azeta")
+      if (azetaReward) {
+        return accumulator + parseFloat(azetaReward.amount)
+      }
+    }
+    return accumulator
+  }, 0)
 
   const findBalance = (chainId: number, coinType: string) => {
     const balance = balances.find(
@@ -94,79 +108,87 @@ const StakingPage = () => {
     return delegation ? delegation.balance.amount : null
   }
 
+  const sendCosmosTx = async (message: any) => {
+    const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+    const accountAddress = hexToBech32Address(address as any, "zeta")
+    const url = `${api}/cosmos/auth/v1beta1/accounts/${accountAddress}`
+    const broadcastURL = `${api}/cosmos/tx/v1beta1/txs`
+    const { account } = await (await fetch(url))?.json()
+    const { sequence, account_number } = account?.base_account
+    const pubkey = account?.base_account.pub_key.key
+    const chain = { chainId: 7001, cosmosChainId: "athens_7001-1" }
+    const sender = {
+      accountAddress,
+      sequence,
+      accountNumber: account_number,
+      pubkey,
+    }
+    const fee = {
+      amount: "4000000000000000",
+      denom: "azeta",
+      gas: "200000",
+    }
+    const memo = ""
+    const tx = createTxMsgDelegate(chain, sender, fee, memo, message)
+    if (address) {
+      const signature = await window?.ethereum?.request({
+        method: "eth_signTypedData_v4",
+        params: [address, JSON.stringify(tx.eipToSign)],
+      })
+
+      const extension = signatureToWeb3Extension(
+        chain,
+        sender,
+        signature as any
+      )
+
+      const rawTx = createTxRawEIP712(
+        tx.legacyAmino.body,
+        tx.legacyAmino.authInfo,
+        extension
+      )
+      const post = await fetch(broadcastURL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: generatePostBodyBroadcast({
+          message: {
+            toBinary() {
+              return rawTx.message.serializeBinary()
+            },
+          },
+          path: rawTx.path,
+        }),
+      })
+      return await post.json()
+    }
+  }
+
   const handleStake = async () => {
     setIsSending(true)
     let result: any = null
     try {
-      const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
-      const accountAddress = hexToBech32Address(address as any, "zeta")
-      const url = `${api}/cosmos/auth/v1beta1/accounts/${accountAddress}`
-      const broadcastURL = `${api}/cosmos/tx/v1beta1/txs`
-      const { account } = await (await fetch(url))?.json()
-      const { sequence, account_number } = account?.base_account
-      const pubkey = account?.base_account.pub_key.key
-      const chain = { chainId: 7001, cosmosChainId: "athens_7001-1" }
-      const sender = {
-        accountAddress,
-        sequence,
-        accountNumber: account_number,
-        pubkey,
-      }
-      const fee = {
-        amount: "4000000000000000",
-        denom: "azeta",
-        gas: "200000",
-      }
-      const memo = ""
-      const params = {
+      result = await sendCosmosTx({
         validatorAddress: selectedValidator.operator_address,
         amount: parseUnits(amount, 18).toString(),
         denom: "azeta",
-      }
-      const tx = createTxMsgDelegate(chain, sender, fee, memo, params)
-      if (address) {
-        const signature = await window?.ethereum?.request({
-          method: "eth_signTypedData_v4",
-          params: [address, JSON.stringify(tx.eipToSign)],
-        })
-
-        const extension = signatureToWeb3Extension(
-          chain,
-          sender,
-          signature as any
-        )
-
-        const rawTx = createTxRawEIP712(
-          tx.legacyAmino.body,
-          tx.legacyAmino.authInfo,
-          extension
-        )
-        const post = await fetch(broadcastURL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: generatePostBodyBroadcast({
-            message: {
-              toBinary() {
-                return rawTx.message.serializeBinary()
-              },
-            },
-            path: rawTx.path,
-          }),
-        })
-        result = await post.json()
-      }
+      })
     } catch (e) {
       console.error(e)
     } finally {
-      const title = result?.tx_response.code === 0 ? "Success" : "Error"
-      const description =
-        result?.tx_response.code === 0 ? "All good." : result.raw_log
-      console.log(result)
       setIsSending(false)
       setAmount("")
-      toast({ title, description })
+      if (result) {
+        const success = result?.tx_response?.code === 0
+        const title = success ? "Success" : "Error"
+        const description = success ? "All good." : result?.tx_response?.raw_log
+        toast({
+          title,
+          description,
+          variant: success ? "default" : "destructive",
+        })
+      }
     }
   }
 
@@ -225,7 +247,7 @@ const StakingPage = () => {
           Staking
         </h1>
         <div className="pl-4 text-sm text-muted-foreground mb-1">Available</div>
-        <div className="pl-4 text-3xl font-bold mb-10">
+        <div className="pl-4 text-3xl font-bold mb-6 flex items-center">
           {parseFloat(zetaBalance).toFixed(2)} ZETA
         </div>
         <div>
@@ -242,12 +264,18 @@ const StakingPage = () => {
             <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
               {selectedValidator?.description.moniker}
             </h1>
+            {selectedValidator.jailed && (
+              <div className="ml-3 mb-4 flex items-center text-rose-500 text-sm">
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                <div>Validator is jailed</div>
+              </div>
+            )}
             <div className="ml-3 mb-2">
               {selectedValidator?.description.details}
             </div>
             {selectedValidator?.description.website && (
               <div>
-                <Button variant="link" asChild>
+                <Button variant="link" asChild className="p-3">
                   <Link
                     href={selectedValidator?.description.website}
                     target="_blank"
@@ -260,11 +288,34 @@ const StakingPage = () => {
                 </Button>
               </div>
             )}
-            <div className="mx-3 mt-4 grid gap-4 grid-cols-3">
+            {getStakedAmount(selectedValidator.operator_address) && (
+              <div className="mx-3 my-4 grid grid-cols-2">
+                <div className="text-sm">Staked</div>
+                <div className="text-sm text-right font-semibold">
+                  {(
+                    parseFloat(
+                      getStakedAmount(selectedValidator.operator_address)
+                    ) / 1e18
+                  )
+                    .toFixed(2)
+                    .toString()}
+                  &nbsp;ZETA
+                </div>
+              </div>
+            )}
+            <div className="mx-3 my-4 grid grid-cols-2">
+              <div className="text-sm">Commission</div>
+              <div className="text-sm text-right font-semibold">
+                {selectedValidator.commission.commission_rates.rate * 100}%
+              </div>
+            </div>
+            <div className="mx-3 mt-6 grid gap-4 grid-cols-3">
               <div className="col-span-2">
                 <Input
+                  type="number"
                   placeholder="0"
                   value={amount}
+                  min="0"
                   className="text-xl mb-1"
                   onChange={(e) => setAmount(e.target.value)}
                 />
