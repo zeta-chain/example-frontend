@@ -8,14 +8,15 @@ import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
   MsgDelegateParams,
   createTxMsgDelegate,
+  createTxMsgMultipleWithdrawDelegatorReward,
   createTxRawEIP712,
   signatureToWeb3Extension,
 } from "@evmos/transactions"
 import { signatureToPubkey } from "@hanchon/signature-to-pubkey"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { set } from "lodash"
-import { AlertTriangle, Globe2 } from "lucide-react"
-import { parseUnits } from "viem"
+import { AlertTriangle, ArrowBigDown, Gift, Globe2 } from "lucide-react"
+import { formatUnits, parseUnits } from "viem"
 import { useAccount } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
@@ -56,15 +57,20 @@ const StakingPage = () => {
     fetchStakingRewards()
   }, [])
 
-  const stakingRewardsTotal = stakingRewards.reduce((accumulator, current) => {
-    if (current.reward && current.reward.length > 0) {
-      const azetaReward = current.reward.find((r) => r.denom === "azeta")
+  const stakingRewardsTotal = stakingRewards.reduce((a: any, c: any) => {
+    if (c.reward && c.reward.length > 0) {
+      const azetaReward = c.reward.find((r: any) => r.denom === "azeta")
       if (azetaReward) {
-        return accumulator + parseFloat(azetaReward.amount)
+        return a + parseFloat(azetaReward.amount)
       }
     }
-    return accumulator
+    return a
   }, 0)
+
+  const stakingAmountTotal = stakingDelegations.reduce((a: any, c: any) => {
+    const amount = BigInt(c.balance.amount)
+    return a + amount
+  }, BigInt(0))
 
   const findBalance = (chainId: number, coinType: string) => {
     const balance = balances.find(
@@ -108,7 +114,16 @@ const StakingPage = () => {
     return delegation ? delegation.balance.amount : null
   }
 
-  const sendCosmosTx = async (message: any) => {
+  const sendCosmosTx = async (
+    params: any,
+    createTxFunction: (
+      chain: any,
+      sender: any,
+      fee: any,
+      memo: string,
+      params: any
+    ) => any
+  ) => {
     const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
     const accountAddress = hexToBech32Address(address as any, "zeta")
     const url = `${api}/cosmos/auth/v1beta1/accounts/${accountAddress}`
@@ -129,7 +144,10 @@ const StakingPage = () => {
       gas: "200000",
     }
     const memo = ""
-    const tx = createTxMsgDelegate(chain, sender, fee, memo, message)
+    const txDetails = { chain, sender, fee, memo, params }
+    const tx = createTxFunction(
+      ...(Object.values(txDetails) as [any, any, any, string, any])
+    )
     if (address) {
       const signature = await window?.ethereum?.request({
         method: "eth_signTypedData_v4",
@@ -165,15 +183,46 @@ const StakingPage = () => {
     }
   }
 
+  const handleClaimReward = async () => {
+    console.log(stakingRewards.map((r: any) => r.validator_address))
+    let result: any = null
+    try {
+      result = await sendCosmosTx(
+        {
+          validatorAddresses: stakingRewards.map(
+            (r: any) => r.validator_address
+          ),
+        },
+        createTxMsgMultipleWithdrawDelegatorReward
+      )
+    } catch (e) {
+      console.error(e)
+    } finally {
+      if (result) {
+        const success = result?.tx_response?.code === 0
+        const title = success ? "Success" : "Error"
+        const description = success ? "All good." : result?.tx_response?.raw_log
+        toast({
+          title,
+          description,
+          variant: success ? "default" : "destructive",
+        })
+      }
+    }
+  }
+
   const handleStake = async () => {
     setIsSending(true)
     let result: any = null
     try {
-      result = await sendCosmosTx({
-        validatorAddress: selectedValidator.operator_address,
-        amount: parseUnits(amount, 18).toString(),
-        denom: "azeta",
-      })
+      result = await sendCosmosTx(
+        {
+          validatorAddress: selectedValidator.operator_address,
+          amount: parseUnits(amount, 18).toString(),
+          denom: "azeta",
+        },
+        createTxMsgDelegate
+      )
     } catch (e) {
       console.error(e)
     } finally {
@@ -182,7 +231,9 @@ const StakingPage = () => {
       if (result) {
         const success = result?.tx_response?.code === 0
         const title = success ? "Success" : "Error"
-        const description = success ? "All good." : result?.tx_response?.raw_log
+        const description = success
+          ? "Successfully delegated."
+          : result?.tx_response?.raw_log
         toast({
           title,
           description,
@@ -246,9 +297,47 @@ const StakingPage = () => {
         <h1 className="leading-10 text-2xl font-bold tracking-tight pl-4 mb-6">
           Staking
         </h1>
-        <div className="pl-4 text-sm text-muted-foreground mb-1">Available</div>
-        <div className="pl-4 text-3xl font-bold mb-6 flex items-center">
-          {parseFloat(zetaBalance).toFixed(2)} ZETA
+        <div className="mb-6">
+          <Card className="py-6 shadow-none border-none mb-2">
+            <div className="grid sm:grid-cols-3 grid-cols-1 gap-2">
+              <div className="border border-gray-100 p-4 rounded-2xl">
+                <div className="text-sm text-muted-foreground mb-1">
+                  Available
+                </div>
+                <div className="text-xl flex items-center font-semibold">
+                  {parseFloat(zetaBalance).toFixed(4)} ZETA
+                </div>
+              </div>
+              <div className="border border-gray-100 p-4 rounded-2xl mb-1">
+                <div className="text-sm text-muted-foreground mb-1">Staked</div>
+                <div className="text-xl flex items-center">
+                  {parseFloat(formatUnits(stakingAmountTotal, 18)).toFixed(2)}
+                  &nbsp;ZETA
+                </div>
+              </div>
+              <div>
+                <div className="border border-gray-100 p-4 rounded-t-2xl mb-1">
+                  <div className="text-sm text-muted-foreground mb-1">
+                    Rewards
+                  </div>
+                  <div className="text-xl flex items-center">
+                    {parseFloat(formatUnits(stakingRewardsTotal, 18)).toFixed(
+                      4
+                    )}
+                    &nbsp;ZETA
+                  </div>
+                </div>
+                <Button
+                  onClick={handleClaimReward}
+                  variant="secondary"
+                  className="w-full hover:bg-gray-100 bg-white border border-gray-100 rounded-t-none rounded-b-2xl font-semibold"
+                >
+                  <Gift className="w-4 h-4 mr-1" />
+                  Claim rewards
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
         <div>
           {validators.length > 0 ? (
