@@ -376,173 +376,6 @@ const StakingPage = () => {
     )
   }
 
-  const WithdrawPopover = () => {
-    return (
-      <Popover onOpenChange={() => setWithdrawAmount("")}>
-        <PopoverTrigger>
-          <Button variant="outline" className="rounded-lg w-full">
-            <ArrowBigDown className="w-4 h-4 mr-1" />
-            Withdraw
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="flex flex-col gap-2 rounded-lg shadow-2xl border-none">
-          <div className="flex border-solid border-gray-200 rounded-lg border">
-            <Input
-              type="number"
-              placeholder="0"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              min="0"
-              className="text-xl rounded-lg border-none"
-            />
-            <Button
-              onClick={() => {
-                const a =
-                  parseFloat(
-                    getStakedAmount(selectedValidator.operator_address)
-                  ) / 1e18
-                setWithdrawAmount(Number.isInteger(a) ? a : a.toFixed(18))
-              }}
-              variant="link"
-              className="text-xs tracking-wide"
-            >
-              MAX
-            </Button>
-          </div>
-          <Button className="grow rounded-lg w-full" onClick={handleWithdraw}>
-            Withdraw
-          </Button>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-
-  const RedelegatePopover = () => {
-    return (
-      <Popover>
-        <PopoverTrigger>
-          <Button variant="outline" className="rounded-lg w-full">
-            <Redo2 className="w-4 h-4 mr-1" />
-            Redelegate
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="flex flex-col gap-2 rounded-lg shadow-2xl border-none">
-          <Input
-            type="number"
-            placeholder="0"
-            value={redelegateAmount}
-            onChange={(e) => setRedelegateAmount(e.target.value)}
-            min="0"
-            className="text-xl rounded-lg"
-          />
-          <Button className="grow rounded-lg w-full">Redelegate</Button>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-
-  const ValidatorDetails = () => {
-    return (
-      <div className="sticky transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
-        <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
-          {selectedValidator?.description.moniker}
-        </h1>
-        {selectedValidator.jailed && (
-          <div className="ml-3 mb-4 flex items-center text-rose-500 text-sm">
-            <AlertTriangle className="h-4 w-4 mr-1" />
-            <div>Validator is jailed</div>
-          </div>
-        )}
-        <div className="ml-3 mb-2">
-          {selectedValidator?.description.details}
-        </div>
-        {selectedValidator?.description.website && (
-          <div>
-            <Button variant="link" asChild className="p-3">
-              <Link
-                href={selectedValidator?.description.website}
-                target="_blank"
-              >
-                <Globe2 className="w-4 h-4 mr-1" />
-                {selectedValidator?.description.website
-                  .replace(/^(https?:\/\/)/, "")
-                  .replace(/\/$/, "")}
-              </Link>
-            </Button>
-          </div>
-        )}
-        {getStakedAmount(selectedValidator.operator_address) && (
-          <Card className="shadow-none rounded-2xl border-gray-100">
-            <div className="mx-3 my-4 grid grid-cols-2">
-              <div className="text-sm">Staked</div>
-              <div className="text-sm text-right font-semibold">
-                {(
-                  parseFloat(
-                    getStakedAmount(selectedValidator.operator_address)
-                  ) / 1e18
-                )
-                  .toFixed(2)
-                  .toString()}
-                &nbsp;ZETA
-              </div>
-            </div>
-            <div className="p-2">
-              <div className="grid grid-cols-2 gap-2">
-                <WithdrawPopover />
-                <RedelegatePopover />
-              </div>
-            </div>
-          </Card>
-        )}
-        <div className="mx-3 my-4 grid grid-cols-2">
-          <div className="text-sm">Commission</div>
-          <div className="text-sm text-right font-semibold">
-            {selectedValidator.commission.commission_rates.rate * 100}%
-          </div>
-        </div>
-        <StakePopover />
-      </div>
-    )
-  }
-
-  const StakePopover = () => {
-    return (
-      <Popover>
-        <PopoverTrigger className="px-3 w-full">
-          <Button className="w-full" variant="outline">
-            <ArrowBigUp className="w-4 h-4 mr-1" />
-            Stake
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent>
-          <div className="flex gap-2 flex-col">
-            <div className="col-span-2">
-              <Input
-                type="number"
-                placeholder="0"
-                value={amount}
-                min="0"
-                className="text-xl mb-1 rounded-lg"
-                disabled={isSending || !isZetaChain}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-              <div className="text-xs text-slate-400">
-                Available: {parseFloat(zetaBalance).toFixed(4)} ZETA
-              </div>
-            </div>
-            <Button
-              disabled={isSending || !isZetaChain}
-              className="rounded-lg"
-              onClick={handleStake}
-            >
-              Stake
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-
   return (
     <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
       <div className="sm:col-span-2 overflow-x-scroll">
@@ -610,7 +443,161 @@ const StakingPage = () => {
         </div>
       </div>
       <div className="sm:col-span-1 relative order-first sm:order-last">
-        {selectedValidator && <ValidatorDetails />}
+        {selectedValidator && (
+          <div className="sticky transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
+              {selectedValidator?.description.moniker}
+            </h1>
+            {selectedValidator.jailed && (
+              <div className="ml-3 mb-4 flex items-center text-rose-500 text-sm">
+                <AlertTriangle className="h-4 w-4 mr-1" />
+                <div>Validator is jailed</div>
+              </div>
+            )}
+            <div className="ml-3 mb-2">
+              {selectedValidator?.description.details}
+            </div>
+            {selectedValidator?.description.website && (
+              <div>
+                <Button variant="link" asChild className="p-3">
+                  <Link
+                    href={selectedValidator?.description.website}
+                    target="_blank"
+                  >
+                    <Globe2 className="w-4 h-4 mr-1" />
+                    {selectedValidator?.description.website
+                      .replace(/^(https?:\/\/)/, "")
+                      .replace(/\/$/, "")}
+                  </Link>
+                </Button>
+              </div>
+            )}
+            {getStakedAmount(selectedValidator.operator_address) && (
+              <Card className="shadow-none rounded-2xl border-gray-100">
+                <div className="mx-3 my-4 grid grid-cols-2">
+                  <div className="text-sm">Staked</div>
+                  <div className="text-sm text-right font-semibold">
+                    {(
+                      parseFloat(
+                        getStakedAmount(selectedValidator.operator_address)
+                      ) / 1e18
+                    )
+                      .toFixed(2)
+                      .toString()}
+                    &nbsp;ZETA
+                  </div>
+                </div>
+                <div className="p-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Popover onOpenChange={() => setWithdrawAmount("")}>
+                      <PopoverTrigger>
+                        <Button variant="outline" className="rounded-lg w-full">
+                          <ArrowBigDown className="w-4 h-4 mr-1" />
+                          Withdraw
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="flex flex-col gap-2 rounded-lg shadow-2xl border-none">
+                        <div className="flex border-solid border-gray-200 rounded-lg border">
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            min="0"
+                            className="text-xl rounded-lg border-none"
+                          />
+                          <Button
+                            onClick={() => {
+                              const a =
+                                parseFloat(
+                                  getStakedAmount(
+                                    selectedValidator.operator_address
+                                  )
+                                ) / 1e18
+                              setWithdrawAmount(
+                                Number.isInteger(a) ? a : a.toFixed(18)
+                              )
+                            }}
+                            variant="link"
+                            className="text-xs tracking-wide"
+                          >
+                            MAX
+                          </Button>
+                        </div>
+                        <Button
+                          className="grow rounded-lg w-full"
+                          onClick={handleWithdraw}
+                        >
+                          Withdraw
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger>
+                        <Button variant="outline" className="rounded-lg w-full">
+                          <Redo2 className="w-4 h-4 mr-1" />
+                          Redelegate
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="flex flex-col gap-2 rounded-lg shadow-2xl border-none">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={redelegateAmount}
+                          onChange={(e) => setRedelegateAmount(e.target.value)}
+                          min="0"
+                          className="text-xl rounded-lg"
+                        />
+                        <Button className="grow rounded-lg w-full">
+                          Redelegate
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </Card>
+            )}
+            <div className="mx-3 my-4 grid grid-cols-2">
+              <div className="text-sm">Commission</div>
+              <div className="text-sm text-right font-semibold">
+                {selectedValidator.commission.commission_rates.rate * 100}%
+              </div>
+            </div>
+            <Popover>
+              <PopoverTrigger className="px-3 w-full">
+                <Button className="w-full" variant="outline">
+                  <ArrowBigUp className="w-4 h-4 mr-1" />
+                  Stake
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <div className="flex gap-2 flex-col">
+                  <div className="col-span-2">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={amount}
+                      min="0"
+                      className="text-xl mb-1 rounded-lg"
+                      disabled={isSending || !isZetaChain}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                    <div className="text-xs text-slate-400">
+                      Available: {parseFloat(zetaBalance).toFixed(4)} ZETA
+                    </div>
+                  </div>
+                  <Button
+                    disabled={isSending || !isZetaChain}
+                    className="rounded-lg"
+                    onClick={handleStake}
+                  >
+                    Stake
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
     </div>
   )
