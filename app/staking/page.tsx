@@ -42,16 +42,23 @@ const StakingPage = () => {
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
+  const [isZetaChain, setIsZetaChain] = useState(false)
   const [amount, setAmount] = useState<any>("")
   const { address } = useAccount()
   const { toast } = useToast()
   const { chain } = useNetwork()
 
   useEffect(() => {
+    setIsZetaChain(chain?.id === 7001)
+  }, [chain])
+
+  useEffect(() => {
     fetchStakingDelegations()
     fetchValidators()
     fetchStakingRewards()
   }, [])
+
+  const notZetaChain = chain?.id !== 7001
 
   const stakingRewardsTotal = stakingRewards.reduce((a: any, c: any) => {
     if (c.reward && c.reward.length > 0) {
@@ -336,7 +343,7 @@ const StakingPage = () => {
                 </div>
                 <Button
                   onClick={handleClaimReward}
-                  disabled={chain?.id !== 7001}
+                  disabled={!isZetaChain}
                   variant="secondary"
                   className="w-full hover:bg-gray-100 bg-white border border-gray-100 rounded-t-none rounded-b-2xl font-semibold"
                 >
@@ -415,7 +422,7 @@ const StakingPage = () => {
                   placeholder="0"
                   value={amount}
                   min="0"
-                  disabled={isSending || chain?.id !== 7001}
+                  disabled={isSending || !isZetaChain}
                   className="text-xl mb-1"
                   onChange={(e) => setAmount(e.target.value)}
                 />
@@ -424,7 +431,7 @@ const StakingPage = () => {
                 </div>
               </div>
               <Button
-                disabled={isSending || chain?.id !== 7001}
+                disabled={isSending || !isZetaChain}
                 className="w-full col-span-1"
                 onClick={handleStake}
               >
