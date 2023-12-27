@@ -12,12 +12,13 @@ import {
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { AlertTriangle, ArrowBigDown, Gift, Globe2 } from "lucide-react"
 import { formatUnits, parseUnits } from "viem"
-import { useAccount } from "wagmi"
+import { useAccount, useNetwork } from "wagmi"
 
 import { hexToBech32Address } from "@/lib/hexToBech32Address"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -44,6 +45,7 @@ const StakingPage = () => {
   const [amount, setAmount] = useState<any>("")
   const { address } = useAccount()
   const { toast } = useToast()
+  const { chain } = useNetwork()
 
   useEffect(() => {
     fetchStakingDelegations()
@@ -178,7 +180,6 @@ const StakingPage = () => {
   }
 
   const handleClaimReward = async () => {
-    console.log(stakingRewards.map((r: any) => r.validator_address))
     let result: any = null
     try {
       result = await sendCosmosTx(
@@ -237,6 +238,18 @@ const StakingPage = () => {
     }
   }
 
+  const LoadingSkeleton = () => {
+    return (
+      <div className="space-y-4">
+        {Array(10)
+          .fill(null)
+          .map((_, index) => (
+            <Skeleton key={index} className="h-10 w-full" />
+          ))}
+      </div>
+    )
+  }
+
   const ValidatorTable = () => {
     return (
       <Table>
@@ -290,7 +303,7 @@ const StakingPage = () => {
       <div className="sm:col-span-2 overflow-x-scroll">
         <h1 className="leading-10 text-2xl font-bold tracking-tight pl-4 mb-6">
           Staking
-        </h1>
+        </h1>{" "}
         <div className="mb-6">
           <Card className="py-6 shadow-none border-none mb-2">
             <div className="grid sm:grid-cols-3 grid-cols-1 gap-2">
@@ -323,6 +336,7 @@ const StakingPage = () => {
                 </div>
                 <Button
                   onClick={handleClaimReward}
+                  disabled={chain?.id !== 7001}
                   variant="secondary"
                   className="w-full hover:bg-gray-100 bg-white border border-gray-100 rounded-t-none rounded-b-2xl font-semibold"
                 >
@@ -337,7 +351,9 @@ const StakingPage = () => {
           {validators.length > 0 ? (
             <ValidatorTable />
           ) : (
-            <div className="pl-4">Loading...</div>
+            <div className="pl-4">
+              <LoadingSkeleton />
+            </div>
           )}
         </div>
       </div>
@@ -399,6 +415,7 @@ const StakingPage = () => {
                   placeholder="0"
                   value={amount}
                   min="0"
+                  disabled={isSending || chain?.id !== 7001}
                   className="text-xl mb-1"
                   onChange={(e) => setAmount(e.target.value)}
                 />
@@ -407,7 +424,7 @@ const StakingPage = () => {
                 </div>
               </div>
               <Button
-                disabled={isSending}
+                disabled={isSending || chain?.id !== 7001}
                 className="w-full col-span-1"
                 onClick={handleStake}
               >
