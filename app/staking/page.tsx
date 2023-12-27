@@ -6,11 +6,12 @@ import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
   createTxMsgDelegate,
   createTxMsgMultipleWithdrawDelegatorReward,
+  createTxMsgUndelegate,
   createTxRawEIP712,
   signatureToWeb3Extension,
 } from "@evmos/transactions"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
-import { AlertTriangle, ArrowBigDown, Gift, Globe2 } from "lucide-react"
+import { AlertTriangle, ArrowBigDown, Gift, Globe2, X } from "lucide-react"
 import { formatUnits, parseUnits } from "viem"
 import { useAccount, useNetwork } from "wagmi"
 
@@ -44,6 +45,9 @@ const StakingPage = () => {
   const [isSending, setIsSending] = useState(false)
   const [isZetaChain, setIsZetaChain] = useState(false)
   const [amount, setAmount] = useState<any>("")
+  const [withdrawAmount, setWithdrawAmount] = useState<any>("")
+  const [redelegateAmount, setRedelegateAmount] = useState<any>("")
+  const [pageState, setPageState] = useState<any>()
   const { address } = useAccount()
   const { toast } = useToast()
   const { chain } = useNetwork()
@@ -213,6 +217,38 @@ const StakingPage = () => {
     }
   }
 
+  const handleWithdraw = async () => {
+    setIsSending(true)
+    let result: any = null
+    try {
+      result = await sendCosmosTx(
+        {
+          validatorAddress: selectedValidator.operator_address,
+          amount: parseUnits(amount, 18).toString(),
+          denom: "azeta",
+        },
+        createTxMsgUndelegate
+      )
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSending(false)
+      setAmount("")
+      if (result) {
+        const success = result?.tx_response?.code === 0
+        const title = success ? "Success" : "Error"
+        const description = success
+          ? "Successfully delegated."
+          : result?.tx_response?.raw_log
+        toast({
+          title,
+          description,
+          variant: success ? "default" : "destructive",
+        })
+      }
+    }
+  }
+
   const handleStake = async () => {
     setIsSending(true)
     let result: any = null
@@ -255,6 +291,15 @@ const StakingPage = () => {
           ))}
       </div>
     )
+  }
+
+  const changePageState = (state: string) => () => {
+    if (state === "withdraw") {
+      setWithdrawAmount(
+        parseFloat(getStakedAmount(selectedValidator.operator_address)) / 1e18
+      )
+    }
+    setPageState(state)
   }
 
   const ValidatorTable = () => {
@@ -310,7 +355,7 @@ const StakingPage = () => {
       <div className="sm:col-span-2 overflow-x-scroll">
         <h1 className="leading-10 text-2xl font-bold tracking-tight pl-4 mb-6">
           Staking
-        </h1>{" "}
+        </h1>
         <div className="mb-6">
           <Card className="py-6 shadow-none border-none mb-2">
             <div className="grid sm:grid-cols-3 grid-cols-1 gap-2">
@@ -344,7 +389,7 @@ const StakingPage = () => {
                 <Button
                   onClick={handleClaimReward}
                   disabled={!isZetaChain}
-                  variant="secondary"
+                  variant="outline"
                   className="w-full hover:bg-gray-100 bg-white border border-gray-100 rounded-t-none rounded-b-2xl font-semibold"
                 >
                   <Gift className="w-4 h-4 mr-1" />
@@ -395,19 +440,67 @@ const StakingPage = () => {
               </div>
             )}
             {getStakedAmount(selectedValidator.operator_address) && (
-              <div className="mx-3 my-4 grid grid-cols-2">
-                <div className="text-sm">Staked</div>
-                <div className="text-sm text-right font-semibold">
-                  {(
-                    parseFloat(
-                      getStakedAmount(selectedValidator.operator_address)
-                    ) / 1e18
-                  )
-                    .toFixed(2)
-                    .toString()}
-                  &nbsp;ZETA
+              <Card className="shadow-none rounded-2xl border-gray-100">
+                <div className="mx-3 my-4 grid grid-cols-2">
+                  <div className="text-sm">Staked</div>
+                  <div className="text-sm text-right font-semibold">
+                    {(
+                      parseFloat(
+                        getStakedAmount(selectedValidator.operator_address)
+                      ) / 1e18
+                    )
+                      .toFixed(2)
+                      .toString()}
+                    &nbsp;ZETA
+                  </div>
                 </div>
-              </div>
+                <div className="p-2">
+                  {!["withdraw", "redelegate"].includes(pageState) && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={changePageState("withdraw")}
+                        variant="outline"
+                        className="rounded-lg"
+                      >
+                        Withdraw
+                      </Button>
+                      <Button
+                        onClick={changePageState("redelegate")}
+                        variant="outline"
+                        className="rounded-lg"
+                      >
+                        Redelegate
+                      </Button>
+                    </div>
+                  )}
+                  {pageState === "withdraw" && (
+                    <div className="grid gap-2 grid-cols-4">
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          min="0"
+                          className="text-xl rounded-lg"
+                        />
+                      </div>
+                      <div className="flex col-span-2 gap-0.5">
+                        <Button className="grow rounded-r-none">
+                          Withdraw
+                        </Button>
+                        <Button
+                          onClick={changePageState("")}
+                          className="rounded-l-none bg-gray-950"
+                          size="icon"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
             )}
             <div className="mx-3 my-4 grid grid-cols-2">
               <div className="text-sm">Commission</div>
@@ -415,29 +508,54 @@ const StakingPage = () => {
                 {selectedValidator.commission.commission_rates.rate * 100}%
               </div>
             </div>
-            <div className="mx-3 mt-6 grid gap-4 grid-cols-3">
-              <div className="col-span-2">
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={amount}
-                  min="0"
-                  disabled={isSending || !isZetaChain}
-                  className="text-xl mb-1"
-                  onChange={(e) => setAmount(e.target.value)}
-                />
+            {pageState !== "stake" && (
+              <div className="mx-3">
+                <Button
+                  className="w-full mb-1"
+                  variant="outline"
+                  onClick={changePageState("stake")}
+                >
+                  Stake
+                </Button>
                 <div className="text-xs text-slate-400">
                   Available: {parseFloat(zetaBalance).toFixed(4)} ZETA
                 </div>
               </div>
-              <Button
-                disabled={isSending || !isZetaChain}
-                className="w-full col-span-1"
-                onClick={handleStake}
-              >
-                Stake
-              </Button>
-            </div>
+            )}
+            {pageState === "stake" && (
+              <div className="mx-3 grid gap-2 grid-cols-4">
+                <div className="col-span-2">
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={amount}
+                    min="0"
+                    className="text-xl mb-1 rounded-lg"
+                    disabled={isSending || !isZetaChain}
+                    onChange={(e) => setAmount(e.target.value)}
+                  />
+                  <div className="text-xs text-slate-400">
+                    Available: {parseFloat(zetaBalance).toFixed(4)} ZETA
+                  </div>
+                </div>
+                <div className="flex col-span-2 gap-0.5">
+                  <Button
+                    disabled={isSending || !isZetaChain}
+                    className="col-span-1 rounded-l-lg rounded-r-none grow"
+                    onClick={handleStake}
+                  >
+                    Stake
+                  </Button>
+                  <Button
+                    onClick={changePageState("")}
+                    className="rounded-l-none bg-gray-950"
+                    size="icon"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
