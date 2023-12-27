@@ -2,24 +2,18 @@
 
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
-import { hashMessage } from "@ethersproject/hash"
-import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key"
 import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
-  MsgDelegateParams,
   createTxMsgDelegate,
   createTxMsgMultipleWithdrawDelegatorReward,
   createTxRawEIP712,
   signatureToWeb3Extension,
 } from "@evmos/transactions"
-import { signatureToPubkey } from "@hanchon/signature-to-pubkey"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
-import { set } from "lodash"
 import { AlertTriangle, ArrowBigDown, Gift, Globe2 } from "lucide-react"
 import { formatUnits, parseUnits } from "viem"
 import { useAccount } from "wagmi"
 
-import { useEthersSigner } from "@/lib/ethers"
 import { hexToBech32Address } from "@/lib/hexToBech32Address"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
