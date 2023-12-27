@@ -499,6 +499,32 @@ const StakingPage = () => {
                       </div>
                     </div>
                   )}
+                  {pageState === "redelegate" && (
+                    <div className="grid gap-2 grid-cols-4">
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={redelegateAmount}
+                          onChange={(e) => setRedelegateAmount(e.target.value)}
+                          min="0"
+                          className="text-xl rounded-lg"
+                        />
+                      </div>
+                      <div className="flex col-span-2 gap-0.5">
+                        <Button className="grow rounded-r-none">
+                          Redelegate
+                        </Button>
+                        <Button
+                          onClick={changePageState("")}
+                          className="rounded-l-none bg-gray-950"
+                          size="icon"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             )}
