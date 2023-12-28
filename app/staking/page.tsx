@@ -136,7 +136,12 @@ const StakingPage = () => {
   )
 
   const sortedValidators = validators
-    .filter((v: any) => !v.jailed || showJailedValidators)
+    .filter(
+      (v: any) =>
+        !v.jailed ||
+        delegatedValidatorAddresses.has(v.operator_address) ||
+        showJailedValidators
+    )
     .sort((a: any, b: any) => {
       const aIsDelegated = delegatedValidatorAddresses.has(a.operator_address)
       const bIsDelegated = delegatedValidatorAddresses.has(b.operator_address)
