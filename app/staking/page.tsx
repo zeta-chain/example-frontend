@@ -161,6 +161,18 @@ const StakingPage = () => {
       : null
   }
 
+  const LoadingSkeleton = () => {
+    return (
+      <div className="space-y-4">
+        {Array(10)
+          .fill(null)
+          .map((_, index) => (
+            <Skeleton key={index} className="h-10 w-full" />
+          ))}
+      </div>
+    )
+  }
+
   const sendCosmosTx = async (
     params: any,
     createTxFunction: (
@@ -228,18 +240,6 @@ const StakingPage = () => {
       })
       return await post.json()
     }
-  }
-
-  const LoadingSkeleton = () => {
-    return (
-      <div className="space-y-4">
-        {Array(10)
-          .fill(null)
-          .map((_, index) => (
-            <Skeleton key={index} className="h-10 w-full" />
-          ))}
-      </div>
-    )
   }
 
   const handleClaimReward = async () => {
