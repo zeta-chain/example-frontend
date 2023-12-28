@@ -65,6 +65,13 @@ const StakingPage = () => {
   const { toast } = useToast()
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
+  const [withdrawAmountValid, setWithdrawAmountValid] = useState<any>(false)
+
+  useEffect(() => {
+    const amount = parseUnits(withdrawAmount.toString(), 18)
+    const staked = getStakedAmount(selectedValidator.operator_address)
+    setWithdrawAmountValid(amount > 0 && amount <= staked)
+  }, [withdrawAmount])
 
   useEffect(() => {
     setIsZetaChain(chain?.id === 7001)
@@ -531,7 +538,7 @@ const StakingPage = () => {
                         <Button
                           className="grow rounded-lg w-full"
                           onClick={handleWithdraw}
-                          disabled={!isZetaChain}
+                          disabled={!isZetaChain || !withdrawAmountValid}
                         >
                           Withdraw
                         </Button>

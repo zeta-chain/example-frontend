@@ -2,7 +2,7 @@
 
 import "@/styles/globals.css"
 import { parse } from "path"
-import { createContext, useCallback, useEffect, useState } from "react"
+import { createContext, use, useCallback, useEffect, useState } from "react"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import {
   fetchFees,
