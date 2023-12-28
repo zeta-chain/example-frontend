@@ -490,8 +490,12 @@ const StakingPage = () => {
                 <div className="p-2">
                   <div className="grid grid-cols-2 gap-2">
                     <Popover onOpenChange={() => setWithdrawAmount("")}>
-                      <PopoverTrigger>
-                        <Button variant="outline" className="rounded-lg w-full">
+                      <PopoverTrigger disabled={!isZetaChain}>
+                        <Button
+                          variant="outline"
+                          className="rounded-lg w-full"
+                          disabled={!isZetaChain}
+                        >
                           <ArrowBigDown className="w-4 h-4 mr-1" />
                           Withdraw
                         </Button>
@@ -527,14 +531,19 @@ const StakingPage = () => {
                         <Button
                           className="grow rounded-lg w-full"
                           onClick={handleWithdraw}
+                          disabled={!isZetaChain}
                         >
                           Withdraw
                         </Button>
                       </PopoverContent>
                     </Popover>
                     <Popover>
-                      <PopoverTrigger>
-                        <Button variant="outline" className="rounded-lg w-full">
+                      <PopoverTrigger disabled={!isZetaChain}>
+                        <Button
+                          variant="outline"
+                          className="rounded-lg w-full"
+                          disabled={!isZetaChain}
+                        >
                           <Redo2 className="w-4 h-4 mr-1" />
                           Redelegate
                         </Button>
@@ -548,7 +557,10 @@ const StakingPage = () => {
                           min="0"
                           className="text-xl rounded-lg"
                         />
-                        <Button className="grow rounded-lg w-full">
+                        <Button
+                          className="grow rounded-lg w-full"
+                          disabled={!isZetaChain}
+                        >
                           Redelegate
                         </Button>
                       </PopoverContent>
@@ -564,8 +576,12 @@ const StakingPage = () => {
               </div>
             </div>
             <Popover>
-              <PopoverTrigger className="px-3 w-full">
-                <Button className="w-full" variant="outline">
+              <PopoverTrigger className="px-3 w-full" disabled={!isZetaChain}>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  disabled={!isZetaChain}
+                >
                   <ArrowBigUp className="w-4 h-4 mr-1" />
                   Stake
                 </Button>
