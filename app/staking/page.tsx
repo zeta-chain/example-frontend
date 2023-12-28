@@ -54,6 +54,8 @@ const StakingPage = () => {
     fetchStakingRewards,
     stakingRewards,
     validatorsLoading,
+    fetchUnbondingDelegations,
+    unbondingDelegations,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -86,6 +88,7 @@ const StakingPage = () => {
     fetchStakingDelegations()
     fetchValidators()
     fetchStakingRewards()
+    fetchUnbondingDelegations()
   }
 
   useEffect(() => {
@@ -269,6 +272,16 @@ const StakingPage = () => {
     }
   }
 
+  const unbondingDelegationsTotal = unbondingDelegations.reduce(
+    (totalSum: any, delegator: any) => {
+      const delegatorSum = delegator.entries.reduce((sum: any, entry: any) => {
+        return sum + BigInt(entry.balance)
+      }, BigInt(0))
+      return BigInt(totalSum) + BigInt(delegatorSum)
+    },
+    0
+  )
+
   const handleWithdraw = async () => {
     setIsSending(true)
     let result: any = null
@@ -405,25 +418,32 @@ const StakingPage = () => {
           <Card className="py-6 shadow-none border-none mb-2">
             <div className="grid sm:grid-cols-3 grid-cols-1 gap-2">
               <div className="border border-gray-100 p-4 rounded-2xl">
-                <div className="text-sm text-muted-foreground mb-1">
-                  Available
-                </div>
+                <div className="text-xs text-muted-foreground">Available</div>
                 <div className="text-xl flex items-center font-semibold">
                   {parseFloat(zetaBalance).toFixed(4)} ZETA
                 </div>
               </div>
-              <div className="border border-gray-100 p-4 rounded-2xl mb-1">
-                <div className="text-sm text-muted-foreground mb-1">Staked</div>
-                <div className="text-xl flex items-center">
-                  {parseFloat(formatUnits(stakingAmountTotal, 18)).toFixed(2)}
-                  &nbsp;ZETA
+              <div className="flex flex-col gap-3 border border-gray-100 p-4 rounded-2xl">
+                <div>
+                  <div className="text-xs text-muted-foreground">Staked</div>
+                  <div className="text-xl flex items-center">
+                    {parseFloat(formatUnits(stakingAmountTotal, 18)).toFixed(2)}
+                    &nbsp;ZETA
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Unstaking</div>
+                  <div className="text-xl flex items-center">
+                    {parseFloat(
+                      formatUnits(unbondingDelegationsTotal, 18)
+                    ).toFixed(2)}
+                    &nbsp;ZETA
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="border border-gray-100 p-4 rounded-t-2xl mb-1">
-                  <div className="text-sm text-muted-foreground mb-1">
-                    Rewards
-                  </div>
+              <div className="flex flex-col gap-1">
+                <div className="grow border border-gray-100 p-4 rounded-t-2xl">
+                  <div className="text-xs text-muted-foreground">Rewards</div>
                   <div className="text-xl flex items-center">
                     {parseFloat(formatUnits(stakingRewardsTotal, 18)).toFixed(
                       4

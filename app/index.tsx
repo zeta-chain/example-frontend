@@ -38,8 +38,25 @@ export default function Index({ children }: RootLayoutProps) {
   const [validatorsLoading, setValidatorsLoading] = useState(false)
   const [stakingDelegations, setStakingDelegations] = useState<any>([])
   const [stakingRewards, setStakingRewards] = useState<any>([])
+  const [unbondingDelegations, setUnbondingDelegations] = useState<any>([])
 
   const { address, isConnected } = useAccount()
+
+  const fetchUnbondingDelegations = useCallback(
+    debounce(async () => {
+      try {
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const addr = hexToBech32Address(address as any, "zeta")
+        const url = `${api}/cosmos/staking/v1beta1/delegators/${addr}/unbonding_delegations`
+        const response = await fetch(url)
+        const data = await response.json()
+        setUnbondingDelegations(data.unbonding_responses)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500),
+    []
+  )
 
   const fetchStakingDelegations = useCallback(
     debounce(async () => {
@@ -269,6 +286,8 @@ export default function Index({ children }: RootLayoutProps) {
           fetchBalances,
           fetchStakingDelegations,
           fetchStakingRewards,
+          unbondingDelegations,
+          fetchUnbondingDelegations,
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
