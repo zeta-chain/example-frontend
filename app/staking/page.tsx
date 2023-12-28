@@ -1,5 +1,6 @@
 "use client"
 
+import { format } from "path"
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { generatePostBodyBroadcast } from "@evmos/provider"
@@ -72,7 +73,8 @@ const StakingPage = () => {
   useEffect(() => {
     try {
       const amount = parseUnits(withdrawAmount.toString(), 18)
-      const staked = getStakedAmount(selectedValidator.operator_address)
+      const staked = BigInt(getStakedAmount(selectedValidator.operator_address))
+      console.log(amount, staked, amount <= staked)
       setWithdrawAmountValid(amount > 0 && amount <= staked)
     } catch (e) {
       console.error(e)
@@ -164,7 +166,7 @@ const StakingPage = () => {
     const delegation = stakingDelegations.find(
       (d: any) => d.delegation.validator_address === validatorAddress
     )
-    return delegation && parseInt(delegation.balance.amount) > 0
+    return delegation && parseUnits(delegation.balance.amount, 18) > BigInt(0)
       ? delegation.balance.amount
       : null
   }
@@ -551,14 +553,11 @@ const StakingPage = () => {
                           />
                           <Button
                             onClick={() => {
-                              const a =
-                                parseFloat(
-                                  getStakedAmount(
-                                    selectedValidator.operator_address
-                                  )
-                                ) / 1e18
+                              const addr = selectedValidator.operator_address
+                              const am = formatUnits(getStakedAmount(addr), 18)
+                              const isInt = Number.isInteger(parseFloat(am))
                               setWithdrawAmount(
-                                Number.isInteger(a) ? a : a.toFixed(18)
+                                isInt ? parseInt(am) : am.toString()
                               )
                             }}
                             variant="link"
@@ -574,6 +573,9 @@ const StakingPage = () => {
                         >
                           Withdraw
                         </Button>
+                        {JSON.stringify(
+                          getStakedAmount(selectedValidator.operator_address)
+                        )}
                       </PopoverContent>
                     </Popover>
                     <Popover>
