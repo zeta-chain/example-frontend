@@ -446,8 +446,8 @@ const StakingPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <div className="grow border border-gray-100 p-4 rounded-t-2xl">
+              <div className="border border-gray-100 rounded-2xl flex flex-col justify-between">
+                <div className="p-4">
                   <div className="text-xs text-muted-foreground">Rewards</div>
                   <div className="text-xl flex items-center">
                     {parseFloat(formatUnits(stakingRewardsTotal, 18)).toFixed(
@@ -456,15 +456,17 @@ const StakingPage = () => {
                     &nbsp;ZETA
                   </div>
                 </div>
-                <Button
-                  onClick={handleClaimReward}
-                  disabled={!isZetaChain}
-                  variant="outline"
-                  className="w-full hover:bg-gray-100 bg-white border border-gray-100 rounded-t-none rounded-b-2xl"
-                >
-                  <Gift className="w-4 h-4 mr-1" />
-                  Claim rewards
-                </Button>
+                <div className="p-2">
+                  <Button
+                    onClick={handleClaimReward}
+                    disabled={!isZetaChain}
+                    variant="outline"
+                    className="w-full rounded-lg"
+                  >
+                    <Gift className="w-4 h-4 mr-1" />
+                    Claim rewards
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
