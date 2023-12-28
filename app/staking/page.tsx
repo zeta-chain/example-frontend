@@ -68,9 +68,14 @@ const StakingPage = () => {
   const [withdrawAmountValid, setWithdrawAmountValid] = useState<any>(false)
 
   useEffect(() => {
-    const amount = parseUnits(withdrawAmount.toString(), 18)
-    const staked = getStakedAmount(selectedValidator.operator_address)
-    setWithdrawAmountValid(amount > 0 && amount <= staked)
+    try {
+      const amount = parseUnits(withdrawAmount.toString(), 18)
+      const staked = getStakedAmount(selectedValidator.operator_address)
+      setWithdrawAmountValid(amount > 0 && amount <= staked)
+    } catch (e) {
+      console.error(e)
+      setWithdrawAmountValid(false)
+    }
   }, [withdrawAmount])
 
   useEffect(() => {
