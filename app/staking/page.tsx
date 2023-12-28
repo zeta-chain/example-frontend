@@ -230,6 +230,18 @@ const StakingPage = () => {
     }
   }
 
+  const LoadingSkeleton = () => {
+    return (
+      <div className="space-y-4">
+        {Array(10)
+          .fill(null)
+          .map((_, index) => (
+            <Skeleton key={index} className="h-10 w-full" />
+          ))}
+      </div>
+    )
+  }
+
   const handleClaimReward = async () => {
     let result: any = null
     try {
@@ -255,18 +267,6 @@ const StakingPage = () => {
         })
       }
     }
-  }
-
-  const LoadingSkeleton = () => {
-    return (
-      <div className="space-y-4">
-        {Array(10)
-          .fill(null)
-          .map((_, index) => (
-            <Skeleton key={index} className="h-10 w-full" />
-          ))}
-      </div>
-    )
   }
 
   const handleWithdraw = async () => {
