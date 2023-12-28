@@ -257,6 +257,18 @@ const StakingPage = () => {
     }
   }
 
+  const LoadingSkeleton = () => {
+    return (
+      <div className="space-y-4">
+        {Array(10)
+          .fill(null)
+          .map((_, index) => (
+            <Skeleton key={index} className="h-10 w-full" />
+          ))}
+      </div>
+    )
+  }
+
   const handleWithdraw = async () => {
     setIsSending(true)
     let result: any = null
@@ -287,18 +299,6 @@ const StakingPage = () => {
         })
       }
     }
-  }
-
-  const LoadingSkeleton = () => {
-    return (
-      <div className="space-y-4">
-        {Array(10)
-          .fill(null)
-          .map((_, index) => (
-            <Skeleton key={index} className="h-10 w-full" />
-          ))}
-      </div>
-    )
   }
 
   const handleStake = async () => {
