@@ -1,22 +1,43 @@
-# next-template
+# ZetaChain Frontend App Template
 
-A Next.js 13 template for building apps with Radix UI and Tailwind CSS.
+This repository provides a frontend app template for developers looking to build
+applications on ZetaChain. It's designed to demonstrate various ZetaChain
+functionalities and serve as a starting point for custom DApp development.
 
-## Usage
+![Screenshot](./public/screenshot.png)
 
-```bash
-npx create-next-app -e https://github.com/shadcn/next-template
-```
+The template is built with [Next.js](https://nextjs.org/),
+[Tailwind](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/), and
+the [ZetaChain Toolkit](https://github.com/zeta-chain/toolkit/).
 
 ## Features
 
-- Next.js 13 App Directory
-- Radix UI Primitives
-- Tailwind CSS
-- Icons from [Lucide](https://lucide.dev)
-- Dark mode with `next-themes`
-- Tailwind CSS class sorting, merging and linting.
+- Portfolio view with token balances
+- Omnichain swaps
+- Token deposit and withdrawal
+- Cross-chain transaction tracking
+- Cross-chain messaging example
+- Bitcoin support
 
-## License
+## Prerequisites
 
-Licensed under the [MIT license](https://github.com/shadcn/ui/blob/main/LICENSE.md).
+- Node.js v18
+- Yarn
+
+## Getting Started
+
+Start a development server:
+
+```
+yarn dev
+```
+
+## Contributions
+
+Contributions are welcome. Please fork the project, create your feature branch,
+commit your changes, push to the branch, and open a pull request.
+
+## Disclaimer
+
+This is an early stage project. Expect bugs, breaking changes, and unfinished
+features. Please use at your own risk.
