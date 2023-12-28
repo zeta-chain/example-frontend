@@ -573,9 +573,6 @@ const StakingPage = () => {
                         >
                           Withdraw
                         </Button>
-                        {JSON.stringify(
-                          getStakedAmount(selectedValidator.operator_address)
-                        )}
                       </PopoverContent>
                     </Popover>
                     <Popover>
