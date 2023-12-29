@@ -14,6 +14,7 @@ import {
 } from "@evmos/transactions"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { formatDistanceToNow } from "date-fns"
+import { set } from "lodash"
 import {
   AlertTriangle,
   ArrowBigDown,
@@ -82,6 +83,8 @@ const StakingPage = () => {
   const [withdrawAmountValid, setWithdrawAmountValid] = useState<any>(false)
   const [redelegateValidatorSelected, setRedelegateValidatorSelected] =
     useState<any>(null)
+  const [redelegationDropdownOpen, setRedelegationDropdownOpen] =
+    useState(false)
 
   useEffect(() => {
     try {
@@ -666,7 +669,10 @@ const StakingPage = () => {
                           min="0"
                           className="text-xl rounded-lg"
                         />
-                        <Popover>
+                        <Popover
+                          open={redelegationDropdownOpen}
+                          onOpenChange={setRedelegationDropdownOpen}
+                        >
                           <PopoverTrigger>
                             <Button
                               className="w-full flex justify-between px-3"
@@ -693,8 +699,8 @@ const StakingPage = () => {
                                     value={v.description.moniker}
                                     onSelect={(m: string) => {
                                       const v = findValidatorAddressByMoniker(m)
-                                      console.log(v)
                                       setRedelegateValidatorSelected(v)
+                                      setRedelegationDropdownOpen(false)
                                     }}
                                   >
                                     <Check
