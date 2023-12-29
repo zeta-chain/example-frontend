@@ -12,6 +12,7 @@ import {
   signatureToWeb3Extension,
 } from "@evmos/transactions"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
+import { formatDistanceToNow } from "date-fns"
 import {
   AlertTriangle,
   ArrowBigDown,
@@ -74,7 +75,6 @@ const StakingPage = () => {
     try {
       const amount = parseUnits(withdrawAmount.toString(), 18)
       const staked = BigInt(getStakedAmount(selectedValidator.operator_address))
-      console.log(amount, staked, amount <= staked)
       setWithdrawAmountValid(amount > 0 && amount <= staked)
     } catch (e) {
       console.error(e)
@@ -296,7 +296,7 @@ const StakingPage = () => {
       result = await sendCosmosTx(
         {
           validatorAddress: selectedValidator.operator_address,
-          amount: parseUnits(withdrawAmount, 18).toString(),
+          amount: parseUnits(withdrawAmount.toString(), 18).toString(),
           denom: "azeta",
         },
         createTxMsgUndelegate
@@ -310,7 +310,7 @@ const StakingPage = () => {
         const success = result?.tx_response?.code === 0
         const title = success ? "Success" : "Error"
         const description = success
-          ? "Successfully delegated."
+          ? "Successfully withdrawn."
           : result?.tx_response?.raw_log
         toast({
           title,
@@ -351,6 +351,12 @@ const StakingPage = () => {
         })
       }
     }
+  }
+
+  const unbondingDelegationsFor = (validatorAddress: string) => {
+    return unbondingDelegations.find((x: any) => {
+      return x.validator_address === selectedValidator.operator_address
+    })?.entries
   }
 
   const ValidatorTable = () => {
@@ -516,8 +522,8 @@ const StakingPage = () => {
             {getStakedAmount(selectedValidator.operator_address) && (
               <Card className="shadow-none rounded-2xl border-gray-100">
                 <div className="mx-3 my-4 grid grid-cols-2">
-                  <div className="text-sm">Staked</div>
-                  <div className="text-sm text-right font-semibold">
+                  <div className="text-sm font-semibold">Staked</div>
+                  <div className="text-sm text-right">
                     {(
                       parseFloat(
                         getStakedAmount(selectedValidator.operator_address)
@@ -605,6 +611,26 @@ const StakingPage = () => {
                     </Popover>
                   </div>
                 </div>
+              </Card>
+            )}
+            {unbondingDelegationsFor(selectedValidator.operator_address) && (
+              <Card className="my-4 shadow-none rounded-2xl border-gray-100 text-sm">
+                <div className="mx-3 my-4 font-semibold">Unstaking</div>
+                {unbondingDelegationsFor(
+                  selectedValidator.operator_address
+                ).map((x: any) => (
+                  <div className="mx-3 my-4 grid grid-cols-2">
+                    <div>
+                      {formatDistanceToNow(x.completion_time, {
+                        addSuffix: true,
+                      })}
+                    </div>
+                    <div className="text-right">
+                      {parseFloat(formatUnits(x.balance, 18)).toFixed(2)}
+                      &nbsp;ZETA
+                    </div>
+                  </div>
+                ))}
               </Card>
             )}
             <div className="mx-3 my-4 grid grid-cols-2">
