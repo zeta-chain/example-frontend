@@ -688,7 +688,7 @@ const StakingPage = () => {
                               <ChevronDown className="w-4 h-4" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0">
+                          <PopoverContent className="w-[300px] p-0 rounded-lg shadow-2xl border-none">
                             <Command>
                               <CommandInput placeholder="Search tokens..." />
                               <CommandEmpty>No balances found.</CommandEmpty>
