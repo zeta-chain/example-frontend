@@ -2,15 +2,21 @@
 
 import { useContext, useEffect, useState } from "react"
 import { formatUnits } from "viem"
+import { useAccount } from "wagmi"
 
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AppContext } from "@/app/index"
 
 const PoolsPage = () => {
-  const { pools, balances, balancesLoading, poolsLoading } =
+  const { pools, balances, balancesLoading, poolsLoading, fetchPools } =
     useContext(AppContext)
   const [poolsSorted, setPoolsSorted] = useState<any[]>([])
+  const { address, isConnected } = useAccount()
+
+  useEffect(() => {
+    fetchPools()
+  }, [address, isConnected])
 
   useEffect(() => {
     const enrichPoolsData = (pools: any[], balances: any[]) => {

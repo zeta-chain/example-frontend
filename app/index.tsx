@@ -45,6 +45,9 @@ export default function Index({ children }: RootLayoutProps) {
   const fetchUnbondingDelegations = useCallback(
     debounce(async () => {
       try {
+        if (!isConnected) {
+          return setUnbondingDelegations([])
+        }
         const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
         const addr = hexToBech32Address(address as any, "zeta")
         const url = `${api}/cosmos/staking/v1beta1/delegators/${addr}/unbonding_delegations`
@@ -55,12 +58,15 @@ export default function Index({ children }: RootLayoutProps) {
         console.error(e)
       }
     }, 500),
-    []
+    [address, isConnected]
   )
 
   const fetchStakingDelegations = useCallback(
     debounce(async () => {
       try {
+        if (!isConnected) {
+          return setStakingDelegations([])
+        }
         const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
         const addr = hexToBech32Address(address as any, "zeta")
         const url = `${api}/cosmos/staking/v1beta1/delegations/${addr}`
@@ -71,12 +77,15 @@ export default function Index({ children }: RootLayoutProps) {
         console.error(e)
       }
     }, 500),
-    []
+    [address, isConnected]
   )
 
   const fetchStakingRewards = useCallback(
     debounce(async () => {
       try {
+        if (!isConnected) {
+          return setStakingRewards([])
+        }
         const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
         const addr = hexToBech32Address(address as any, "zeta")
         const url = `${api}/cosmos/distribution/v1beta1/delegators/${addr}/rewards`
@@ -87,7 +96,7 @@ export default function Index({ children }: RootLayoutProps) {
         console.error(e)
       }
     }, 500),
-    []
+    [address, isConnected]
   )
 
   const fetchValidators = useCallback(
@@ -97,6 +106,10 @@ export default function Index({ children }: RootLayoutProps) {
       let nextKey: any = null
 
       try {
+        if (!isConnected) {
+          setValidatorsLoading(false)
+          return setValidators([])
+        }
         const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
 
         const fetchBonded = async () => {
@@ -136,13 +149,16 @@ export default function Index({ children }: RootLayoutProps) {
         setValidatorsLoading(false)
       }
     }, 500),
-    []
+    [address, isConnected]
   )
 
   const fetchBalances = useCallback(
     debounce(async (refresh: Boolean = false, btc: any = null) => {
       refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
       try {
+        if (!isConnected) {
+          return setBalances([])
+        }
         const b = await getBalances(address, btc)
         setBalances(b)
       } catch (e) {
@@ -157,6 +173,9 @@ export default function Index({ children }: RootLayoutProps) {
   const fetchFeesList = useCallback(
     debounce(async () => {
       try {
+        if (!isConnected) {
+          return setFees([])
+        }
         setFees(await fetchFees(500000))
       } catch (e) {
         console.log(e)
@@ -182,7 +201,6 @@ export default function Index({ children }: RootLayoutProps) {
   useEffect(() => {
     fetchBalances()
     fetchFeesList()
-    fetchPools()
   }, [isConnected, address])
 
   const [inbounds, setInbounds] = useState<any>([])
@@ -283,6 +301,7 @@ export default function Index({ children }: RootLayoutProps) {
           setInbounds,
           setBitcoinAddress,
           setBalances,
+          fetchPools,
           fetchBalances,
           fetchStakingDelegations,
           fetchStakingRewards,

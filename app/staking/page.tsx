@@ -75,7 +75,7 @@ const StakingPage = () => {
   const [amount, setAmount] = useState<any>("")
   const [withdrawAmount, setWithdrawAmount] = useState<any>("")
   const [redelegateAmount, setRedelegateAmount] = useState<any>("")
-  const { address } = useAccount()
+  const { address, isConnected } = useAccount()
   const { toast } = useToast()
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
@@ -107,7 +107,7 @@ const StakingPage = () => {
 
   useEffect(() => {
     fetchStakingData()
-  }, [])
+  }, [address, isConnected])
 
   const toggleJailedValidators = () => {
     setShowJailedValidators(!showJailedValidators)
