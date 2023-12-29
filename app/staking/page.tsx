@@ -5,6 +5,7 @@ import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
+  createTxMsgBeginRedelegate,
   createTxMsgDelegate,
   createTxMsgMultipleWithdrawDelegatorReward,
   createTxMsgUndelegate,
@@ -17,6 +18,8 @@ import {
   AlertTriangle,
   ArrowBigDown,
   ArrowBigUp,
+  Check,
+  ChevronDown,
   Gift,
   Globe2,
   Redo2,
@@ -28,6 +31,13 @@ import { useAccount, useNetwork } from "wagmi"
 import { hexToBech32Address } from "@/lib/hexToBech32Address"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
@@ -70,6 +80,8 @@ const StakingPage = () => {
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
   const [withdrawAmountValid, setWithdrawAmountValid] = useState<any>(false)
+  const [redelegateValidatorSelected, setRedelegateValidatorSelected] =
+    useState<any>(null)
 
   useEffect(() => {
     try {
@@ -414,6 +426,59 @@ const StakingPage = () => {
     )
   }
 
+  const findValidatorAddressByMoniker = (moniker: string) => {
+    for (const v of sortedValidators) {
+      if (v.description.moniker.toLowerCase() === moniker.toLowerCase()) {
+        return v.operator_address
+      }
+    }
+    return null
+  }
+
+  const findValidatorMonikerByAddress = (address: string) => {
+    for (const v of sortedValidators) {
+      if (
+        v.operator_address.toLowerCase() ===
+        redelegateValidatorSelected.toLowerCase()
+      ) {
+        return v.description.moniker
+      }
+    }
+    return null
+  }
+
+  const handleRedelegate = async () => {
+    let result: any = null
+    try {
+      result = await sendCosmosTx(
+        {
+          validatorSrcAddress: selectedValidator.operator_address,
+          validatorDstAddress: redelegateValidatorSelected,
+          amount: parseUnits(redelegateAmount, 18).toString(),
+          denom: "azeta",
+        },
+        createTxMsgBeginRedelegate
+      )
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setRedelegateAmount("")
+      setRedelegateValidatorSelected("")
+      if (result) {
+        const success = result?.tx_response?.code === 0
+        const title = success ? "Success" : "Error"
+        const description = success
+          ? "Successfully redelegated."
+          : result?.tx_response?.raw_log
+        toast({
+          title,
+          description,
+          variant: success ? "default" : "destructive",
+        })
+      }
+    }
+  }
+
   return (
     <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
       <div className="sm:col-span-2 overflow-x-scroll">
@@ -601,9 +666,64 @@ const StakingPage = () => {
                           min="0"
                           className="text-xl rounded-lg"
                         />
+                        <Popover>
+                          <PopoverTrigger>
+                            <Button
+                              className="w-full flex justify-between px-3"
+                              variant="outline"
+                            >
+                              <div>
+                                {redelegateValidatorSelected
+                                  ? findValidatorMonikerByAddress(
+                                      redelegateValidatorSelected
+                                    )
+                                  : "Select a validator"}
+                              </div>
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                              <CommandInput placeholder="Search tokens..." />
+                              <CommandEmpty>No balances found.</CommandEmpty>
+                              <CommandGroup className="max-h-[400px] overflow-y-scroll">
+                                {sortedValidators?.map((v: any) => (
+                                  <CommandItem
+                                    key={v.operator_address}
+                                    value={v.description.moniker}
+                                    onSelect={(m: string) => {
+                                      const v = findValidatorAddressByMoniker(m)
+                                      console.log(v)
+                                      setRedelegateValidatorSelected(v)
+                                    }}
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 opacity-${
+                                        redelegateValidatorSelected ===
+                                        v.operator_address
+                                          ? 100
+                                          : 0
+                                      }`}
+                                    />
+                                    <div className="w-full">
+                                      <div className="flex justify-between">
+                                        <div>{v.description.moniker}</div>
+                                        <div>{v.voting_power.toFixed(2)}%</div>
+                                      </div>
+                                      <div className="text-xs text-slate-400">
+                                        {balances.chain_name}
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         <Button
                           className="grow rounded-lg w-full"
                           disabled={!isZetaChain}
+                          onClick={handleRedelegate}
                         >
                           Redelegate
                         </Button>
