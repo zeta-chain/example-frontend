@@ -26,6 +26,73 @@ import {
 import Transfer from "@/components/transfer"
 import { AppContext } from "@/app/index"
 
+const LoadingSkeleton = () => {
+  return (
+    <div className="space-y-4">
+      {Array(5)
+        .fill(null)
+        .map((_, index) => (
+          <Skeleton key={index} className="h-10 w-full" />
+        ))}
+    </div>
+  )
+}
+
+const BalancesTable = ({ sortedBalances, showAll, toggleShowAll }: any) => {
+  return (
+    <div>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-none hover:bg-transparent">
+            <TableHead className="pl-4">Asset</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Balance</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedBalances
+            .slice(0, showAll ? sortedBalances.length : 5)
+            .map((b: any, index: any) => (
+              <TableRow key={index} className="border-none">
+                <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                  <div>{b.ticker}</div>
+                  <div className="text-xs text-slate-400">{b.chain_name}</div>
+                </TableCell>
+                <TableCell>{b.coin_type}</TableCell>
+                <TableCell className="rounded-br-xl rounded-tr-xl">
+                  {parseFloat(b.balance).toFixed(2) || "N/A"}
+                </TableCell>
+              </TableRow>
+            ))}
+        </TableBody>
+      </Table>
+      {sortedBalances?.length > 5 && (
+        <div className="my-4 flex justify-center">
+          <Button variant="link" onClick={toggleShowAll}>
+            {showAll ? "Collapse" : "Show all assets"}
+            {showAll ? (
+              <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-75" />
+            ) : (
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const ConnectWallet = () => {
+  return (
+    <Alert>
+      <AlertTitle>Connect wallet</AlertTitle>
+      <AlertDescription>
+        Please, connect wallet to see token balances.
+      </AlertDescription>
+    </Alert>
+  )
+}
+
 export default function IndexPage() {
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
     useContext(AppContext)
@@ -72,66 +139,15 @@ export default function IndexPage() {
             </Button>
           </div>
           {balancesLoading ? (
-            <div className="space-y-4">
-              {Array(5)
-                .fill(null)
-                .map((_, index) => (
-                  <Skeleton key={index} className="h-10 w-full" />
-                ))}
-            </div>
+            <LoadingSkeleton />
+          ) : isConnected ? (
+            <BalancesTable
+              sortedBalances={sortedBalances}
+              showAll={showAll}
+              toggleShowAll={toggleShowAll}
+            />
           ) : (
-            <>
-              {isConnected ? (
-                <div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-none hover:bg-transparent">
-                        <TableHead className="pl-4">Asset</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sortedBalances
-                        .slice(0, showAll ? sortedBalances.length : 5)
-                        .map((b: any, index: any) => (
-                          <TableRow key={index} className="border-none">
-                            <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
-                              <div>{b.ticker}</div>
-                              <div className="text-xs text-slate-400">
-                                {b.chain_name}
-                              </div>
-                            </TableCell>
-                            <TableCell>{b.coin_type}</TableCell>
-                            <TableCell className="rounded-br-xl rounded-tr-xl">
-                              {parseFloat(b.balance).toFixed(2) || "N/A"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                  {sortedBalances?.length > 5 && (
-                    <div className="my-4 flex justify-center">
-                      <Button variant="link" onClick={toggleShowAll}>
-                        {showAll ? "Collapse" : "Show all assets"}
-                        {showAll ? (
-                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-75" />
-                        ) : (
-                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Alert>
-                  <AlertTitle>Connect wallet</AlertTitle>
-                  <AlertDescription>
-                    Please, connect wallet to see token balances.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </>
+            <ConnectWallet />
           )}
           <div className="my-5 flex space-x-2">
             <Link href="/messaging" legacyBehavior passHref>
