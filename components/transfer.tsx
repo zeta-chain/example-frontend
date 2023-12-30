@@ -874,7 +874,7 @@ const Transfer = () => {
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
+            <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
@@ -882,6 +882,7 @@ const Transfer = () => {
                   {sourceBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
+                      className="hover:cursor-pointer"
                       value={balances.id}
                       onSelect={(c) => {
                         setSourceToken(c === sourceToken ? null : c)
@@ -953,7 +954,7 @@ const Transfer = () => {
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
+            <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
@@ -961,6 +962,7 @@ const Transfer = () => {
                   {destinationBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
+                      className="hover:cursor-pointer"
                       value={balances.id}
                       onSelect={(c) => {
                         setDestinationToken(c === destinationToken ? null : c)
