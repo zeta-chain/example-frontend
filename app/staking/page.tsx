@@ -141,7 +141,10 @@ const StakingPage = () => {
   const zetaBalance = findBalance(7001, "Gas")
 
   const handleSelectValidator = (validator: any) => {
-    setSelectedValidator(validator)
+    const same =
+      selectedValidator &&
+      validator.operator_address === selectedValidator.operator_address
+    setSelectedValidator(same ? null : validator)
   }
 
   const delegatedValidatorAddresses = new Set(
