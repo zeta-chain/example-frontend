@@ -395,7 +395,7 @@ const StakingPage = () => {
               return (
                 <TableRow
                   key={v.operator_address}
-                  className={`border-none cursor-pointer ${
+                  className={`transition-none border-none cursor-pointer ${
                     v.jailed ? "text-gray-300" : ""
                   }`}
                   onClick={() => handleSelectValidator(v)}
