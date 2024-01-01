@@ -80,7 +80,7 @@ const BalancesTable = ({
                           <ArrowBigUp className="h-4 w-4 mr-0.5" />
                           {stakingAmountTotal > 0 ? (
                             <span>
-                              Staking:&nbsp;
+                              Staked:&nbsp;
                               {parseFloat(
                                 formatUnits(stakingAmountTotal, 18)
                               ).toFixed(0)}
