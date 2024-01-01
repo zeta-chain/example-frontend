@@ -78,7 +78,7 @@ const BalancesTable = ({
                       >
                         <Link href="/staking">
                           <ArrowBigUp className="h-4 w-4 mr-0.5" />
-                          {stakingAmountTotal < 0 ? (
+                          {stakingAmountTotal > 0 ? (
                             <span>
                               Staking:&nbsp;
                               {parseFloat(
@@ -86,7 +86,7 @@ const BalancesTable = ({
                               ).toFixed(0)}
                             </span>
                           ) : (
-                            <span className="font-semibold">Stake ZETA</span>
+                            <span>Stake ZETA</span>
                           )}
                         </Link>
                       </Button>
