@@ -4,12 +4,14 @@ import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { divide } from "lodash"
 import {
+  ArrowBigUp,
   ChevronDown,
   ChevronUp,
-  FlaskRound,
   MessageCircle,
   RefreshCw,
+  Zap,
 } from "lucide-react"
+import { formatUnits } from "viem"
 import { useAccount } from "wagmi"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -38,7 +40,12 @@ const LoadingSkeleton = () => {
   )
 }
 
-const BalancesTable = ({ sortedBalances, showAll, toggleShowAll }: any) => {
+const BalancesTable = ({
+  sortedBalances,
+  showAll,
+  toggleShowAll,
+  stakingAmountTotal,
+}: any) => {
   return (
     <div>
       <Table>
@@ -46,7 +53,7 @@ const BalancesTable = ({ sortedBalances, showAll, toggleShowAll }: any) => {
           <TableRow className="border-none hover:bg-transparent">
             <TableHead className="pl-4">Asset</TableHead>
             <TableHead>Type</TableHead>
-            <TableHead>Balance</TableHead>
+            <TableHead className="text-right">Balance</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,11 +63,35 @@ const BalancesTable = ({ sortedBalances, showAll, toggleShowAll }: any) => {
               <TableRow key={index} className="border-none">
                 <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
                   <div>{b.ticker}</div>
-                  <div className="text-xs text-slate-400">{b.chain_name}</div>
+                  <div className="text-xs text-gray-400">{b.chain_name}</div>
                 </TableCell>
                 <TableCell>{b.coin_type}</TableCell>
-                <TableCell className="rounded-br-xl rounded-tr-xl">
+                <TableCell className="rounded-br-xl rounded-tr-xl text-right">
                   {parseFloat(b.balance).toFixed(2) || "N/A"}
+                  {b.ticker === "ZETA" && b.coin_type === "Gas" && (
+                    <div>
+                      <Button
+                        size="sm"
+                        variant="link"
+                        className="my-1 p-0 text-xs h-5"
+                        asChild
+                      >
+                        <Link href="/staking">
+                          <ArrowBigUp className="h-4 w-4 mr-0.5" />
+                          {stakingAmountTotal < 0 ? (
+                            <span>
+                              Staking:&nbsp;
+                              {parseFloat(
+                                formatUnits(stakingAmountTotal, 18)
+                              ).toFixed(0)}
+                            </span>
+                          ) : (
+                            <span className="font-semibold">Stake ZETA</span>
+                          )}
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -94,8 +125,13 @@ const ConnectWallet = () => {
 }
 
 export default function IndexPage() {
-  const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
-    useContext(AppContext)
+  const {
+    balances,
+    balancesLoading,
+    balancesRefreshing,
+    fetchBalances,
+    stakingDelegations,
+  } = useContext(AppContext)
   const [sortedBalances, setSortedBalances] = useState([])
   const [showAll, setShowAll] = useState(false)
 
@@ -109,9 +145,18 @@ export default function IndexPage() {
     setShowAll(!showAll)
   }
 
+  const stakingAmountTotal = stakingDelegations.reduce((a: any, c: any) => {
+    const amount = BigInt(c.balance.amount)
+    return a + amount
+  }, BigInt(0))
+
   useEffect(() => {
     let balance = balances
       .sort((a: any, b: any) => {
+        // Prioritize ZETA
+        if (a.ticker === "ZETA" && a.coin_type === "Gas") return -1
+        if (b.ticker === "ZETA" && b.coin_type === "Gas") return 1
+
         if (a.coin_type === "Gas" && b.coin_type !== "Gas") return -1
         if (a.coin_type !== "Gas" && b.coin_type === "Gas") return 1
         return a.chain_name < b.chain_name ? -1 : 1
@@ -145,6 +190,7 @@ export default function IndexPage() {
               sortedBalances={sortedBalances}
               showAll={showAll}
               toggleShowAll={toggleShowAll}
+              stakingAmountTotal={stakingAmountTotal}
             />
           ) : (
             <ConnectWallet />

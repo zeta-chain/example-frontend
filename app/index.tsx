@@ -203,6 +203,7 @@ export default function Index({ children }: RootLayoutProps) {
   useEffect(() => {
     fetchBalances(true)
     fetchFeesList()
+    fetchStakingDelegations()
   }, [isConnected, address])
 
   const [inbounds, setInbounds] = useState<any>([])
