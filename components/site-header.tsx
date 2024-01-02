@@ -20,6 +20,7 @@ export function SiteHeader() {
   const connectBitcoin = async () => {
     const w = window as any
     if ("xfi" in w && w.xfi?.bitcoin) {
+      w.xfi.bitcoin.changeNetwork("testnet")
       const btc = (await w.xfi.bitcoin.getAccounts())[0]
       await setBitcoinAddress(btc)
       fetchBalances(true, btc)
