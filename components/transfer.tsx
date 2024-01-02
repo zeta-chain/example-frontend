@@ -152,7 +152,7 @@ const Transfer = () => {
           symbol: "ZETA",
           formatted,
         })
-      } else if (sendType === "crossChainSwap") {
+      } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
         const fee =
           fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
         const amount = parseFloat(fee)
