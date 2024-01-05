@@ -81,7 +81,7 @@ const StakingPage = () => {
   const { toast } = useToast()
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
-  const [withdrawAmountValid, setWithdrawAmountValid] = useState<any>(false)
+  const [withdrawAmountValid, setWithdrawAmountValid] = useState(false)
   const [redelegateValidatorSelected, setRedelegateValidatorSelected] =
     useState<any>(null)
   const [redelegationDropdownOpen, setRedelegationDropdownOpen] =
