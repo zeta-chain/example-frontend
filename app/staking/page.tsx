@@ -74,9 +74,9 @@ const StakingPage = () => {
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
   const [isZetaChain, setIsZetaChain] = useState(false)
-  const [amount, setAmount] = useState<any>("")
-  const [withdrawAmount, setWithdrawAmount] = useState<any>("")
-  const [redelegateAmount, setRedelegateAmount] = useState<any>("")
+  const [amount, setAmount] = useState("")
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [redelegateAmount, setRedelegateAmount] = useState("")
   const { address, isConnected } = useAccount()
   const { toast } = useToast()
   const { chain } = useNetwork()
@@ -644,7 +644,7 @@ const StakingPage = () => {
                               const am = formatUnits(getStakedAmount(addr), 18)
                               const isInt = Number.isInteger(parseFloat(am))
                               setWithdrawAmount(
-                                isInt ? parseInt(am) : am.toString()
+                                isInt ? parseInt(am).toString() : am.toString()
                               )
                             }}
                             variant="link"
