@@ -12,7 +12,7 @@ import {
   createTxRawEIP712,
   signatureToWeb3Extension,
 } from "@evmos/transactions"
-import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
+import { getChainId, getEndpoints } from "@zetachain/networks"
 import { formatDistanceToNow } from "date-fns"
 import { set } from "lodash"
 import {
@@ -87,6 +87,8 @@ const StakingPage = () => {
   const [redelegationDropdownOpen, setRedelegationDropdownOpen] =
     useState(false)
 
+  const zetaChainId = getChainId("zeta_testnet") as number
+
   useEffect(() => {
     try {
       const amount = parseUnits(withdrawAmount.toString(), 18)
@@ -99,7 +101,7 @@ const StakingPage = () => {
   }, [withdrawAmount])
 
   useEffect(() => {
-    setIsZetaChain(chain?.id === 7001)
+    setIsZetaChain(chain?.id === zetaChainId)
   }, [chain])
 
   const fetchStakingData = () => {
@@ -140,7 +142,7 @@ const StakingPage = () => {
     return balance ? balance.balance : "0"
   }
 
-  const zetaBalance = findBalance(7001, "Gas")
+  const zetaBalance = findBalance(zetaChainId, "Gas")
 
   const handleSelectValidator = (validator: any) => {
     const same =
@@ -221,7 +223,7 @@ const StakingPage = () => {
     const { account } = await (await fetch(url))?.json()
     const { sequence, account_number } = account?.base_account
     const pubkey = account?.base_account.pub_key.key
-    const chain = { chainId: 7001, cosmosChainId: "athens_7001-1" }
+    const chain = { chainId: zetaChainId, cosmosChainId: "athens_7001-1" }
     const sender = {
       accountAddress,
       sequence,
