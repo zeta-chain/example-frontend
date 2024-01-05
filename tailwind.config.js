@@ -15,6 +15,8 @@ module.exports = {
     extend: {
       boxShadow: {
         rainbowkit: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+        xl: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);",
+        "2xl": "0 10px 50px -12px rgb(0 0 0 / 0.25);",
       },
       scale: {
         1025: "1.025",

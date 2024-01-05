@@ -1,7 +1,11 @@
 "use client"
 
+import { EvmPriceServiceConnection } from "@pythnetwork/pyth-evm-js"
+
 import "@/styles/globals.css"
-import { createContext, useCallback, useEffect, useState } from "react"
+import { parse } from "path"
+import { createContext, use, useCallback, useEffect, useState } from "react"
+import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import {
   fetchFees,
   getBalances,
@@ -13,6 +17,8 @@ import EventEmitter from "eventemitter3"
 import debounce from "lodash/debounce"
 import { useAccount } from "wagmi"
 
+import { hexToBech32Address } from "@/lib/hexToBech32Address"
+import { Toaster } from "@/components/ui/toaster"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -30,19 +36,139 @@ export default function Index({ children }: RootLayoutProps) {
   const [fees, setFees] = useState<any>([])
   const [pools, setPools] = useState<any>([])
   const [poolsLoading, setPoolsLoading] = useState(false)
-
+  const [validators, setValidators] = useState<any>([])
+  const [validatorsLoading, setValidatorsLoading] = useState(false)
+  const [stakingDelegations, setStakingDelegations] = useState<any>([])
+  const [stakingRewards, setStakingRewards] = useState<any>([])
+  const [unbondingDelegations, setUnbondingDelegations] = useState<any>([])
+  const [prices, setPrices] = useState<any>([])
   const { address, isConnected } = useAccount()
+
+  const fetchUnbondingDelegations = useCallback(
+    debounce(async () => {
+      try {
+        if (!isConnected) {
+          return setUnbondingDelegations([])
+        }
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const addr = hexToBech32Address(address as any, "zeta")
+        const url = `${api}/cosmos/staking/v1beta1/delegators/${addr}/unbonding_delegations`
+        const response = await fetch(url)
+        const data = await response.json()
+        setUnbondingDelegations(data.unbonding_responses)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500),
+    [address, isConnected]
+  )
+
+  const fetchStakingDelegations = useCallback(
+    debounce(async () => {
+      try {
+        if (!isConnected) {
+          return setStakingDelegations([])
+        }
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const addr = hexToBech32Address(address as any, "zeta")
+        const url = `${api}/cosmos/staking/v1beta1/delegations/${addr}`
+        const response = await fetch(url)
+        const data = await response.json()
+        setStakingDelegations(data.delegation_responses)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500),
+    [address, isConnected]
+  )
+
+  const fetchStakingRewards = useCallback(
+    debounce(async () => {
+      try {
+        if (!isConnected) {
+          return setStakingRewards([])
+        }
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const addr = hexToBech32Address(address as any, "zeta")
+        const url = `${api}/cosmos/distribution/v1beta1/delegators/${addr}/rewards`
+        const response = await fetch(url)
+        const data = await response.json()
+        setStakingRewards(data.rewards)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500),
+    [address, isConnected]
+  )
+
+  const fetchValidators = useCallback(
+    debounce(async () => {
+      setValidatorsLoading(true)
+      let allValidators: any[] = []
+      let nextKey: any = null
+
+      try {
+        if (!isConnected) {
+          setValidatorsLoading(false)
+          return setValidators([])
+        }
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+
+        const fetchBonded = async () => {
+          const response = await fetch(`${api}/cosmos/staking/v1beta1/pool`)
+          const data = await response.json()
+          return data
+        }
+
+        const fetchPage = async (key: string) => {
+          const endpoint = "/cosmos/staking/v1beta1/validators"
+          const query = `pagination.key=${encodeURIComponent(key)}`
+          const url = `${api}${endpoint}?${key && query}`
+
+          const response = await fetch(url)
+          const data = await response.json()
+
+          allValidators = allValidators.concat(data.validators)
+
+          if (data.pagination && data.pagination.next_key) {
+            await fetchPage(data.pagination.next_key)
+          }
+        }
+        const pool = (await fetchBonded())?.pool
+        const tokens =
+          parseInt(pool.bonded_tokens) + parseInt(pool.not_bonded_tokens)
+        await fetchPage(nextKey)
+        allValidators = allValidators.map((v) => {
+          return {
+            ...v,
+            voting_power: tokens ? (parseInt(v.tokens) / tokens) * 100 : 0,
+          }
+        })
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setValidators(allValidators)
+        setValidatorsLoading(false)
+      }
+    }, 500),
+    [address, isConnected]
+  )
 
   const fetchBalances = useCallback(
     debounce(async (refresh: Boolean = false, btc: any = null) => {
-      refresh ? setBalancesRefreshing(true) : setBalancesLoading(true)
+      if (refresh) setBalancesRefreshing(true)
+      if (balances.length === 0) setBalancesLoading(true)
       try {
+        if (!isConnected) {
+          return setBalances([])
+        }
         const b = await getBalances(address, btc)
         setBalances(b)
       } catch (e) {
         console.log(e)
       } finally {
-        refresh ? setBalancesRefreshing(false) : setBalancesLoading(false)
+        setBalancesRefreshing(false)
+        setBalancesLoading(false)
       }
     }, 500),
     [isConnected, address]
@@ -51,6 +177,9 @@ export default function Index({ children }: RootLayoutProps) {
   const fetchFeesList = useCallback(
     debounce(async () => {
       try {
+        if (!isConnected) {
+          return setFees([])
+        }
         setFees(await fetchFees(500000))
       } catch (e) {
         console.log(e)
@@ -74,10 +203,67 @@ export default function Index({ children }: RootLayoutProps) {
   )
 
   useEffect(() => {
-    fetchBalances()
+    fetchBalances(true)
     fetchFeesList()
-    fetchPools()
+    fetchStakingDelegations()
+    fetchPrices()
   }, [isConnected, address])
+
+  const fetchPrices = useCallback(
+    debounce(async () => {
+      let priceIds: any = []
+      const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+
+      const zetaChainUrl = `${api}/zeta-chain/fungible/foreign_coins`
+      const pythNetworkUrl = "https://benchmarks.pyth.network/v1/price_feeds/"
+
+      try {
+        const zetaResponse = await fetch(zetaChainUrl)
+        const zetaData = await zetaResponse.json()
+        const foreignCoins = zetaData.foreignCoins
+        const symbolsFromZeta = foreignCoins.map((coin: any) =>
+          coin.symbol.replace(/^[tg]/, "")
+        )
+
+        const pythResponse = await fetch(pythNetworkUrl)
+        const pythData = await pythResponse.json()
+        const priceFeeds = pythData
+
+        priceIds = priceFeeds
+          .filter((feed: any) => {
+            const base = symbolsFromZeta.includes(feed.attributes.base)
+            const quote = feed.attributes.quote_currency === "USD"
+            return base && quote
+          })
+          .map((feed: any) => ({
+            symbol: feed.attributes.base,
+            id: feed.id,
+          }))
+      } catch (error) {
+        console.error("Error fetching or processing data:", error)
+        return []
+      }
+      const connection = new EvmPriceServiceConnection(
+        "https://hermes.pyth.network"
+      )
+
+      const priceFeeds = await connection.getLatestPriceFeeds(
+        priceIds.map((p: any) => p.id)
+      )
+
+      setPrices(
+        priceFeeds?.map((p: any) => {
+          const pr = p.getPriceNoOlderThan(60)
+          return {
+            id: p.id,
+            symbol: priceIds.find((i: any) => i.id === p.id)?.symbol,
+            price: parseInt(pr.price) * 10 ** pr.expo,
+          }
+        })
+      )
+    }, 500),
+    []
+  )
 
   const [inbounds, setInbounds] = useState<any>([])
   const [cctxs, setCCTXs] = useState<any>([])
@@ -160,19 +346,30 @@ export default function Index({ children }: RootLayoutProps) {
       <AppContext.Provider
         value={{
           cctxs,
-          setCCTXs,
           inbounds,
-          setInbounds,
           balances,
           bitcoinAddress,
-          setBitcoinAddress,
-          setBalances,
           balancesLoading,
           balancesRefreshing,
-          fetchBalances,
           fees,
           pools,
           poolsLoading,
+          validators,
+          fetchValidators,
+          validatorsLoading,
+          stakingDelegations,
+          stakingRewards,
+          setCCTXs,
+          setInbounds,
+          setBitcoinAddress,
+          setBalances,
+          fetchPools,
+          fetchBalances,
+          fetchStakingDelegations,
+          fetchStakingRewards,
+          unbondingDelegations,
+          fetchUnbondingDelegations,
+          prices,
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
@@ -180,6 +377,7 @@ export default function Index({ children }: RootLayoutProps) {
             <SiteHeader />
             <section className="container px-4 mt-4">{children}</section>
           </div>
+          <Toaster />
         </ThemeProvider>
       </AppContext.Provider>
     </>
