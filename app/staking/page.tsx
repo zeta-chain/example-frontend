@@ -539,9 +539,9 @@ const StakingPage = () => {
                 <div className="p-4">
                   <div className="text-xs text-muted-foreground">Rewards</div>
                   <div className="text-xl flex items-center">
-                    {parseFloat(formatUnits(stakingRewardsTotal, 18)).toFixed(
-                      4
-                    )}
+                    {parseFloat(
+                      formatUnits(BigInt(parseInt(stakingRewardsTotal)), 18)
+                    ).toFixed(6)}
                     &nbsp;ZETA
                   </div>
                 </div>
