@@ -41,7 +41,7 @@ const LoadingSkeleton = () => {
 }
 
 const BalancesTable = ({
-  sortedBalances,
+  balances,
   showAll,
   toggleShowAll,
   stakingAmountTotal,
@@ -53,12 +53,13 @@ const BalancesTable = ({
           <TableRow className="border-none hover:bg-transparent">
             <TableHead className="pl-4">Asset</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead className="text-right">Price</TableHead>
             <TableHead className="text-right">Balance</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedBalances
-            .slice(0, showAll ? sortedBalances.length : 5)
+          {balances
+            .slice(0, showAll ? balances.length : 5)
             .map((b: any, index: any) => (
               <TableRow key={index} className="border-none">
                 <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
@@ -66,6 +67,9 @@ const BalancesTable = ({
                   <div className="text-xs text-gray-400">{b.chain_name}</div>
                 </TableCell>
                 <TableCell>{b.coin_type}</TableCell>
+                <TableCell className="text-right">
+                  {b.price?.toFixed(2)}
+                </TableCell>
                 <TableCell className="rounded-br-xl rounded-tr-xl text-right">
                   {parseFloat(b.balance).toFixed(2) || "N/A"}
                   {b.ticker === "ZETA" && b.coin_type === "Gas" && (
@@ -97,7 +101,7 @@ const BalancesTable = ({
             ))}
         </TableBody>
       </Table>
-      {sortedBalances?.length > 5 && (
+      {balances?.length > 5 && (
         <div className="my-4 flex justify-center">
           <Button variant="link" onClick={toggleShowAll}>
             {showAll ? "Collapse" : "Show all assets"}
@@ -130,6 +134,7 @@ export default function IndexPage() {
     balancesLoading,
     balancesRefreshing,
     fetchBalances,
+    prices,
     stakingDelegations,
   } = useContext(AppContext)
   const [sortedBalances, setSortedBalances] = useState([])
@@ -144,6 +149,20 @@ export default function IndexPage() {
   const toggleShowAll = () => {
     setShowAll(!showAll)
   }
+
+  const balancesPrices = sortedBalances.map((balance: any) => {
+    const normalizeSymbol = (symbol: string) => symbol.replace(/^[tg]/, "")
+
+    const normalizedSymbol = normalizeSymbol(balance.symbol)
+    const priceObj = prices.find(
+      (price: any) => normalizeSymbol(price.symbol) === normalizedSymbol
+    )
+
+    return {
+      ...balance,
+      price: priceObj ? priceObj.price : null,
+    }
+  })
 
   const stakingAmountTotal = stakingDelegations.reduce((a: any, c: any) => {
     const amount = BigInt(c.balance.amount)
@@ -167,27 +186,42 @@ export default function IndexPage() {
     setSortedBalances(balance)
   }, [balances])
 
+  const balancesTotal = balancesPrices.reduce((a: any, c: any) => {
+    return a + parseFloat(c.balance)
+  }, 0)
+
+  const formatBalanceTotal = (b: string) => {
+    if (parseFloat(b) > 1000) {
+      return parseInt(b).toLocaleString()
+    } else {
+      return parseFloat(b).toFixed(2)
+    }
+  }
+
   return (
     <div>
       <div className="grid sm:grid-cols-3 gap-x-10">
         <div className="sm:col-span-2 overflow-x-scroll">
-          <div className="flex items-center justify-start gap-2 mt-12 mb-6">
-            <h1 className="leading-10 text-2xl font-bold tracking-tight pl-4">
-              Portfolio
-            </h1>
-            <Button size="icon" variant="ghost" onClick={refreshBalances}>
-              <RefreshCw
-                className={`h-4 w-4 ${
-                  (balancesLoading || balancesRefreshing) && "animate-spin"
-                }`}
-              />
-            </Button>
+          <div className="mt-12 mb-8">
+            <div className="px-3 text-sm mb-1 text-gray-400">Total balance</div>
+            <div className="flex items-center justify-start gap-1">
+              <h1 className="px-3 text-4xl font-bold tracking-tight">
+                ${formatBalanceTotal(balancesTotal)}
+              </h1>
+              <Button size="icon" variant="ghost" onClick={refreshBalances}>
+                <RefreshCw
+                  className={`h-4 w-4 ${
+                    (balancesLoading || balancesRefreshing) && "animate-spin"
+                  }`}
+                />
+              </Button>
+            </div>
           </div>
           {balancesLoading ? (
             <LoadingSkeleton />
           ) : isConnected ? (
             <BalancesTable
-              sortedBalances={sortedBalances}
+              balances={balancesPrices}
               showAll={showAll}
               toggleShowAll={toggleShowAll}
               stakingAmountTotal={stakingAmountTotal}
