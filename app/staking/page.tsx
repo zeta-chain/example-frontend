@@ -1,6 +1,5 @@
 "use client"
 
-import { format } from "path"
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { generatePostBodyBroadcast } from "@evmos/provider"
@@ -12,9 +11,8 @@ import {
   createTxRawEIP712,
   signatureToWeb3Extension,
 } from "@evmos/transactions"
-import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
+import { getChainId, getEndpoints } from "@zetachain/networks"
 import { formatDistanceToNow } from "date-fns"
-import { set } from "lodash"
 import {
   AlertTriangle,
   ArrowBigDown,
@@ -74,18 +72,20 @@ const StakingPage = () => {
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
   const [isZetaChain, setIsZetaChain] = useState(false)
-  const [amount, setAmount] = useState<any>("")
-  const [withdrawAmount, setWithdrawAmount] = useState<any>("")
-  const [redelegateAmount, setRedelegateAmount] = useState<any>("")
+  const [amount, setAmount] = useState("")
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [redelegateAmount, setRedelegateAmount] = useState("")
   const { address, isConnected } = useAccount()
   const { toast } = useToast()
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
-  const [withdrawAmountValid, setWithdrawAmountValid] = useState<any>(false)
+  const [withdrawAmountValid, setWithdrawAmountValid] = useState(false)
   const [redelegateValidatorSelected, setRedelegateValidatorSelected] =
     useState<any>(null)
   const [redelegationDropdownOpen, setRedelegationDropdownOpen] =
     useState(false)
+
+  const zetaChainId = getChainId("zeta_testnet") as number
 
   useEffect(() => {
     try {
@@ -99,7 +99,7 @@ const StakingPage = () => {
   }, [withdrawAmount])
 
   useEffect(() => {
-    setIsZetaChain(chain?.id === 7001)
+    setIsZetaChain(chain?.id === zetaChainId)
   }, [chain])
 
   const fetchStakingData = () => {
@@ -140,7 +140,7 @@ const StakingPage = () => {
     return balance ? balance.balance : "0"
   }
 
-  const zetaBalance = findBalance(7001, "Gas")
+  const zetaBalance = findBalance(zetaChainId, "Gas")
 
   const handleSelectValidator = (validator: any) => {
     const same =
@@ -221,7 +221,7 @@ const StakingPage = () => {
     const { account } = await (await fetch(url))?.json()
     const { sequence, account_number } = account?.base_account
     const pubkey = account?.base_account.pub_key.key
-    const chain = { chainId: 7001, cosmosChainId: "athens_7001-1" }
+    const chain = { chainId: zetaChainId, cosmosChainId: "athens_7001-1" }
     const sender = {
       accountAddress,
       sequence,
@@ -644,7 +644,7 @@ const StakingPage = () => {
                               const am = formatUnits(getStakedAmount(addr), 18)
                               const isInt = Number.isInteger(parseFloat(am))
                               setWithdrawAmount(
-                                isInt ? parseInt(am) : am.toString()
+                                isInt ? parseInt(am).toString() : am.toString()
                               )
                             }}
                             variant="link"
