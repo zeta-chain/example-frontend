@@ -69,6 +69,7 @@ const StakingPage = () => {
     validatorsLoading,
     fetchUnbondingDelegations,
     unbondingDelegations,
+    fetchBalances,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -106,6 +107,7 @@ const StakingPage = () => {
     fetchValidators()
     fetchStakingRewards()
     fetchUnbondingDelegations()
+    fetchBalances()
   }
 
   useEffect(() => {
@@ -209,7 +211,8 @@ const StakingPage = () => {
       fee: any,
       memo: string,
       params: any
-    ) => any
+    ) => any,
+    customFee?: { amount: string; denom: string; gas: string }
   ) => {
     const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
     const accountAddress = hexToBech32Address(address as any, "zeta")
@@ -225,7 +228,7 @@ const StakingPage = () => {
       accountNumber: account_number,
       pubkey,
     }
-    const fee = {
+    const fee = customFee || {
       amount: "4000000000000000",
       denom: "azeta",
       gas: "500000",
@@ -272,14 +275,21 @@ const StakingPage = () => {
 
   const handleClaimReward = async () => {
     let result: any = null
+    const validatorAddresses = stakingRewards.map(
+      (r: any) => r.validator_address
+    )
+    const customFee = {
+      amount: "4000000000000000",
+      denom: "azeta",
+      gas: "2000000",
+    }
     try {
       result = await sendCosmosTx(
         {
-          validatorAddresses: stakingRewards.map(
-            (r: any) => r.validator_address
-          ),
+          validatorAddresses,
         },
-        createTxMsgMultipleWithdrawDelegatorReward
+        createTxMsgMultipleWithdrawDelegatorReward,
+        customFee
       )
     } catch (e) {
       console.error(e)
