@@ -1,6 +1,5 @@
 "use client"
 
-import { format } from "path"
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { generatePostBodyBroadcast } from "@evmos/provider"
@@ -14,7 +13,6 @@ import {
 } from "@evmos/transactions"
 import { getChainId, getEndpoints } from "@zetachain/networks"
 import { formatDistanceToNow } from "date-fns"
-import { set } from "lodash"
 import {
   AlertTriangle,
   ArrowBigDown,
