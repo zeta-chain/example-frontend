@@ -69,6 +69,7 @@ const StakingPage = () => {
     validatorsLoading,
     fetchUnbondingDelegations,
     unbondingDelegations,
+    fetchBalances,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -106,6 +107,7 @@ const StakingPage = () => {
     fetchValidators()
     fetchStakingRewards()
     fetchUnbondingDelegations()
+    fetchBalances()
   }
 
   useEffect(() => {
