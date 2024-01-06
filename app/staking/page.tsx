@@ -44,6 +44,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -163,13 +164,15 @@ const StakingPage = () => {
   )
 
   const sortedValidators = validators
-    .filter(
-      (v: any) =>
-        !v.jailed ||
-        delegatedValidatorAddresses.has(v.operator_address) ||
-        unbondingValidatorsAddresses.has(v.operator_address) ||
-        showJailedValidators
-    )
+    .filter((v: any) => {
+      const isJailed = v.jailed
+      const hasStaked = delegatedValidatorAddresses.has(v.operator_address)
+      const hasPendingUnstaking = unbondingValidatorsAddresses.has(
+        v.operator_address
+      )
+
+      return !isJailed || (isJailed && (hasStaked || hasPendingUnstaking))
+    })
     .sort((a: any, b: any) => {
       const aDelegated = delegatedValidatorAddresses.has(a.operator_address)
       const bDelegated = delegatedValidatorAddresses.has(b.operator_address)
@@ -185,6 +188,20 @@ const StakingPage = () => {
       if (a.jailed && !b.jailed) return 1
       if (!a.jailed && b.jailed) return -1
 
+      return b.voting_power - a.voting_power
+    })
+
+  const sortedValidatorsJailed = validators
+    .filter((v: any) => {
+      const isJailed = v.jailed
+      const hasStaked = delegatedValidatorAddresses.has(v.operator_address)
+      const hasPendingUnstaking = unbondingValidatorsAddresses.has(
+        v.operator_address
+      )
+
+      return isJailed && !hasStaked && !hasPendingUnstaking
+    })
+    .sort((a: any, b: any) => {
       return b.voting_power - a.voting_power
     })
 
@@ -394,6 +411,8 @@ const StakingPage = () => {
   }
 
   const ValidatorTable = () => {
+    const jailedValidators = sortedValidators.filter((v: any) => v.jailed)
+
     return (
       <div className="mb-20">
         <Table>
@@ -414,13 +433,16 @@ const StakingPage = () => {
               return (
                 <TableRow
                   key={v.operator_address}
-                  className={`transition-none border-none cursor-pointer ${
-                    v.jailed ? "text-rose-500" : ""
-                  }`}
+                  className="transition-none border-none cursor-pointer"
                   onClick={() => handleSelectValidator(v)}
                 >
-                  <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                  <TableCell
+                    className={`pl-4 rounded-bl-xl rounded-tl-xl flex items-center gap-1 ${
+                      v.jailed ? "text-rose-500" : ""
+                    }`}
+                  >
                     {v.description.moniker}
+                    {v.jailed && <AlertTriangle className="h-4 w-4" />}
                   </TableCell>
                   <TableCell className="text-right">
                     {stakedAmount &&
@@ -448,6 +470,50 @@ const StakingPage = () => {
             })}
           </TableBody>
         </Table>
+        {sortedValidatorsJailed.length > 0 && showJailedValidators && (
+          <div>
+            <Separator className="mx-4 my-4" />
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none hover:bg-transparent">
+                  <TableHead className="text-black flex items-center gap-1">
+                    Jailed Validators
+                    <AlertTriangle className="h-4 w-4" />
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Voting&nbsp;power
+                  </TableHead>
+                  <TableHead className="text-right">Commission</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedValidatorsJailed.map((v: any) => (
+                  <TableRow
+                    key={v.operator_address}
+                    className="transition-none border-none cursor-pointer"
+                    onClick={() => handleSelectValidator(v)}
+                  >
+                    <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl text-rose-500">
+                      {v.description.moniker}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
+                    </TableCell>
+                    <TableCell className="rounded-br-xl rounded-tr-xl text-right">
+                      <span>
+                        {(
+                          parseFloat(v.commission.commission_rates.rate) * 100
+                        ).toFixed(0)}
+                      </span>
+                      %
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
         <div className="my-5 flex justify-center">
           <Button variant="link" onClick={toggleJailedValidators}>
             {showJailedValidators ? "Hide" : "Show"} Jailed Validators
