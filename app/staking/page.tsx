@@ -281,7 +281,7 @@ const StakingPage = () => {
     const customFee = {
       amount: "4000000000000000",
       denom: "azeta",
-      gas: "2000000",
+      gas: (validatorAddresses.length * 100000).toString(),
     }
     try {
       result = await sendCosmosTx(
