@@ -262,6 +262,15 @@ const StakingPage = () => {
       ...(Object.values(txDetails) as [any, any, any, string, any])
     )
     if (address) {
+      if (!(window.ethereum as any)?._metamask) {
+        toast({
+          title: "MetaMask",
+          description:
+            "Currently, only Metamask is supported. Please, make sure that it is set as the default wallet.",
+          variant: "destructive",
+        })
+        return
+      }
       const signature = await window?.ethereum?.request({
         method: "eth_signTypedData_v4",
         params: [address, JSON.stringify(tx.eipToSign)],
