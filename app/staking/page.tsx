@@ -19,6 +19,7 @@ import {
   ArrowBigUp,
   Check,
   ChevronDown,
+  Clock4,
   Gift,
   Globe2,
   Redo2,
@@ -157,28 +158,33 @@ const StakingPage = () => {
     })
   )
 
+  const unbondingValidatorsAddresses = new Set(
+    unbondingDelegations.map((u: any) => u.validator_address)
+  )
+
   const sortedValidators = validators
     .filter(
       (v: any) =>
         !v.jailed ||
         delegatedValidatorAddresses.has(v.operator_address) ||
+        unbondingValidatorsAddresses.has(v.operator_address) ||
         showJailedValidators
     )
     .sort((a: any, b: any) => {
-      const aIsDelegated = delegatedValidatorAddresses.has(a.operator_address)
-      const bIsDelegated = delegatedValidatorAddresses.has(b.operator_address)
-      const aIsJailed = a.jailed
-      const bIsJailed = b.jailed
+      const aDelegated = delegatedValidatorAddresses.has(a.operator_address)
+      const bDelegated = delegatedValidatorAddresses.has(b.operator_address)
+      const aUnbonding = unbondingValidatorsAddresses.has(a.operator_address)
+      const bUnbonding = unbondingValidatorsAddresses.has(b.operator_address)
 
-      // Prioritize validators with user delegations first
-      if (aIsDelegated && !bIsDelegated) return -1
-      if (!aIsDelegated && bIsDelegated) return 1
+      if (aDelegated && !bDelegated) return -1
+      if (!aDelegated && bDelegated) return 1
 
-      // Then sort by jailed status (non-jailed first)
-      if (aIsJailed && !bIsJailed) return 1
-      if (!aIsJailed && bIsJailed) return -1
+      if (aUnbonding && !bUnbonding) return -1
+      if (!aUnbonding && bUnbonding) return 1
 
-      // Finally, sort by voting power
+      if (a.jailed && !b.jailed) return 1
+      if (!a.jailed && b.jailed) return -1
+
       return b.voting_power - a.voting_power
     })
 
@@ -383,7 +389,7 @@ const StakingPage = () => {
 
   const unbondingDelegationsFor = (validatorAddress: string) => {
     return unbondingDelegations.find((x: any) => {
-      return x.validator_address === selectedValidator.operator_address
+      return x.validator_address === validatorAddress
     })?.entries
   }
 
@@ -401,12 +407,15 @@ const StakingPage = () => {
           </TableHeader>
           <TableBody>
             {sortedValidators.map((v: any) => {
+              const unbonding = unbondingDelegationsFor(
+                v.operator_address
+              )?.reduce((a: any, c: any) => a + BigInt(c.balance), BigInt(0))
               const stakedAmount = getStakedAmount(v.operator_address)
               return (
                 <TableRow
                   key={v.operator_address}
                   className={`transition-none border-none cursor-pointer ${
-                    v.jailed ? "text-gray-300" : ""
+                    v.jailed ? "text-rose-500" : ""
                   }`}
                   onClick={() => handleSelectValidator(v)}
                 >
@@ -416,6 +425,12 @@ const StakingPage = () => {
                   <TableCell className="text-right">
                     {stakedAmount &&
                       `${(parseFloat(stakedAmount) / 1e18).toFixed(2)}`}
+                    {unbonding && (
+                      <div className="text-xs flex items-center gap-1 justify-end text-slate-400">
+                        <Clock4 className="w-3 h-3" />
+                        {parseFloat(formatUnits(unbonding, 18)).toFixed(0)}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
@@ -526,7 +541,9 @@ const StakingPage = () => {
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Unstaking</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    Unstaking <Clock4 className="w-3 h-3" />
+                  </div>
                   <div className="text-xl flex items-center">
                     {parseFloat(
                       formatUnits(unbondingDelegationsTotal, 18)
@@ -754,7 +771,9 @@ const StakingPage = () => {
             )}
             {unbondingDelegationsFor(selectedValidator.operator_address) && (
               <Card className="my-4 shadow-none rounded-2xl border-gray-100 text-sm">
-                <div className="mx-3 my-4 font-semibold">Unstaking</div>
+                <div className="mx-3 my-4 font-semibold flex items-center gap-1">
+                  Unstaking <Clock4 className="w-3 h-3" />
+                </div>
                 {unbondingDelegationsFor(
                   selectedValidator.operator_address
                 ).map((x: any) => (
