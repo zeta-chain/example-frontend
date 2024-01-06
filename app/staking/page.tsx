@@ -433,16 +433,18 @@ const StakingPage = () => {
               return (
                 <TableRow
                   key={v.operator_address}
-                  className="transition-none border-none cursor-pointer"
+                  className="transition-none border-none cursor-pointer relative"
                   onClick={() => handleSelectValidator(v)}
                 >
                   <TableCell
-                    className={`pl-4 rounded-bl-xl rounded-tl-xl flex items-center gap-1 ${
+                    className={`pl-4 rounded-bl-xl rounded-tl-xl ${
                       v.jailed ? "text-rose-500" : ""
                     }`}
                   >
-                    {v.description.moniker}
-                    {v.jailed && <AlertTriangle className="h-4 w-4" />}
+                    <div className="flex items-center gap-1">
+                      {v.description.moniker}
+                      {v.jailed && <AlertTriangle className="h-4 w-4" />}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     {stakedAmount &&
@@ -450,7 +452,7 @@ const StakingPage = () => {
                     {unbonding && (
                       <div className="text-xs flex items-center gap-1 justify-end text-slate-400">
                         <Clock4 className="w-3 h-3" />
-                        {parseFloat(formatUnits(unbonding, 18)).toFixed(0)}
+                        {parseFloat(formatUnits(unbonding, 18)).toFixed(2)}
                       </div>
                     )}
                   </TableCell>
