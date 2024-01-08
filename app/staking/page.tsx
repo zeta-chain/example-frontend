@@ -12,6 +12,7 @@ import {
   signatureToWeb3Extension,
 } from "@evmos/transactions"
 import { getChainId, getEndpoints } from "@zetachain/networks"
+import { bech32 } from "bech32"
 import { formatDistanceToNow } from "date-fns"
 import {
   AlertTriangle,
@@ -19,6 +20,8 @@ import {
   ArrowBigUp,
   Check,
   ChevronDown,
+  Clock4,
+  Eye,
   Gift,
   Globe2,
   Redo2,
@@ -43,6 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -68,6 +72,8 @@ const StakingPage = () => {
     fetchUnbondingDelegations,
     unbondingDelegations,
     fetchBalances,
+    observers,
+    fetchObservers,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -88,13 +94,17 @@ const StakingPage = () => {
   const zetaChainId = getChainId("zeta_testnet") as number
 
   useEffect(() => {
-    try {
-      const amount = parseUnits(withdrawAmount.toString(), 18)
-      const staked = BigInt(getStakedAmount(selectedValidator.operator_address))
-      setWithdrawAmountValid(amount > 0 && amount <= staked)
-    } catch (e) {
-      console.error(e)
-      setWithdrawAmountValid(false)
+    if (selectedValidator) {
+      try {
+        const amount = parseUnits(withdrawAmount.toString(), 18)
+        const staked = BigInt(
+          getStakedAmount(selectedValidator.operator_address)
+        )
+        setWithdrawAmountValid(amount > 0 && amount <= staked)
+      } catch (e) {
+        console.error(e)
+        setWithdrawAmountValid(false)
+      }
     }
   }, [withdrawAmount])
 
@@ -108,6 +118,7 @@ const StakingPage = () => {
     fetchStakingRewards()
     fetchUnbondingDelegations()
     fetchBalances()
+    fetchObservers()
   }
 
   useEffect(() => {
@@ -157,28 +168,49 @@ const StakingPage = () => {
     })
   )
 
+  const unbondingValidatorsAddresses = new Set(
+    unbondingDelegations.map((u: any) => u.validator_address)
+  )
+
   const sortedValidators = validators
-    .filter(
-      (v: any) =>
-        !v.jailed ||
-        delegatedValidatorAddresses.has(v.operator_address) ||
-        showJailedValidators
-    )
+    .filter((v: any) => {
+      const isJailed = v.jailed
+      const hasStaked = delegatedValidatorAddresses.has(v.operator_address)
+      const hasPendingUnstaking = unbondingValidatorsAddresses.has(
+        v.operator_address
+      )
+
+      return !isJailed || (isJailed && (hasStaked || hasPendingUnstaking))
+    })
     .sort((a: any, b: any) => {
-      const aIsDelegated = delegatedValidatorAddresses.has(a.operator_address)
-      const bIsDelegated = delegatedValidatorAddresses.has(b.operator_address)
-      const aIsJailed = a.jailed
-      const bIsJailed = b.jailed
+      const aDelegated = delegatedValidatorAddresses.has(a.operator_address)
+      const bDelegated = delegatedValidatorAddresses.has(b.operator_address)
+      const aUnbonding = unbondingValidatorsAddresses.has(a.operator_address)
+      const bUnbonding = unbondingValidatorsAddresses.has(b.operator_address)
 
-      // Prioritize validators with user delegations first
-      if (aIsDelegated && !bIsDelegated) return -1
-      if (!aIsDelegated && bIsDelegated) return 1
+      if (aDelegated && !bDelegated) return -1
+      if (!aDelegated && bDelegated) return 1
 
-      // Then sort by jailed status (non-jailed first)
-      if (aIsJailed && !bIsJailed) return 1
-      if (!aIsJailed && bIsJailed) return -1
+      if (aUnbonding && !bUnbonding) return -1
+      if (!aUnbonding && bUnbonding) return 1
 
-      // Finally, sort by voting power
+      if (a.jailed && !b.jailed) return 1
+      if (!a.jailed && b.jailed) return -1
+
+      return b.voting_power - a.voting_power
+    })
+
+  const sortedValidatorsJailed = validators
+    .filter((v: any) => {
+      const isJailed = v.jailed
+      const hasStaked = delegatedValidatorAddresses.has(v.operator_address)
+      const hasPendingUnstaking = unbondingValidatorsAddresses.has(
+        v.operator_address
+      )
+
+      return isJailed && !hasStaked && !hasPendingUnstaking
+    })
+    .sort((a: any, b: any) => {
       return b.voting_power - a.voting_power
     })
 
@@ -239,6 +271,15 @@ const StakingPage = () => {
       ...(Object.values(txDetails) as [any, any, any, string, any])
     )
     if (address) {
+      if (!(window.ethereum as any)?._metamask) {
+        toast({
+          title: "MetaMask",
+          description:
+            "Currently, only Metamask is supported. Please, make sure that it is set as the default wallet.",
+          variant: "destructive",
+        })
+        return
+      }
       const signature = await window?.ethereum?.request({
         method: "eth_signTypedData_v4",
         params: [address, JSON.stringify(tx.eipToSign)],
@@ -281,7 +322,7 @@ const StakingPage = () => {
     const customFee = {
       amount: "4000000000000000",
       denom: "azeta",
-      gas: "2000000",
+      gas: (validatorAddresses.length * 100000).toString(),
     }
     try {
       result = await sendCosmosTx(
@@ -383,11 +424,13 @@ const StakingPage = () => {
 
   const unbondingDelegationsFor = (validatorAddress: string) => {
     return unbondingDelegations.find((x: any) => {
-      return x.validator_address === selectedValidator.operator_address
+      return x.validator_address === validatorAddress
     })?.entries
   }
 
   const ValidatorTable = () => {
+    const jailedValidators = sortedValidators.filter((v: any) => v.jailed)
+
     return (
       <div className="mb-20">
         <Table>
@@ -401,21 +444,40 @@ const StakingPage = () => {
           </TableHeader>
           <TableBody>
             {sortedValidators.map((v: any) => {
+              const unbonding = unbondingDelegationsFor(
+                v.operator_address
+              )?.reduce((a: any, c: any) => a + BigInt(c.balance), BigInt(0))
               const stakedAmount = getStakedAmount(v.operator_address)
               return (
                 <TableRow
                   key={v.operator_address}
-                  className={`transition-none border-none cursor-pointer ${
-                    v.jailed ? "text-gray-300" : ""
-                  }`}
+                  className="transition-none border-none cursor-pointer relative"
                   onClick={() => handleSelectValidator(v)}
                 >
-                  <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
-                    {v.description.moniker}
+                  <TableCell
+                    className={`pl-4 rounded-bl-xl rounded-tl-xl ${
+                      v.jailed ? "text-rose-500" : ""
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {v.description.moniker}
+                        {v.jailed && <AlertTriangle className="h-4 w-4" />}
+                        {isObserver(v.operator_address) && (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     {stakedAmount &&
                       `${(parseFloat(stakedAmount) / 1e18).toFixed(2)}`}
+                    {unbonding && (
+                      <div className="text-xs flex items-center gap-1 justify-end text-slate-400">
+                        <Clock4 className="w-3 h-3" />
+                        {parseFloat(formatUnits(unbonding, 18)).toFixed(2)}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
@@ -433,6 +495,50 @@ const StakingPage = () => {
             })}
           </TableBody>
         </Table>
+        {sortedValidatorsJailed.length > 0 && showJailedValidators && (
+          <div>
+            <Separator className="mx-4 my-4" />
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none hover:bg-transparent">
+                  <TableHead className="text-black flex items-center gap-1">
+                    Jailed Validators
+                    <AlertTriangle className="h-4 w-4" />
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Voting&nbsp;power
+                  </TableHead>
+                  <TableHead className="text-right">Commission</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedValidatorsJailed.map((v: any) => (
+                  <TableRow
+                    key={v.operator_address}
+                    className="transition-none border-none cursor-pointer"
+                    onClick={() => handleSelectValidator(v)}
+                  >
+                    <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                      {v.description.moniker}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
+                    </TableCell>
+                    <TableCell className="rounded-br-xl rounded-tr-xl text-right">
+                      <span>
+                        {(
+                          parseFloat(v.commission.commission_rates.rate) * 100
+                        ).toFixed(0)}
+                      </span>
+                      %
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
         <div className="my-5 flex justify-center">
           <Button variant="link" onClick={toggleJailedValidators}>
             {showJailedValidators ? "Hide" : "Show"} Jailed Validators
@@ -495,6 +601,22 @@ const StakingPage = () => {
     }
   }
 
+  const isObserver = (address: string) => {
+    const convertToValoper = (address: any) => {
+      try {
+        const decoded = bech32.decode(address)
+        if (decoded.prefix === "zeta") {
+          return bech32.encode("zetavaloper", decoded.words)
+        }
+      } catch (error) {
+        console.error("Error converting address:", error)
+      }
+      return address
+    }
+
+    return observers.find((o: any) => convertToValoper(o.operator) === address)
+  }
+
   return (
     <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
       <div className="sm:col-span-2 overflow-x-scroll">
@@ -526,7 +648,9 @@ const StakingPage = () => {
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Unstaking</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    Unstaking <Clock4 className="w-3 h-3" />
+                  </div>
                   <div className="text-xl flex items-center">
                     {parseFloat(
                       formatUnits(unbondingDelegationsTotal, 18)
@@ -585,6 +709,12 @@ const StakingPage = () => {
             <div className="ml-3 mb-2">
               {selectedValidator?.description.details}
             </div>
+            {isObserver(selectedValidator.operator_address) && (
+              <div className="ml-3 my-4 flex items-center text-sm">
+                <Eye className="h-4 w-4 mr-1" />
+                <div>This is an observer validator</div>
+              </div>
+            )}
             {selectedValidator?.description.website && (
               <div>
                 <Button variant="link" asChild className="p-3">
@@ -754,7 +884,9 @@ const StakingPage = () => {
             )}
             {unbondingDelegationsFor(selectedValidator.operator_address) && (
               <Card className="my-4 shadow-none rounded-2xl border-gray-100 text-sm">
-                <div className="mx-3 my-4 font-semibold">Unstaking</div>
+                <div className="mx-3 my-4 font-semibold flex items-center gap-1">
+                  Unstaking <Clock4 className="w-3 h-3" />
+                </div>
                 {unbondingDelegationsFor(
                   selectedValidator.operator_address
                 ).map((x: any) => (
@@ -779,7 +911,11 @@ const StakingPage = () => {
               </div>
             </div>
             <Popover>
-              <PopoverTrigger className="px-3 w-full" disabled={!isZetaChain}>
+              <PopoverTrigger
+                className="px-3 w-full"
+                disabled={!isZetaChain}
+                asChild
+              >
                 <Button
                   className="w-full"
                   variant="outline"
