@@ -12,6 +12,7 @@ import {
   signatureToWeb3Extension,
 } from "@evmos/transactions"
 import { getChainId, getEndpoints } from "@zetachain/networks"
+import { bech32 } from "bech32"
 import { formatDistanceToNow } from "date-fns"
 import {
   AlertTriangle,
@@ -20,6 +21,7 @@ import {
   Check,
   ChevronDown,
   Clock4,
+  Eye,
   Gift,
   Globe2,
   Redo2,
@@ -70,6 +72,8 @@ const StakingPage = () => {
     fetchUnbondingDelegations,
     unbondingDelegations,
     fetchBalances,
+    observers,
+    fetchObservers,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -114,6 +118,7 @@ const StakingPage = () => {
     fetchStakingRewards()
     fetchUnbondingDelegations()
     fetchBalances()
+    fetchObservers()
   }
 
   useEffect(() => {
@@ -454,9 +459,14 @@ const StakingPage = () => {
                       v.jailed ? "text-rose-500" : ""
                     }`}
                   >
-                    <div className="flex items-center gap-1">
-                      {v.description.moniker}
-                      {v.jailed && <AlertTriangle className="h-4 w-4" />}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {v.description.moniker}
+                        {v.jailed && <AlertTriangle className="h-4 w-4" />}
+                        {isObserver(v.operator_address) && (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -508,7 +518,7 @@ const StakingPage = () => {
                     className="transition-none border-none cursor-pointer"
                     onClick={() => handleSelectValidator(v)}
                   >
-                    <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl text-rose-500">
+                    <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
                       {v.description.moniker}
                     </TableCell>
                     <TableCell className="text-right">
@@ -589,6 +599,22 @@ const StakingPage = () => {
         })
       }
     }
+  }
+
+  const isObserver = (address: string) => {
+    const convertToValoper = (address: any) => {
+      try {
+        const decoded = bech32.decode(address)
+        if (decoded.prefix === "zeta") {
+          return bech32.encode("zetavaloper", decoded.words)
+        }
+      } catch (error) {
+        console.error("Error converting address:", error)
+      }
+      return address
+    }
+
+    return observers.find((o: any) => convertToValoper(o.operator) === address)
   }
 
   return (
@@ -683,6 +709,12 @@ const StakingPage = () => {
             <div className="ml-3 mb-2">
               {selectedValidator?.description.details}
             </div>
+            {isObserver(selectedValidator.operator_address) && (
+              <div className="ml-3 my-4 flex items-center text-sm">
+                <Eye className="h-4 w-4 mr-1" />
+                <div>This is an observer validator</div>
+              </div>
+            )}
             {selectedValidator?.description.website && (
               <div>
                 <Button variant="link" asChild className="p-3">
