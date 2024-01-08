@@ -110,7 +110,7 @@ export default function Index({ children }: RootLayoutProps) {
       try {
         if (!isConnected) {
           setValidatorsLoading(false)
-          return setValidators([])
+          setValidators([])
         }
         const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
 
