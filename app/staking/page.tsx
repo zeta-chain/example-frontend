@@ -879,7 +879,11 @@ const StakingPage = () => {
               </div>
             </div>
             <Popover>
-              <PopoverTrigger className="px-3 w-full" disabled={!isZetaChain}>
+              <PopoverTrigger
+                className="px-3 w-full"
+                disabled={!isZetaChain}
+                asChild
+              >
                 <Button
                   className="w-full"
                   variant="outline"
