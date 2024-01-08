@@ -75,7 +75,7 @@ const StakingPage = () => {
   const [amount, setAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [redelegateAmount, setRedelegateAmount] = useState("")
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, connector } = useAccount()
   const { toast } = useToast()
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
@@ -214,6 +214,7 @@ const StakingPage = () => {
     ) => any,
     customFee?: { amount: string; denom: string; gas: string }
   ) => {
+    const provider = connector?.options.getProvider()
     const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
     const accountAddress = hexToBech32Address(address as any, "zeta")
     const url = `${api}/cosmos/auth/v1beta1/accounts/${accountAddress}`
@@ -239,7 +240,7 @@ const StakingPage = () => {
       ...(Object.values(txDetails) as [any, any, any, string, any])
     )
     if (address) {
-      const signature = await window?.ethereum?.request({
+      const signature = await provider.request({
         method: "eth_signTypedData_v4",
         params: [address, JSON.stringify(tx.eipToSign)],
       })

@@ -1,7 +1,12 @@
 "use client"
 
 import "@/styles/globals.css"
-import { injectedWallet, metaMaskWallet } from "@rainbow-me/rainbowkit/wallets"
+import {
+  injectedWallet,
+  metaMaskWallet,
+  okxWallet,
+  xdefiWallet,
+} from "@rainbow-me/rainbowkit/wallets"
 
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
@@ -44,6 +49,8 @@ const connectors = connectorsForWallets([
     wallets: [
       injectedWallet({ chains }),
       metaMaskWallet({ projectId: "PROJECT_ID", chains }),
+      xdefiWallet({ chains }),
+      okxWallet({ projectId: "PROJECT_ID", chains }),
     ],
   },
 ])
