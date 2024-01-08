@@ -90,13 +90,17 @@ const StakingPage = () => {
   const zetaChainId = getChainId("zeta_testnet") as number
 
   useEffect(() => {
-    try {
-      const amount = parseUnits(withdrawAmount.toString(), 18)
-      const staked = BigInt(getStakedAmount(selectedValidator.operator_address))
-      setWithdrawAmountValid(amount > 0 && amount <= staked)
-    } catch (e) {
-      console.error(e)
-      setWithdrawAmountValid(false)
+    if (selectedValidator) {
+      try {
+        const amount = parseUnits(withdrawAmount.toString(), 18)
+        const staked = BigInt(
+          getStakedAmount(selectedValidator.operator_address)
+        )
+        setWithdrawAmountValid(amount > 0 && amount <= staked)
+      } catch (e) {
+        console.error(e)
+        setWithdrawAmountValid(false)
+      }
     }
   }, [withdrawAmount])
 
