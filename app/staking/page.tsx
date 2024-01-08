@@ -696,7 +696,7 @@ const StakingPage = () => {
       </div>
       <div className="sm:col-span-1 relative order-first sm:order-last">
         {selectedValidator && (
-          <div className="sticky transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
+          <div className="sticky max-h-[75vh] transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
             <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
               {selectedValidator?.description.moniker}
             </h1>
