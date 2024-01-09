@@ -889,8 +889,8 @@ const StakingPage = () => {
                 </div>
                 {unbondingDelegationsFor(
                   selectedValidator.operator_address
-                ).map((x: any) => (
-                  <div className="mx-3 my-4 grid grid-cols-2">
+                ).map((x: any, key: number) => (
+                  <div key={key} className="mx-3 my-4 grid grid-cols-2">
                     <div>
                       {formatDistanceToNow(x.completion_time, {
                         addSuffix: true,
