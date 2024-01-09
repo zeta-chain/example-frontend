@@ -748,7 +748,7 @@ const StakingPage = () => {
                 <div className="p-2">
                   <div className="grid grid-cols-2 gap-2">
                     <Popover onOpenChange={() => setWithdrawAmount("")}>
-                      <PopoverTrigger disabled={!isZetaChain}>
+                      <PopoverTrigger asChild disabled={!isZetaChain}>
                         <Button
                           variant="outline"
                           className="rounded-lg w-full"
@@ -793,7 +793,7 @@ const StakingPage = () => {
                       </PopoverContent>
                     </Popover>
                     <Popover>
-                      <PopoverTrigger disabled={!isZetaChain}>
+                      <PopoverTrigger asChild disabled={!isZetaChain}>
                         <Button
                           variant="outline"
                           className="rounded-lg w-full"
@@ -816,7 +816,7 @@ const StakingPage = () => {
                           open={redelegationDropdownOpen}
                           onOpenChange={setRedelegationDropdownOpen}
                         >
-                          <PopoverTrigger>
+                          <PopoverTrigger asChild>
                             <Button
                               className="w-full flex justify-between px-3"
                               variant="outline"
