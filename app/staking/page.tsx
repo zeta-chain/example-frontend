@@ -662,8 +662,13 @@ const StakingPage = () => {
     )
   }
 
-  const handleCopy = (x: any) => {
-    navigator.clipboard.writeText(x)
+  const handleCopy = async (x: any) => {
+    await navigator.clipboard.writeText(x)
+    toast({
+      title: "Copied to clipboard",
+      description: <div className="text-xs">{x}</div>,
+      variant: "default",
+    })
   }
 
   return (
@@ -757,13 +762,6 @@ const StakingPage = () => {
                 <DropdownMenuContent className="border-none shadow-2xl rounded-lg">
                   <DropdownMenuItem
                     onClick={() =>
-                      handleCopy(selectedValidator.operator_address)
-                    }
-                  >
-                    {shortenAddress(selectedValidator.operator_address)}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
                       handleCopy(
                         convertToBech32(
                           selectedValidator.operator_address,
@@ -778,6 +776,13 @@ const StakingPage = () => {
                         "zeta"
                       )
                     )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(selectedValidator.operator_address)
+                    }
+                  >
+                    {shortenAddress(selectedValidator.operator_address)}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
