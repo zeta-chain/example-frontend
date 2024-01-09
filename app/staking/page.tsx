@@ -21,6 +21,7 @@ import {
   Check,
   ChevronDown,
   Clock4,
+  Copy,
   Eye,
   Gift,
   Globe2,
@@ -30,7 +31,10 @@ import {
 import { formatUnits, parseUnits } from "viem"
 import { useAccount, useNetwork } from "wagmi"
 
-import { hexToBech32Address } from "@/lib/hexToBech32Address"
+import {
+  bech32ToHexAddress,
+  hexToBech32Address,
+} from "@/lib/hexToBech32Address"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -40,6 +44,12 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
@@ -601,20 +611,59 @@ const StakingPage = () => {
     }
   }
 
-  const isObserver = (address: string) => {
-    const convertToValoper = (address: any) => {
+  function shortenAddress(address: any) {
+    let isBech32 = false
+    try {
+      isBech32 = !!bech32.decode(address)
+    } catch (error) {}
+    if (isBech32) {
       try {
         const decoded = bech32.decode(address)
-        if (decoded.prefix === "zeta") {
-          return bech32.encode("zetavaloper", decoded.words)
+        const fullAddress = bech32.encode(decoded.prefix, decoded.words)
+
+        const dataPartStart = fullAddress.indexOf("1") + 1
+
+        if (fullAddress.length - dataPartStart > 8) {
+          const start = fullAddress.substring(dataPartStart, dataPartStart + 4)
+          const end = fullAddress.slice(-4)
+          return `${decoded.prefix}1${start}...${end}`
+        } else {
+          return fullAddress
         }
       } catch (error) {
-        console.error("Error converting address:", error)
+        return address
       }
+    } else if (address.startsWith("0x")) {
+      if (address.length > 10) {
+        const start = address.slice(2, 6)
+        const end = address.slice(-4)
+        return `0x${start}...${end}`
+      } else {
+        return address
+      }
+    } else {
       return address
     }
+  }
 
-    return observers.find((o: any) => convertToValoper(o.operator) === address)
+  const convertToBech32 = (address: any, prefix: string) => {
+    try {
+      const decoded = bech32.decode(address)
+      return bech32.encode(prefix, decoded.words)
+    } catch (error) {
+      console.error("Error converting address:", error)
+    }
+    return address
+  }
+
+  const isObserver = (address: string) => {
+    return observers.find(
+      (o: any) => convertToBech32(o.operator, "zetavaloper") === address
+    )
+  }
+
+  const handleCopy = (x: any) => {
+    navigator.clipboard.writeText(x)
   }
 
   return (
@@ -697,8 +746,52 @@ const StakingPage = () => {
       <div className="sm:col-span-1 relative order-first sm:order-last">
         {selectedValidator && (
           <div className="sticky max-h-[75vh] transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
-            <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
+            <h1 className="text-2xl flex items-center gap-2 font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
               {selectedValidator?.description.moniker}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="border-none shadow-2xl rounded-lg">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(selectedValidator.operator_address)
+                    }
+                  >
+                    {shortenAddress(selectedValidator.operator_address)}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(
+                        convertToBech32(
+                          selectedValidator.operator_address,
+                          "zeta"
+                        )
+                      )
+                    }
+                  >
+                    {shortenAddress(
+                      convertToBech32(
+                        selectedValidator.operator_address,
+                        "zeta"
+                      )
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(
+                        bech32ToHexAddress(selectedValidator.operator_address)
+                      )
+                    }
+                  >
+                    {shortenAddress(
+                      bech32ToHexAddress(selectedValidator.operator_address)
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </h1>
             {selectedValidator.jailed && (
               <div className="ml-3 mb-4 flex items-center text-rose-500 text-sm">
