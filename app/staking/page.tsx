@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
@@ -96,6 +96,8 @@ const StakingPage = () => {
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
   const [withdrawAmountValid, setWithdrawAmountValid] = useState(false)
+  const [selectedValidatorSelfDelegation, setSelectedValidatorSelfDelegation] =
+    useState<any>(null)
   const [redelegateValidatorSelected, setRedelegateValidatorSelected] =
     useState<any>(null)
   const [redelegationDropdownOpen, setRedelegationDropdownOpen] =
@@ -163,7 +165,7 @@ const StakingPage = () => {
 
   const zetaBalance = findBalance(zetaChainId, "Gas")
 
-  const handleSelectValidator = (validator: any) => {
+  const handleSelectValidator = async (validator: any) => {
     const same =
       selectedValidator &&
       validator.operator_address === selectedValidator.operator_address
@@ -244,6 +246,28 @@ const StakingPage = () => {
       </div>
     )
   }
+
+  const fetchSelfDelegation = useCallback(async () => {
+    if (!selectedValidator) setSelectedValidatorSelfDelegation(null)
+    try {
+      if (selectedValidator) {
+        const addr = selectedValidator.operator_address
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const delegator = convertToBech32(addr, "zeta")
+        const url = `${api}/cosmos/staking/v1beta1/validators/${addr}/delegations/${delegator}`
+        const response = await fetch(url)
+        const data = await response.json()
+        const amount = data?.delegation_response?.balance?.amount
+        setSelectedValidatorSelfDelegation(amount / selectedValidator.tokens)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [selectedValidator])
+
+  useEffect(() => {
+    fetchSelfDelegation()
+  }, [selectedValidator])
 
   const sendCosmosTx = async (
     params: any,
@@ -671,6 +695,26 @@ const StakingPage = () => {
     })
   }
 
+  const formatSelfDelegation = (selfDelegation: any) => {
+    let percentage = selfDelegation * 100
+    let numStr = percentage.toString()
+    let decimalIndex = numStr.indexOf(".")
+    if (decimalIndex === -1) {
+      return numStr
+    }
+    let meaningfulDigits = 0
+    let index = decimalIndex + 1
+    while (meaningfulDigits < 2 && index < numStr.length) {
+      if (numStr[index] !== "0") {
+        meaningfulDigits++
+      }
+      index++
+    }
+    let digitsAfterDecimal = index - decimalIndex - 1
+
+    return percentage.toFixed(digitsAfterDecimal)
+  }
+
   return (
     <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
       <div className="sm:col-span-2 overflow-x-scroll">
@@ -1006,6 +1050,13 @@ const StakingPage = () => {
               <div className="text-sm">Commission</div>
               <div className="text-sm text-right font-semibold">
                 {selectedValidator.commission.commission_rates.rate * 100}%
+              </div>
+            </div>
+            <div className="mx-3 my-4 grid grid-cols-2">
+              <div className="text-sm">Self-delegation</div>
+              <div className="text-sm text-right font-semibold">
+                {selectedValidatorSelfDelegation &&
+                  formatSelfDelegation(selectedValidatorSelfDelegation) + "%"}
               </div>
             </div>
             <Popover>
