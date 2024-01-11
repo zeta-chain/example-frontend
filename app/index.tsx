@@ -151,8 +151,7 @@ export default function Index({ children }: RootLayoutProps) {
           }
         }
         const pool = (await fetchBonded())?.pool
-        const tokens =
-          parseInt(pool.bonded_tokens) + parseInt(pool.not_bonded_tokens)
+        const tokens = parseInt(pool.bonded_tokens)
         await fetchPage(nextKey)
         allValidators = allValidators.map((v) => {
           return {
