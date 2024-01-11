@@ -41,8 +41,24 @@ export default function Index({ children }: RootLayoutProps) {
   const [stakingDelegations, setStakingDelegations] = useState<any>([])
   const [stakingRewards, setStakingRewards] = useState<any>([])
   const [unbondingDelegations, setUnbondingDelegations] = useState<any>([])
+  const [observers, setObservers] = useState<any>([])
   const [prices, setPrices] = useState<any>([])
   const { address, isConnected } = useAccount()
+
+  const fetchObservers = useCallback(
+    debounce(async () => {
+      try {
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const url = `${api}/zeta-chain/observer/nodeAccount`
+        const response = await fetch(url)
+        const data = await response.json()
+        setObservers(data.NodeAccount)
+      } catch (e) {
+        console.error(e)
+      }
+    }, 500),
+    []
+  )
 
   const fetchUnbondingDelegations = useCallback(
     debounce(async () => {
@@ -110,7 +126,7 @@ export default function Index({ children }: RootLayoutProps) {
       try {
         if (!isConnected) {
           setValidatorsLoading(false)
-          return setValidators([])
+          setValidators([])
         }
         const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
 
@@ -135,8 +151,7 @@ export default function Index({ children }: RootLayoutProps) {
           }
         }
         const pool = (await fetchBonded())?.pool
-        const tokens =
-          parseInt(pool.bonded_tokens) + parseInt(pool.not_bonded_tokens)
+        const tokens = parseInt(pool.bonded_tokens)
         await fetchPage(nextKey)
         allValidators = allValidators.map((v) => {
           return {
@@ -370,6 +385,8 @@ export default function Index({ children }: RootLayoutProps) {
           unbondingDelegations,
           fetchUnbondingDelegations,
           prices,
+          fetchObservers,
+          observers,
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>

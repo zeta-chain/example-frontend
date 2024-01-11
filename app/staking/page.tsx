@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext, useEffect, useState } from "react"
+import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
 import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
@@ -12,6 +12,7 @@ import {
   signatureToWeb3Extension,
 } from "@evmos/transactions"
 import { getChainId, getEndpoints } from "@zetachain/networks"
+import { bech32 } from "bech32"
 import { formatDistanceToNow } from "date-fns"
 import {
   AlertTriangle,
@@ -19,6 +20,9 @@ import {
   ArrowBigUp,
   Check,
   ChevronDown,
+  Clock4,
+  Copy,
+  Eye,
   Gift,
   Globe2,
   Redo2,
@@ -27,7 +31,10 @@ import {
 import { formatUnits, parseUnits } from "viem"
 import { useAccount, useNetwork } from "wagmi"
 
-import { hexToBech32Address } from "@/lib/hexToBech32Address"
+import {
+  bech32ToHexAddress,
+  hexToBech32Address,
+} from "@/lib/hexToBech32Address"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -37,12 +44,19 @@ import {
   CommandInput,
   CommandItem,
 } from "@/components/ui/command"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -68,6 +82,8 @@ const StakingPage = () => {
     fetchUnbondingDelegations,
     unbondingDelegations,
     fetchBalances,
+    observers,
+    fetchObservers,
   } = useContext(AppContext)
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
@@ -80,6 +96,8 @@ const StakingPage = () => {
   const { chain } = useNetwork()
   const [showJailedValidators, setShowJailedValidators] = useState(false)
   const [withdrawAmountValid, setWithdrawAmountValid] = useState(false)
+  const [selectedValidatorSelfDelegation, setSelectedValidatorSelfDelegation] =
+    useState<any>(null)
   const [redelegateValidatorSelected, setRedelegateValidatorSelected] =
     useState<any>(null)
   const [redelegationDropdownOpen, setRedelegationDropdownOpen] =
@@ -88,13 +106,17 @@ const StakingPage = () => {
   const zetaChainId = getChainId("zeta_testnet") as number
 
   useEffect(() => {
-    try {
-      const amount = parseUnits(withdrawAmount.toString(), 18)
-      const staked = BigInt(getStakedAmount(selectedValidator.operator_address))
-      setWithdrawAmountValid(amount > 0 && amount <= staked)
-    } catch (e) {
-      console.error(e)
-      setWithdrawAmountValid(false)
+    if (selectedValidator) {
+      try {
+        const amount = parseUnits(withdrawAmount.toString(), 18)
+        const staked = BigInt(
+          getStakedAmount(selectedValidator.operator_address)
+        )
+        setWithdrawAmountValid(amount > 0 && amount <= staked)
+      } catch (e) {
+        console.error(e)
+        setWithdrawAmountValid(false)
+      }
     }
   }, [withdrawAmount])
 
@@ -108,6 +130,7 @@ const StakingPage = () => {
     fetchStakingRewards()
     fetchUnbondingDelegations()
     fetchBalances()
+    fetchObservers()
   }
 
   useEffect(() => {
@@ -142,7 +165,7 @@ const StakingPage = () => {
 
   const zetaBalance = findBalance(zetaChainId, "Gas")
 
-  const handleSelectValidator = (validator: any) => {
+  const handleSelectValidator = async (validator: any) => {
     const same =
       selectedValidator &&
       validator.operator_address === selectedValidator.operator_address
@@ -157,28 +180,49 @@ const StakingPage = () => {
     })
   )
 
+  const unbondingValidatorsAddresses = new Set(
+    unbondingDelegations.map((u: any) => u.validator_address)
+  )
+
   const sortedValidators = validators
-    .filter(
-      (v: any) =>
-        !v.jailed ||
-        delegatedValidatorAddresses.has(v.operator_address) ||
-        showJailedValidators
-    )
+    .filter((v: any) => {
+      const isJailed = v.jailed
+      const hasStaked = delegatedValidatorAddresses.has(v.operator_address)
+      const hasPendingUnstaking = unbondingValidatorsAddresses.has(
+        v.operator_address
+      )
+
+      return !isJailed || (isJailed && (hasStaked || hasPendingUnstaking))
+    })
     .sort((a: any, b: any) => {
-      const aIsDelegated = delegatedValidatorAddresses.has(a.operator_address)
-      const bIsDelegated = delegatedValidatorAddresses.has(b.operator_address)
-      const aIsJailed = a.jailed
-      const bIsJailed = b.jailed
+      const aDelegated = delegatedValidatorAddresses.has(a.operator_address)
+      const bDelegated = delegatedValidatorAddresses.has(b.operator_address)
+      const aUnbonding = unbondingValidatorsAddresses.has(a.operator_address)
+      const bUnbonding = unbondingValidatorsAddresses.has(b.operator_address)
 
-      // Prioritize validators with user delegations first
-      if (aIsDelegated && !bIsDelegated) return -1
-      if (!aIsDelegated && bIsDelegated) return 1
+      if (aDelegated && !bDelegated) return -1
+      if (!aDelegated && bDelegated) return 1
 
-      // Then sort by jailed status (non-jailed first)
-      if (aIsJailed && !bIsJailed) return 1
-      if (!aIsJailed && bIsJailed) return -1
+      if (aUnbonding && !bUnbonding) return -1
+      if (!aUnbonding && bUnbonding) return 1
 
-      // Finally, sort by voting power
+      if (a.jailed && !b.jailed) return 1
+      if (!a.jailed && b.jailed) return -1
+
+      return b.voting_power - a.voting_power
+    })
+
+  const sortedValidatorsJailed = validators
+    .filter((v: any) => {
+      const isJailed = v.jailed
+      const hasStaked = delegatedValidatorAddresses.has(v.operator_address)
+      const hasPendingUnstaking = unbondingValidatorsAddresses.has(
+        v.operator_address
+      )
+
+      return isJailed && !hasStaked && !hasPendingUnstaking
+    })
+    .sort((a: any, b: any) => {
       return b.voting_power - a.voting_power
     })
 
@@ -202,6 +246,28 @@ const StakingPage = () => {
       </div>
     )
   }
+
+  const fetchSelfDelegation = useCallback(async () => {
+    if (!selectedValidator) setSelectedValidatorSelfDelegation(null)
+    try {
+      if (selectedValidator) {
+        const addr = selectedValidator.operator_address
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const delegator = convertToBech32(addr, "zeta")
+        const url = `${api}/cosmos/staking/v1beta1/validators/${addr}/delegations/${delegator}`
+        const response = await fetch(url)
+        const data = await response.json()
+        const amount = data?.delegation_response?.balance?.amount
+        setSelectedValidatorSelfDelegation(amount / selectedValidator.tokens)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, [selectedValidator])
+
+  useEffect(() => {
+    fetchSelfDelegation()
+  }, [selectedValidator])
 
   const sendCosmosTx = async (
     params: any,
@@ -282,7 +348,7 @@ const StakingPage = () => {
     const customFee = {
       amount: "4000000000000000",
       denom: "azeta",
-      gas: "2000000",
+      gas: (validatorAddresses.length * 100000).toString(),
     }
     try {
       result = await sendCosmosTx(
@@ -384,11 +450,13 @@ const StakingPage = () => {
 
   const unbondingDelegationsFor = (validatorAddress: string) => {
     return unbondingDelegations.find((x: any) => {
-      return x.validator_address === selectedValidator.operator_address
+      return x.validator_address === validatorAddress
     })?.entries
   }
 
   const ValidatorTable = () => {
+    const jailedValidators = sortedValidators.filter((v: any) => v.jailed)
+
     return (
       <div className="mb-20">
         <Table>
@@ -402,21 +470,40 @@ const StakingPage = () => {
           </TableHeader>
           <TableBody>
             {sortedValidators.map((v: any) => {
+              const unbonding = unbondingDelegationsFor(
+                v.operator_address
+              )?.reduce((a: any, c: any) => a + BigInt(c.balance), BigInt(0))
               const stakedAmount = getStakedAmount(v.operator_address)
               return (
                 <TableRow
                   key={v.operator_address}
-                  className={`transition-none border-none cursor-pointer ${
-                    v.jailed ? "text-gray-300" : ""
-                  }`}
+                  className="transition-none border-none cursor-pointer relative"
                   onClick={() => handleSelectValidator(v)}
                 >
-                  <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
-                    {v.description.moniker}
+                  <TableCell
+                    className={`pl-4 rounded-bl-xl rounded-tl-xl ${
+                      v.jailed ? "text-rose-500" : ""
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-1">
+                        {v.description.moniker}
+                        {v.jailed && <AlertTriangle className="h-4 w-4" />}
+                        {isObserver(v.operator_address) && (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     {stakedAmount &&
                       `${(parseFloat(stakedAmount) / 1e18).toFixed(2)}`}
+                    {unbonding && (
+                      <div className="text-xs flex items-center gap-1 justify-end text-slate-400">
+                        <Clock4 className="w-3 h-3" />
+                        {parseFloat(formatUnits(unbonding, 18)).toFixed(2)}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
@@ -434,6 +521,50 @@ const StakingPage = () => {
             })}
           </TableBody>
         </Table>
+        {sortedValidatorsJailed.length > 0 && showJailedValidators && (
+          <div>
+            <Separator className="mx-4 my-4" />
+            <Table>
+              <TableHeader>
+                <TableRow className="border-none hover:bg-transparent">
+                  <TableHead className="text-black flex items-center gap-1">
+                    Jailed Validators
+                    <AlertTriangle className="h-4 w-4" />
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Voting&nbsp;power
+                  </TableHead>
+                  <TableHead className="text-right">Commission</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedValidatorsJailed.map((v: any) => (
+                  <TableRow
+                    key={v.operator_address}
+                    className="transition-none border-none cursor-pointer"
+                    onClick={() => handleSelectValidator(v)}
+                  >
+                    <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                      {v.description.moniker}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
+                    </TableCell>
+                    <TableCell className="rounded-br-xl rounded-tr-xl text-right">
+                      <span>
+                        {(
+                          parseFloat(v.commission.commission_rates.rate) * 100
+                        ).toFixed(0)}
+                      </span>
+                      %
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
         <div className="my-5 flex justify-center">
           <Button variant="link" onClick={toggleJailedValidators}>
             {showJailedValidators ? "Hide" : "Show"} Jailed Validators
@@ -496,6 +627,86 @@ const StakingPage = () => {
     }
   }
 
+  function shortenAddress(address: any) {
+    let isBech32 = false
+    try {
+      isBech32 = !!bech32.decode(address)
+    } catch (error) {}
+    if (isBech32) {
+      try {
+        const decoded = bech32.decode(address)
+        const fullAddress = bech32.encode(decoded.prefix, decoded.words)
+
+        const dataPartStart = fullAddress.indexOf("1") + 1
+
+        if (fullAddress.length - dataPartStart > 8) {
+          const start = fullAddress.substring(dataPartStart, dataPartStart + 4)
+          const end = fullAddress.slice(-4)
+          return `${decoded.prefix}1${start}...${end}`
+        } else {
+          return fullAddress
+        }
+      } catch (error) {
+        return address
+      }
+    } else if (address.startsWith("0x")) {
+      if (address.length > 10) {
+        const start = address.slice(2, 6)
+        const end = address.slice(-4)
+        return `0x${start}...${end}`
+      } else {
+        return address
+      }
+    } else {
+      return address
+    }
+  }
+
+  const convertToBech32 = (address: any, prefix: string) => {
+    try {
+      const decoded = bech32.decode(address)
+      return bech32.encode(prefix, decoded.words)
+    } catch (error) {
+      console.error("Error converting address:", error)
+    }
+    return address
+  }
+
+  const isObserver = (address: string) => {
+    return observers.find(
+      (o: any) => convertToBech32(o.operator, "zetavaloper") === address
+    )
+  }
+
+  const handleCopy = async (x: any) => {
+    await navigator.clipboard.writeText(x)
+    toast({
+      title: "Copied to clipboard",
+      description: <div className="text-xs">{x}</div>,
+      variant: "default",
+    })
+  }
+
+  const formatSelfDelegation = (selfDelegation: any) => {
+    let percentage = selfDelegation * 100
+    let numStr = percentage.toString()
+    let decimalIndex = numStr.indexOf(".")
+    if (decimalIndex === -1) {
+      return numStr
+    }
+    let meaningfulDigits = 0
+    let index = decimalIndex + 1
+    while (meaningfulDigits < 2 && index < numStr.length) {
+      if (numStr[index] !== "0") {
+        meaningfulDigits++
+      }
+      index++
+    }
+    let digitsAfterDecimal = index - decimalIndex - 1
+
+    return percentage.toFixed(digitsAfterDecimal)
+  }
+
   return (
     <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
       <div className="sm:col-span-2 overflow-x-scroll">
@@ -527,7 +738,9 @@ const StakingPage = () => {
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Unstaking</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    Unstaking <Clock4 className="w-3 h-3" />
+                  </div>
                   <div className="text-xl flex items-center">
                     {parseFloat(
                       formatUnits(unbondingDelegationsTotal, 18)
@@ -573,9 +786,53 @@ const StakingPage = () => {
       </div>
       <div className="sm:col-span-1 relative order-first sm:order-last">
         {selectedValidator && (
-          <div className="sticky transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
-            <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
+          <div className="sticky max-h-[75vh] transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
+            <h1 className="text-2xl flex items-center gap-2 font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
               {selectedValidator?.description.moniker}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost">
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="border-none shadow-2xl rounded-lg">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(
+                        convertToBech32(
+                          selectedValidator.operator_address,
+                          "zeta"
+                        )
+                      )
+                    }
+                  >
+                    {shortenAddress(
+                      convertToBech32(
+                        selectedValidator.operator_address,
+                        "zeta"
+                      )
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(selectedValidator.operator_address)
+                    }
+                  >
+                    {shortenAddress(selectedValidator.operator_address)}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleCopy(
+                        bech32ToHexAddress(selectedValidator.operator_address)
+                      )
+                    }
+                  >
+                    {shortenAddress(
+                      bech32ToHexAddress(selectedValidator.operator_address)
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </h1>
             {selectedValidator.jailed && (
               <div className="ml-3 mb-4 flex items-center text-rose-500 text-sm">
@@ -586,6 +843,12 @@ const StakingPage = () => {
             <div className="ml-3 mb-2">
               {selectedValidator?.description.details}
             </div>
+            {isObserver(selectedValidator.operator_address) && (
+              <div className="ml-3 my-4 flex items-center text-sm">
+                <Eye className="h-4 w-4 mr-1" />
+                <div>This is an observer validator</div>
+              </div>
+            )}
             {selectedValidator?.description.website && (
               <div>
                 <Button variant="link" asChild className="p-3">
@@ -619,7 +882,7 @@ const StakingPage = () => {
                 <div className="p-2">
                   <div className="grid grid-cols-2 gap-2">
                     <Popover onOpenChange={() => setWithdrawAmount("")}>
-                      <PopoverTrigger disabled={!isZetaChain}>
+                      <PopoverTrigger asChild disabled={!isZetaChain}>
                         <Button
                           variant="outline"
                           className="rounded-lg w-full"
@@ -664,7 +927,7 @@ const StakingPage = () => {
                       </PopoverContent>
                     </Popover>
                     <Popover>
-                      <PopoverTrigger disabled={!isZetaChain}>
+                      <PopoverTrigger asChild disabled={!isZetaChain}>
                         <Button
                           variant="outline"
                           className="rounded-lg w-full"
@@ -687,7 +950,7 @@ const StakingPage = () => {
                           open={redelegationDropdownOpen}
                           onOpenChange={setRedelegationDropdownOpen}
                         >
-                          <PopoverTrigger>
+                          <PopoverTrigger asChild>
                             <Button
                               className="w-full flex justify-between px-3"
                               variant="outline"
@@ -755,11 +1018,13 @@ const StakingPage = () => {
             )}
             {unbondingDelegationsFor(selectedValidator.operator_address) && (
               <Card className="my-4 shadow-none rounded-2xl border-gray-100 text-sm">
-                <div className="mx-3 my-4 font-semibold">Unstaking</div>
+                <div className="mx-3 my-4 font-semibold flex items-center gap-1">
+                  Unstaking <Clock4 className="w-3 h-3" />
+                </div>
                 {unbondingDelegationsFor(
                   selectedValidator.operator_address
-                ).map((x: any) => (
-                  <div className="mx-3 my-4 grid grid-cols-2">
+                ).map((x: any, key: number) => (
+                  <div key={key} className="mx-3 my-4 grid grid-cols-2">
                     <div>
                       {formatDistanceToNow(x.completion_time, {
                         addSuffix: true,
@@ -779,8 +1044,19 @@ const StakingPage = () => {
                 {selectedValidator.commission.commission_rates.rate * 100}%
               </div>
             </div>
+            <div className="mx-3 my-4 grid grid-cols-2">
+              <div className="text-sm">Self-delegation</div>
+              <div className="text-sm text-right font-semibold">
+                {selectedValidatorSelfDelegation &&
+                  formatSelfDelegation(selectedValidatorSelfDelegation) + "%"}
+              </div>
+            </div>
             <Popover>
-              <PopoverTrigger className="px-3 w-full" disabled={!isZetaChain}>
+              <PopoverTrigger
+                className="px-3 w-full"
+                disabled={!isZetaChain}
+                asChild
+              >
                 <Button
                   className="w-full"
                   variant="outline"
