@@ -45,6 +45,7 @@
     "date-fns": "^3.0.6",
     "ethers": "5.4.7",
     "eventemitter3": "^5.0.1",
+    "framer-motion": "^10.18.0",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
     "lodash": "^4.17.21",

@@ -5,8 +5,8 @@ import { getEndpoints, networks } from "@zetachain/networks"
 import { getAddress } from "@zetachain/protocol-contracts"
 import { prepareData } from "@zetachain/toolkit/helpers"
 import { ethers } from "ethers"
+import { AnimatePresence, motion } from "framer-motion"
 import { gql, request } from "graphql-request"
-import { set } from "lodash"
 import debounce from "lodash/debounce"
 import isEqual from "lodash/isEqual"
 import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
@@ -470,81 +470,91 @@ const NFTPage = () => {
             </div>
           </div>
         </div>
-        {assets &&
-          assets.map((asset: any) => {
-            return (
-              !assetsBurned.includes(asset.id) && (
-                <div className="flex flex-col gap-2" key={asset.id}>
-                  <div className="group">
-                    <Tilt lineGlareBlurAmount="40px" scale={1.05}>
-                      <div
-                        className={`relative h-60 w-44 rounded-xl overflow-hidden p-4 ${
-                          assetData[asset?.chain]?.bg
-                        }`}
-                      >
+        <AnimatePresence>
+          {assets &&
+            assets.map((asset: any) => {
+              return (
+                !assetsBurned.includes(asset.id) && (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex flex-col gap-2"
+                    key={asset.id}
+                  >
+                    <div className="group">
+                      <Tilt lineGlareBlurAmount="40px" scale={1.05}>
                         <div
-                          className={`pointer-events-none	transition-all duration-500 bg-black/[.75] w-full h-full absolute top-0 left-0 flex items-center justify-center opacity-${
-                            assetsUpdating.includes(asset.id) ? 100 : 0
+                          className={`relative h-60 w-44 rounded-xl overflow-hidden p-4 ${
+                            assetData[asset?.chain]?.bg
                           }`}
                         >
-                          <Loader
-                            className="absolute text-white/[.25] animate-spin-slow"
-                            size={48}
-                          />
-                        </div>
+                          <div
+                            className={`pointer-events-none	transition-all duration-500 bg-black/[.75] w-full h-full absolute top-0 left-0 flex items-center justify-center opacity-${
+                              assetsUpdating.includes(asset.id) ? 100 : 0
+                            }`}
+                          >
+                            <Loader
+                              className="absolute text-white/[.25] animate-spin-slow"
+                              size={48}
+                            />
+                          </div>
 
-                        <p
-                          className="text-4xl font-semibold
+                          <p
+                            className="text-4xl font-semibold
                              text-transparent bg-clip-text
                              bg-gradient-to-br from-white to-transparent
                              text-shadow"
-                        >
-                          {asset?.amount}
-                        </p>
-                        <div
-                          className="text-2xl font-semibold
+                          >
+                            {asset?.amount}
+                          </p>
+                          <div
+                            className="text-2xl font-semibold
                              text-transparent bg-clip-text
                              bg-gradient-to-br from-white to-transparent
                              text-shadow"
-                        >
-                          {assetData[asset?.chain]?.token}
-                        </div>
-                        <div
-                          className="text-2xl font-semibold
+                          >
+                            {assetData[asset?.chain]?.token}
+                          </div>
+                          <div
+                            className="text-2xl font-semibold
                              text-transparent bg-clip-text
                              bg-gradient-to-br from-white to-transparent
                              text-shadow mt-5"
-                        >
-                          # {asset.id}
+                          >
+                            # {asset.id}
+                          </div>
                         </div>
-                      </div>
-                    </Tilt>
-                    <div className="flex justify-center -translate-y-[50%]">
-                      <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 ease-out shadow-2xl shadow-gray-500 rounded-full bg-white">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => {
-                            handleBurn(asset.id)
-                          }}
-                          className="hover:bg-transparent hover:text-rose-500"
-                        >
-                          <Flame className="h-4 w-4" />
-                        </Button>
-                        {/* <Button
+                      </Tilt>
+                      <div className="flex justify-center -translate-y-[50%]">
+                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 ease-out shadow-2xl shadow-gray-500 rounded-full bg-white">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              handleBurn(asset.id)
+                            }}
+                            className="hover:bg-transparent hover:text-rose-500"
+                          >
+                            <Flame className="h-4 w-4" />
+                          </Button>
+                          {/* <Button
                       size="icon"
                       variant="ghost"
                       className="hover:bg-transparent hover:text-sky-500"
                     >
                       <Send className="h-4 w-4" />
                     </Button> */}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+                )
               )
-            )
-          })}
+            })}
+        </AnimatePresence>
       </div>
     </div>
   )
