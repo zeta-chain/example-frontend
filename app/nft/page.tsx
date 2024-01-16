@@ -3,6 +3,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { getEndpoints, networks } from "@zetachain/networks"
 import { getAddress } from "@zetachain/protocol-contracts"
+// @ts-ignore
 import { prepareData } from "@zetachain/toolkit/helpers"
 import { ethers } from "ethers"
 import { AnimatePresence, motion } from "framer-motion"
@@ -240,7 +241,7 @@ const NFTPage = () => {
   )
 
   const handleSwitchNetwork = async () => {
-    if (chain.id) {
+    if (chain?.id) {
       switchNetwork?.(selectedChain)
     }
   }
@@ -301,8 +302,8 @@ const NFTPage = () => {
       const value = parseEther(amount)
       const to = getAddress("tss", chainName as any)
       const data = prepareData(omnichainContract, ["address"], [address])
-      const cctx = await signer.sendTransaction({ data, to, value })
-      cctxHash = cctx.hash
+      const cctx = await signer?.sendTransaction({ data, to, value })
+      cctxHash = cctx?.hash
     }
     setAmount("")
     if (cctxHash) {
@@ -317,11 +318,11 @@ const NFTPage = () => {
   const wrongNetwork =
     !selectedChain ||
     parseInt(selectedChain) === 18332 ||
-    parseInt(selectedChain) === chain.id
+    parseInt(selectedChain) === chain?.id
 
   const handleBurn = async (id: any) => {
-    if (chain.id !== 7001) {
-      return await switchNetwork(7001)
+    if (chain?.id !== 7001) {
+      return await switchNetwork?.(7001)
     }
 
     try {
@@ -446,7 +447,7 @@ const NFTPage = () => {
                   variant="ghost"
                   className="hover:bg-transparent hover:text-zinc-600"
                   onClick={() => {
-                    handleSwitchNetwork(selectedChain)
+                    handleSwitchNetwork()
                   }}
                 >
                   Switch Network
