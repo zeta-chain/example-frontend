@@ -341,21 +341,32 @@ const NFTPage = () => {
       const checkApproval = async (
         id: any,
         contract: any
-      ): Promise<boolean> => {
-        console.log("checking approval")
-        const initialApprovedAddress = await contract.getApproved(id)
-        console.log("approved address", initialApprovedAddress)
-        if (
-          initialApprovedAddress.toLowerCase() ===
-          omnichainContract.toLowerCase()
-        ) {
-          console.log("approved!")
-          return true
-        } else {
-          await new Promise((resolve) => setTimeout(resolve, 5000))
+      ): Promise<boolean | void> => {
+        try {
+          console.log("Checking approval...")
+          const approved = await contract.getApproved(id)
+          if (approved.toLowerCase() === omnichainContract.toLowerCase()) {
+            console.log("Approved!")
+            return true
+          } else {
+            console.log("Not approved. Asking for approval...")
+            await contract.approve(omnichainContract, id)
+            for (let i = 0; i < 5; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 5000))
+              console.log("Checking approval again...")
+              const approved = await contract.getApproved(id)
+              if (approved.toLowerCase() === omnichainContract.toLowerCase()) {
+                console.log("Approved!")
+                return true
+              }
+            }
+          }
+          console.log("Starting approval process again...")
           checkApproval(id, contract)
+        } catch (e) {
+          console.error("Approval process cancelled.", e)
+          return false
         }
-        return false
       }
 
       const checkNFTOwnership = async (nftId: any, contract: any) => {
@@ -387,10 +398,13 @@ const NFTPage = () => {
 
       setAssetsUpdating((b: any) => (b.includes(id) ? b : [...b, id]))
       const contract = new ethers.Contract(omnichainContract, abi, signer)
-      await checkApproval(id, contract)
-
-      const cctxHash = await contract.burnNFT(parseInt(id), address)
-      await checkNFTOwnership(id, contract)
+      if (await checkApproval(id, contract)) {
+        const cctxHash = await contract.burnNFT(parseInt(id), address)
+        await checkNFTOwnership(id, contract)
+      } else {
+        setAssetsUpdating(assetsUpdating.filter((a: any) => a !== id))
+        console.error("Burn cancelled.")
+      }
 
       // const inbound = {
       //   inboundHash: cctxHash.hash,
