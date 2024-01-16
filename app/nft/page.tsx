@@ -9,7 +9,7 @@ import { gql, request } from "graphql-request"
 import { set } from "lodash"
 import debounce from "lodash/debounce"
 import isEqual from "lodash/isEqual"
-import { Flame, RefreshCw, Send, Sparkles } from "lucide-react"
+import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
 import { Tilt } from "react-next-tilt"
 import { formatUnits, parseEther } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
@@ -149,6 +149,7 @@ const NFTPage = () => {
   const [amount, setAmount] = useState<any>("")
   const [assetsReloading, setAssetsReloading] = useState<any>(false)
   const [assetsUpdating, setAssetsUpdating] = useState<any>([])
+  const [assetsBurned, setAssetsBurned] = useState<any>([])
   const { balances, bitcoinAddress, setInbounds, inbounds, fees, cctxs } =
     useContext(AppContext)
   const { switchNetwork } = useSwitchNetwork()
@@ -371,28 +372,17 @@ const NFTPage = () => {
 
       const checkNFTOwnership = async (nftId: any, contract: any) => {
         console.log("checking ownership")
-        const checkStartTime = Date.now()
-        let ownershipChecked = false
 
-        while (Date.now() - checkStartTime < 60000) {
+        try {
+          await contract.ownerOf(nftId)
           await new Promise((resolve) => setTimeout(resolve, 5000))
-          try {
-            await contract.ownerOf(nftId)
-          } catch (e) {
-            console.log("Ownership transferred.")
-            ownershipChecked = true
-            await fetchNFTs()
-            setAssetsUpdating(assetsUpdating.filter((a: any) => a !== nftId))
-            ownershipChecked = true
-            break
-          }
-
-          if (Date.now() - checkStartTime >= 20000 && !ownershipChecked) {
-            console.log("Ownership not transferred.")
-            setAssetsUpdating(assetsUpdating.filter((a: any) => a !== nftId))
-            await checkNFTOwnership(nftId, contract)
-            return
-          }
+          checkNFTOwnership(nftId, contract)
+        } catch (e) {
+          console.log("Ownership transferred.")
+          setAssetsBurned((b: any) => (b.includes(id) ? b : [...b, id]))
+          setAssetsUpdating(assetsUpdating.filter((a: any) => a !== nftId))
+          await fetchNFTs()
+          return
         }
       }
 
@@ -419,7 +409,6 @@ const NFTPage = () => {
 
   return (
     <div className="px-4 mt-12">
-      {JSON.stringify(assetsUpdating)}
       <div className="flex items-center justify-start gap-2 mb-6">
         <h1 className="leading-10 text-2xl font-bold tracking-tight">
           NFT Library
@@ -482,65 +471,80 @@ const NFTPage = () => {
           </div>
         </div>
         {assets &&
-          assets.map((asset: any) => (
-            <div className="flex flex-col gap-2" key={asset.id}>
-              <div className="group">
-                <Tilt lineGlareBlurAmount="40px" scale={1.05}>
-                  <div
-                    className={`h-60 w-44 rounded-xl p-4 ${
-                      assetData[asset?.chain]?.bg
-                    }`}
-                  >
-                    <p
-                      className="text-4xl font-semibold
+          assets.map((asset: any) => {
+            return (
+              !assetsBurned.includes(asset.id) && (
+                <div className="flex flex-col gap-2" key={asset.id}>
+                  <div className="group">
+                    <Tilt lineGlareBlurAmount="40px" scale={1.05}>
+                      <div
+                        className={`relative h-60 w-44 rounded-xl overflow-hidden p-4 ${
+                          assetData[asset?.chain]?.bg
+                        }`}
+                      >
+                        <div
+                          className={`pointer-events-none	transition-all duration-500 bg-black/[.75] w-full h-full absolute top-0 left-0 flex items-center justify-center opacity-${
+                            assetsUpdating.includes(asset.id) ? 100 : 0
+                          }`}
+                        >
+                          <Loader
+                            className="absolute text-white/[.25] animate-spin-slow"
+                            size={48}
+                          />
+                        </div>
+
+                        <p
+                          className="text-4xl font-semibold
                              text-transparent bg-clip-text
                              bg-gradient-to-br from-white to-transparent
                              text-shadow"
-                    >
-                      {asset?.amount}
-                    </p>
-                    <div
-                      className="text-2xl font-semibold
+                        >
+                          {asset?.amount}
+                        </p>
+                        <div
+                          className="text-2xl font-semibold
                              text-transparent bg-clip-text
                              bg-gradient-to-br from-white to-transparent
                              text-shadow"
-                    >
-                      {assetData[asset?.chain]?.token}
-                    </div>
-                    <div
-                      className="text-2xl font-semibold opacity-50
+                        >
+                          {assetData[asset?.chain]?.token}
+                        </div>
+                        <div
+                          className="text-2xl font-semibold
                              text-transparent bg-clip-text
                              bg-gradient-to-br from-white to-transparent
                              text-shadow mt-5"
-                    >
-                      # {asset.id}
-                    </div>
-                  </div>
-                </Tilt>
-                <div className="flex justify-center -translate-y-[50%]">
-                  <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 ease-out shadow-2xl shadow-gray-500 rounded-full bg-white">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        handleBurn(asset.id)
-                      }}
-                      className="hover:bg-transparent hover:text-rose-500"
-                    >
-                      <Flame className="h-4 w-4" />
-                    </Button>
-                    {/* <Button
+                        >
+                          # {asset.id}
+                        </div>
+                      </div>
+                    </Tilt>
+                    <div className="flex justify-center -translate-y-[50%]">
+                      <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 ease-out shadow-2xl shadow-gray-500 rounded-full bg-white">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            handleBurn(asset.id)
+                          }}
+                          className="hover:bg-transparent hover:text-rose-500"
+                        >
+                          <Flame className="h-4 w-4" />
+                        </Button>
+                        {/* <Button
                       size="icon"
                       variant="ghost"
                       className="hover:bg-transparent hover:text-sky-500"
                     >
                       <Send className="h-4 w-4" />
                     </Button> */}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              )
+            )
+          })}
       </div>
     </div>
   )
