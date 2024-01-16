@@ -8,7 +8,6 @@ import { ethers } from "ethers"
 import { AnimatePresence, motion } from "framer-motion"
 import { gql, request } from "graphql-request"
 import debounce from "lodash/debounce"
-import isEqual from "lodash/isEqual"
 import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
 import { Tilt } from "react-next-tilt"
 import { formatUnits, parseEther } from "viem"
@@ -27,6 +26,9 @@ import {
 import { AppContext } from "@/app/index"
 
 const omnichainContract = "0x3d026bE559797557Fa215f9F7EB4e8BE89fD7d6f"
+const bitcoinTSS = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
+const GOLDSKY_API =
+  "https://api.goldsky.com/api/public/project_clnujea22c0if34x5965c8c0j/subgraphs/mycontract-zetachain-testnet/v3/gn"
 
 const abi = [
   {
@@ -150,27 +152,12 @@ const NFTPage = () => {
   const [assetsReloading, setAssetsReloading] = useState<any>(false)
   const [assetsUpdating, setAssetsUpdating] = useState<any>([])
   const [assetsBurned, setAssetsBurned] = useState<any>([])
-  const { balances, bitcoinAddress, setInbounds, inbounds, fees, cctxs } =
+  const { bitcoinAddress, setInbounds, inbounds, cctxs, connectBitcoin } =
     useContext(AppContext)
   const { switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
 
-  function useDeepCompareEffect(callback: any, dependencies: any) {
-    const currentDependenciesRef = useRef()
-
-    if (!isEqual(currentDependenciesRef.current, dependencies)) {
-      currentDependenciesRef.current = dependencies
-    }
-
-    useEffect(() => {
-      return callback()
-    }, [currentDependenciesRef.current])
-  }
-
-  const API =
-    "https://api.goldsky.com/api/public/project_clnujea22c0if34x5965c8c0j/subgraphs/mycontract-zetachain-testnet/v3/gn"
-
-  const { address, isConnected } = useAccount()
+  const { address } = useAccount()
 
   function findUserNFTs(walletAddress: string, transfers: any) {
     let currentOwnership: any = {}
@@ -214,13 +201,14 @@ const NFTPage = () => {
 
   const fetchNFTs = useCallback(
     debounce(async () => {
+      console.log("Fetching NFTs...")
       setAssetsReloading(true)
       try {
         let ownedNFTs: any = []
         const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
         if (address) {
           const transfers = (await request(
-            API,
+            GOLDSKY_API,
             query(address.toLocaleLowerCase())
           )) as any
           ownedNFTs = findUserNFTs(address, transfers?.transfers)
@@ -259,12 +247,7 @@ const NFTPage = () => {
 
   useEffect(() => {
     fetchNFTs()
-  }, [address])
-
-  // useDeepCompareEffect(() => {
-  //   console.log("cctxs have changed")
-  //   fetchNFTs()
-  // }, [cctxs])
+  }, [address, JSON.stringify(cctxs)])
 
   const assetData: any = {
     5: {
@@ -289,8 +272,9 @@ const NFTPage = () => {
     let chainName = Object.entries(networks).find(([key, value]) => {
       return value.chain_id === parseInt(c)
     })?.[0]
-    let cctxHash
+    let cctxHash: any
     if (parseInt(c) === 18332) {
+      await connectBitcoin()
       window.xfi.bitcoin.request(
         {
           method: "transfer",
@@ -298,7 +282,7 @@ const NFTPage = () => {
             {
               feeRate: 10,
               from: bitcoinAddress,
-              recipient: "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur",
+              recipient: bitcoinTSS,
               amount: {
                 amount: parseFloat(amount) * 1e8,
                 decimals: 8,
@@ -321,11 +305,13 @@ const NFTPage = () => {
       cctxHash = cctx.hash
     }
     setAmount("")
-    const inbound = {
-      inboundHash: cctxHash,
-      desc: `Minting an NFT`,
+    if (cctxHash) {
+      const inbound = {
+        inboundHash: cctxHash,
+        desc: `Minting an NFT`,
+      }
+      setInbounds([...inbounds, inbound])
     }
-    setInbounds([...inbounds, inbound])
   }
 
   const wrongNetwork =
@@ -391,16 +377,15 @@ const NFTPage = () => {
       if (await checkApproval(id, contract)) {
         const cctxHash = await contract.burnNFT(parseInt(id), address)
         await checkNFTOwnership(id, contract)
+        const inbound = {
+          inboundHash: cctxHash.hash,
+          desc: `Burning an NFT`,
+        }
+        setInbounds([...inbounds, inbound])
       } else {
         setAssetsUpdating(assetsUpdating.filter((a: any) => a !== id))
         console.error("Burn cancelled.")
       }
-
-      // const inbound = {
-      //   inboundHash: cctxHash.hash,
-      //   desc: `Burning an NFT`,
-      // }
-      // setInbounds([...inbounds, inbound])
     } catch (e) {
       console.error(e)
       setAssetsUpdating(assetsUpdating.filter((a: any) => a !== id))
