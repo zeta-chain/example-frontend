@@ -26,10 +26,10 @@ import {
 } from "@/components/ui/select"
 import { AppContext } from "@/app/index"
 
-const omnichainContract = "0x3d026bE559797557Fa215f9F7EB4e8BE89fD7d6f"
+const omnichainContract = "0x7a984BD3ce37257e0124A3c0d25857df5E258Be2"
 const bitcoinTSS = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
 const GOLDSKY_API =
-  "https://api.goldsky.com/api/public/project_clnujea22c0if34x5965c8c0j/subgraphs/mycontract-zetachain-testnet/v3/gn"
+  "https://api.goldsky.com/api/public/project_clnujea22c0if34x5965c8c0j/subgraphs/mycontract-zetachain-testnet/v4/gn"
 
 const abi = [
   {
@@ -153,8 +153,14 @@ const NFTPage = () => {
   const [assetsReloading, setAssetsReloading] = useState<any>(false)
   const [assetsUpdating, setAssetsUpdating] = useState<any>([])
   const [assetsBurned, setAssetsBurned] = useState<any>([])
-  const { bitcoinAddress, setInbounds, inbounds, cctxs, connectBitcoin } =
-    useContext(AppContext)
+  const {
+    bitcoinAddress,
+    setInbounds,
+    inbounds,
+    cctxs,
+    connectBitcoin,
+    balances,
+  } = useContext(AppContext)
   const { switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
 
@@ -207,6 +213,11 @@ const NFTPage = () => {
       try {
         let ownedNFTs: any = []
         const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
+        const api = getEndpoints("cosmos-http", "zeta_testnet")[0]?.url
+        const url = `${api}/zeta-chain/fungible/foreign_coins`
+        const zetaResponse = await fetch(url)
+        const { foreignCoins } = await zetaResponse.json()
+
         if (address) {
           const transfers = (await request(
             GOLDSKY_API,
@@ -221,12 +232,17 @@ const NFTPage = () => {
 
         let nftDetails = await Promise.all(
           ownedNFTs.map(async (id: any) => {
+            const chain = (await contract.tokenChains(BigInt(id))).toString()
+            const decimals = foreignCoins.find(
+              (b: any) =>
+                b.coin_type === "Gas" &&
+                parseInt(b.foreign_chain_id) === parseInt(chain)
+            )?.decimals
             const amount = formatUnits(
               await contract.tokenAmounts(BigInt(id)),
-              18
+              parseInt(decimals)
             )
-            const chain = (await contract.tokenChains(BigInt(id))).toString()
-            return { id, amount, chain }
+            return { id, amount, chain, decimals }
           })
         )
         nftDetails = nftDetails.filter((nft: any) => parseInt(nft.chain) > 0)
@@ -393,6 +409,12 @@ const NFTPage = () => {
     }
   }
 
+  const formatAmount = (amount: any) => {
+    const a = Number(amount)
+    let formatted = a.toPrecision(2)
+    return a % 1 === 0 ? parseInt(formatted) : parseFloat(formatted)
+  }
+
   return (
     <div className="px-4 mt-12">
       <div className="flex items-center justify-start gap-2 mb-6">
@@ -490,11 +512,11 @@ const NFTPage = () => {
 
                           <p
                             className="text-4xl font-semibold
-                             text-transparent bg-clip-text
+                             text-transparent bg-clip-text tracking-tight
                              bg-gradient-to-br from-white to-transparent
                              text-shadow"
                           >
-                            {asset?.amount}
+                            {formatAmount(asset?.amount)}
                           </p>
                           <div
                             className="text-2xl font-semibold
