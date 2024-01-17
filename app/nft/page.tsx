@@ -39,6 +39,7 @@ const NFTPage = () => {
   const [assetsReloading, setAssetsReloading] = useState<any>(false)
   const [assetsUpdating, setAssetsUpdating] = useState<any>([])
   const [assetsBurned, setAssetsBurned] = useState<any>([])
+  const [mintingInProgress, setMintingInProgress] = useState<any>(false)
   const {
     bitcoinAddress,
     setInbounds,
@@ -172,48 +173,55 @@ const NFTPage = () => {
   }
 
   const handleMint = async (c: any) => {
-    let chainName = Object.entries(networks).find(([key, value]) => {
-      return value.chain_id === parseInt(c)
-    })?.[0]
-    let cctxHash: any
-    if (parseInt(c) === 18332) {
-      await connectBitcoin()
-      window.xfi.bitcoin.request(
-        {
-          method: "transfer",
-          params: [
-            {
-              feeRate: 10,
-              from: bitcoinAddress,
-              recipient: bitcoinTSS,
-              amount: {
-                amount: parseFloat(amount) * 1e8,
-                decimals: 8,
+    try {
+      setMintingInProgress(true)
+      let chainName = Object.entries(networks).find(([key, value]) => {
+        return value.chain_id === parseInt(c)
+      })?.[0]
+      let cctxHash: any
+      if (parseInt(c) === 18332) {
+        await connectBitcoin()
+        window.xfi.bitcoin.request(
+          {
+            method: "transfer",
+            params: [
+              {
+                feeRate: 10,
+                from: bitcoinAddress,
+                recipient: bitcoinTSS,
+                amount: {
+                  amount: parseFloat(amount) * 1e8,
+                  decimals: 8,
+                },
+                memo: `${address}`.replace(/^0x/, ""),
               },
-              memo: `${address}`.replace(/^0x/, ""),
-            },
-          ],
-        },
-        (error: any, hash: any) => {
-          if (!error) {
-            cctxHash = hash
+            ],
+          },
+          (error: any, hash: any) => {
+            if (!error) {
+              cctxHash = hash
+            }
           }
-        }
-      )
-    } else {
-      const value = parseEther(amount)
-      const to = getAddress("tss", chainName as any)
-      const data = prepareData(omnichainContract, ["address"], [address])
-      const cctx = await signer?.sendTransaction({ data, to, value })
-      cctxHash = cctx?.hash
-    }
-    setAmount("")
-    if (cctxHash) {
-      const inbound = {
-        inboundHash: cctxHash,
-        desc: `Minting an NFT`,
+        )
+      } else {
+        const value = parseEther(amount)
+        const to = getAddress("tss", chainName as any)
+        const data = prepareData(omnichainContract, ["address"], [address])
+        const cctx = await signer?.sendTransaction({ data, to, value })
+        cctxHash = cctx?.hash
       }
-      setInbounds([...inbounds, inbound])
+      setAmount("")
+      if (cctxHash) {
+        const inbound = {
+          inboundHash: cctxHash,
+          desc: `Minting an NFT`,
+        }
+        setInbounds([...inbounds, inbound])
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setMintingInProgress(false)
     }
   }
 
@@ -327,7 +335,7 @@ const NFTPage = () => {
               <SelectTrigger className="w-full border-none bg-transparent text-2xl font-semibold placeholder:text-red-500">
                 <SelectValue placeholder="TOKEN" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="shadow-2xl border-none rounded-lg">
                 {Object.keys(assetData).map((id: any) => (
                   <SelectItem key={id} value={id}>
                     {assetData[id]?.token}
@@ -337,31 +345,33 @@ const NFTPage = () => {
             </Select>
           </div>
           <div className="flex justify-center -translate-y-[50%]">
-            <div className="transition-all duration-100 ease-out shadow-2xl shadow-gray-500 rounded-full bg-white">
-              {wrongNetwork ? (
-                <Button
-                  variant="ghost"
-                  className="hover:bg-transparent hover:text-zinc-600"
-                  disabled={!(amount > 0) || !selectedChain}
-                  onClick={() => {
-                    handleMint(selectedChain)
-                  }}
-                >
+            {wrongNetwork ? (
+              <Button
+                variant="ghost"
+                className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
+                disabled={!(amount > 0) || !selectedChain || mintingInProgress}
+                onClick={() => {
+                  handleMint(selectedChain)
+                }}
+              >
+                {mintingInProgress ? (
+                  <Loader className="h-4 w-4 mr-1 animate-spin-slow" />
+                ) : (
                   <Sparkles className="h-4 w-4 mr-1" />
-                  Mint
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="hover:bg-transparent hover:text-zinc-600"
-                  onClick={() => {
-                    handleSwitchNetwork()
-                  }}
-                >
-                  Switch Network
-                </Button>
-              )}
-            </div>
+                )}
+                Mint
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
+                onClick={() => {
+                  handleSwitchNetwork()
+                }}
+              >
+                Switch Network
+              </Button>
+            )}
           </div>
         </div>
         <AnimatePresence>
