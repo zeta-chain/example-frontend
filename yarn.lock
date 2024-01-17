@@ -3645,6 +3645,11 @@
     "@walletconnect/window-getters" "^1.0.1"
     tslib "1.14.1"
 
+"@zetachain/example-contracts@1.0.0-rc1":
+  version "1.0.0-rc1"
+  resolved "https://registry.yarnpkg.com/@zetachain/example-contracts/-/example-contracts-1.0.0-rc1.tgz#271ddd5172630d2034ba7060bb9712e22cd377b9"
+  integrity sha512-9fd678CE0FnTipMtpHKfVgAlTJME7suoWy5UiHC1o7tE0sWw+KalbcrZpzNTQrEMpQw4XiRSFJ2scgYBI6iR9g==
+
 "@zetachain/faucet-cli@^4.0.1":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@zetachain/faucet-cli/-/faucet-cli-4.0.1.tgz#1201b2c775fcf7dd4c368c24dfbcc8eb7743a23d"
