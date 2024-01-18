@@ -14,6 +14,7 @@ import {
   // @ts-ignore
 } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
+// @ts-ignore
 import Cookies from "js-cookie"
 import debounce from "lodash/debounce"
 import { useAccount } from "wagmi"
