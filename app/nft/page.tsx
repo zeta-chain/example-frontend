@@ -476,7 +476,7 @@ const NFTPage = () => {
                         sideOffset={-20}
                         className="p-0 w-full transition-all duration-200 ease-linear shadow-2xl shadow-gray-500 rounded-full bg-white border-none"
                       >
-                        {chain.id === 7001 ? (
+                        {chain?.id === 7001 ? (
                           <div>
                             <Button
                               size="icon"
@@ -528,7 +528,9 @@ const NFTPage = () => {
                             <Button
                               variant="ghost"
                               className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
-                              onClick={() => switchNetwork(7001)}
+                              onClick={() =>
+                                switchNetwork && switchNetwork(7001)
+                              }
                             >
                               Switch Network
                             </Button>
