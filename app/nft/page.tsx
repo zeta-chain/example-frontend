@@ -45,14 +45,8 @@ const NFTPage = () => {
   const [assetsBurned, setAssetsBurned] = useState<any>([])
   const [mintingInProgress, setMintingInProgress] = useState<any>(false)
   const [recipient, setRecipient] = useState<any>("")
-  const {
-    bitcoinAddress,
-    setInbounds,
-    inbounds,
-    cctxs,
-    connectBitcoin,
-    balances,
-  } = useContext(AppContext)
+  const { bitcoinAddress, setInbounds, inbounds, cctxs, connectBitcoin } =
+    useContext(AppContext)
   const { switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
 
