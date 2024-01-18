@@ -10,7 +10,15 @@ import { ethers } from "ethers"
 import { AnimatePresence, motion } from "framer-motion"
 import { gql, request } from "graphql-request"
 import debounce from "lodash/debounce"
-import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
+import {
+  CheckCircle2,
+  Flame,
+  Loader,
+  RefreshCw,
+  Send,
+  Sparkles,
+  XCircle,
+} from "lucide-react"
 import { Tilt } from "react-next-tilt"
 import { formatUnits, parseEther } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
@@ -40,6 +48,7 @@ const NFTPage = () => {
   const [assetsUpdating, setAssetsUpdating] = useState<any>([])
   const [assetsBurned, setAssetsBurned] = useState<any>([])
   const [mintingInProgress, setMintingInProgress] = useState<any>(false)
+  const [transferSelected, setTransferSelected] = useState<any>(null)
   const {
     bitcoinAddress,
     setInbounds,
@@ -432,25 +441,61 @@ const NFTPage = () => {
                           </div>
                         </div>
                       </Tilt>
-                      <div className="flex justify-center -translate-y-[50%]">
-                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 ease-out shadow-2xl shadow-gray-500 rounded-full bg-white">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => {
-                              handleBurn(asset.id)
-                            }}
-                            className="hover:bg-transparent hover:text-rose-500"
+                      <div className="flex justify-center -translate-y-[50%] opacity-0 group-hover:opacity-100 transition-all duration-100 ease-out ">
+                        <div>
+                          <div
+                            className={`transition-all duration-200 ease-linear shadow-2xl shadow-gray-500 rounded-full bg-white ${
+                              transferSelected === asset.id &&
+                              "-translate-y-[20%] opacity-75"
+                            }`}
                           >
-                            <Flame className="h-4 w-4" />
-                          </Button>
-                          {/* <Button
-                      size="icon"
-                      variant="ghost"
-                      className="hover:bg-transparent hover:text-sky-500"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button> */}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                handleBurn(asset.id)
+                              }}
+                              className="hover:bg-transparent hover:text-rose-500"
+                            >
+                              <Flame className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="hover:bg-transparent hover:text-sky-500"
+                              onClick={() => {
+                                setTransferSelected(asset.id)
+                              }}
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {transferSelected === asset.id && (
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12">
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                  duration: 0.2,
+                                  ease: "linear",
+                                }}
+                              >
+                                <div className="bg-white rounded-full px-2 py-1 shadow-2xl">
+                                  <div className="flex gap-2 items-center">
+                                    <XCircle
+                                      onClick={() => setTransferSelected(null)}
+                                      className="w-8 h-8 text-zinc-400 cursor-pointer hover:text-black"
+                                    />
+                                    <Input
+                                      className="border-none h-6 py-0 px-1 grow-1 text-xs"
+                                      placeholder="Recipient"
+                                    />
+                                    <CheckCircle2 className="h-8 w-8 text-zinc-400 cursor-pointer hover:text-black" />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
