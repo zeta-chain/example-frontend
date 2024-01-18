@@ -14,11 +14,15 @@ import {
   // @ts-ignore
 } from "@zetachain/toolkit/helpers"
 import EventEmitter from "eventemitter3"
+// @ts-ignore
+import Cookies from "js-cookie"
 import debounce from "lodash/debounce"
 import { useAccount } from "wagmi"
 
 import { hexToBech32Address } from "@/lib/hexToBech32Address"
+import { ToastAction } from "@/components/ui/toast"
 import { Toaster } from "@/components/ui/toaster"
+import { useToast } from "@/components/ui/use-toast"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -44,6 +48,7 @@ export default function Index({ children }: RootLayoutProps) {
   const [observers, setObservers] = useState<any>([])
   const [prices, setPrices] = useState<any>([])
   const { address, isConnected } = useAccount()
+  const { toast } = useToast()
 
   const fetchObservers = useCallback(
     debounce(async () => {
@@ -355,6 +360,17 @@ export default function Index({ children }: RootLayoutProps) {
       }
     }
   }, [inbounds])
+
+  useEffect(() => {
+    if (!Cookies.get("firstTimeVisit")) {
+      toast({
+        title: "Welcome to ZetaChain Example App",
+        description: "This is a testnet. Please do not use real funds.",
+        duration: 60000,
+      })
+      Cookies.set("firstTimeVisit", "true", { expires: 7 })
+    }
+  }, [])
 
   return (
     <>
