@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
-import { setRequestMeta } from "next/dist/server/request-meta"
 import { abi } from "@zetachain/example-contracts/abi/omnichain/NFT.sol/NFT.json"
 import { getEndpoints, networks } from "@zetachain/networks"
 import { getAddress } from "@zetachain/protocol-contracts"
@@ -10,17 +9,8 @@ import { prepareData } from "@zetachain/toolkit/helpers"
 import { ethers } from "ethers"
 import { AnimatePresence, motion } from "framer-motion"
 import { gql, request } from "graphql-request"
-import { divide } from "lodash"
 import debounce from "lodash/debounce"
-import {
-  CheckCircle2,
-  Flame,
-  Loader,
-  RefreshCw,
-  Send,
-  Sparkles,
-  XCircle,
-} from "lucide-react"
+import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
 import { Tilt } from "react-next-tilt"
 import { formatUnits, parseEther } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
@@ -43,7 +33,6 @@ import {
 import { AppContext } from "@/app/index"
 
 const omnichainContract = "0x7a984BD3ce37257e0124A3c0d25857df5E258Be2"
-const bitcoinTSS = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
 const GOLDSKY_API =
   "https://api.goldsky.com/api/public/project_clnujea22c0if34x5965c8c0j/subgraphs/mycontract-zetachain-testnet/v4/gn"
 
@@ -205,7 +194,7 @@ const NFTPage = () => {
               {
                 feeRate: 10,
                 from: bitcoinAddress,
-                recipient: bitcoinTSS,
+                recipient: getAddress("tss", "btc_testnet"),
                 amount: {
                   amount: parseFloat(amount) * 1e8,
                   decimals: 8,
@@ -388,9 +377,7 @@ const NFTPage = () => {
                 variant="ghost"
                 className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
                 disabled={!(amount > 0) || !selectedChain || mintingInProgress}
-                onClick={() => {
-                  handleMint(selectedChain)
-                }}
+                onClick={() => handleMint(selectedChain)}
               >
                 {mintingInProgress ? (
                   <Loader className="h-4 w-4 mr-1 animate-spin-slow" />
