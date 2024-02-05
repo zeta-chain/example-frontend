@@ -14,18 +14,7 @@ import { MainNav } from "@/components/main-nav"
 import { AppContext } from "@/app/index"
 
 export function SiteHeader() {
-  const { bitcoinAddress, fetchBalances, setBitcoinAddress } =
-    useContext(AppContext)
-
-  const connectBitcoin = async () => {
-    const w = window as any
-    if ("xfi" in w && w.xfi?.bitcoin) {
-      w.xfi.bitcoin.changeNetwork("testnet")
-      const btc = (await w.xfi.bitcoin.getAccounts())[0]
-      await setBitcoinAddress(btc)
-      fetchBalances(true, btc)
-    }
-  }
+  const { bitcoinAddress, connectBitcoin } = useContext(AppContext)
 
   return (
     <header className="bg-background sticky top-0 z-40 w-full">
@@ -41,7 +30,7 @@ export function SiteHeader() {
                     className={cn(
                       "mx-2 bg-white hover:bg-white rounded-xl shadow-rainbowkit hover:scale-1025 transition-all active:scale-95"
                     )}
-                    onClick={connectBitcoin}
+                    onClick={() => connectBitcoin()}
                   >
                     <div
                       className={cn(

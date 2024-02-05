@@ -26,6 +26,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
+import { NFTProvider } from "./nft/useNFT"
+
 interface RootLayoutProps {
   children: React.ReactNode
 }
@@ -83,6 +85,17 @@ export default function Index({ children }: RootLayoutProps) {
     }, 500),
     [address, isConnected]
   )
+
+  const connectBitcoin = async () => {
+    const w = window as any
+    console.log("connect bitcoin")
+    if ("xfi" in w && w.xfi?.bitcoin) {
+      w.xfi.bitcoin.changeNetwork("testnet")
+      const btc = (await w.xfi.bitcoin.getAccounts())[0]
+      await setBitcoinAddress(btc)
+      // fetchBalances(true, btc)
+    }
+  }
 
   const fetchStakingDelegations = useCallback(
     debounce(async () => {
@@ -383,6 +396,7 @@ export default function Index({ children }: RootLayoutProps) {
           balancesLoading,
           balancesRefreshing,
           fees,
+          connectBitcoin,
           pools,
           poolsLoading,
           validators,
@@ -406,11 +420,13 @@ export default function Index({ children }: RootLayoutProps) {
         }}
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <div className="relative flex min-h-screen flex-col">
-            <SiteHeader />
-            <section className="container px-4 mt-4">{children}</section>
-          </div>
-          <Toaster />
+          <NFTProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <SiteHeader />
+              <section className="container px-4 mt-4">{children}</section>
+            </div>
+            <Toaster />
+          </NFTProvider>
         </ThemeProvider>
       </AppContext.Provider>
     </>
