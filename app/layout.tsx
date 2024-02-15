@@ -12,6 +12,7 @@ import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import Index from "@/app/index"
 
+import { ZetaChainProvider } from "./ZetaChainContext"
 import "@rainbow-me/rainbowkit/styles.css"
 import {
   RainbowKitProvider,
@@ -75,7 +76,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
         >
           <WagmiConfig config={wagmiConfig}>
             <RainbowKitProvider chains={chains}>
-              <Index>{children}</Index>
+              <ZetaChainProvider>
+                <Index>{children}</Index>
+              </ZetaChainProvider>
             </RainbowKitProvider>
           </WagmiConfig>
         </body>

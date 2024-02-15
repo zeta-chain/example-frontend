@@ -9,7 +9,7 @@ import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
 // @ts-ignore
-import { prepareData, sendZETA, sendZRC20 } from "@zetachain/toolkit/helpers"
+import { prepareData } from "@zetachain/toolkit/helpers"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 import {
@@ -40,9 +40,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useZetaChain } from "@/app/ZetaChainContext"
 import { AppContext } from "@/app/index"
 
 const Transfer = () => {
+  const { client } = useZetaChain()
   const omnichainSwapContractAddress =
     "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
@@ -199,7 +201,7 @@ const Transfer = () => {
       const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
       const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
       const router = new ethers.Contract(
-        routerAddress,
+        routerAddress as any,
         UniswapV2Factory.abi,
         provider
       )
@@ -607,7 +609,13 @@ const Transfer = () => {
   m.crossChainZeta = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
-    const tx = await sendZETA(signer, sourceAmount, from, to, address as string)
+    const tx = await client.sendZETA(
+      signer,
+      sourceAmount,
+      from,
+      to,
+      address as string
+    )
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
@@ -620,7 +628,14 @@ const Transfer = () => {
     const to = destinationTokenSelected.chain_name
     const btc = bitcoinAddress
     const token = sourceTokenSelected.symbol
-    const tx = await sendZRC20(signer, sourceAmount, from, to, btc, token)
+    const tx = await client.sendZRC20(
+      signer,
+      sourceAmount,
+      from,
+      to,
+      btc,
+      token
+    )
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
@@ -638,7 +653,7 @@ const Transfer = () => {
   m.unwrapZeta = async () => {
     if (signer) {
       const contract = new ethers.Contract(
-        getAddress("zetaToken", "zeta_testnet"),
+        getAddress("zetaToken", "zeta_testnet") as any,
         WETH9.abi,
         signer
       )
@@ -666,7 +681,7 @@ const Transfer = () => {
   m.withdrawZRC20 = async () => {
     const destination = destinationTokenSelected.chain_name
     const ZRC20Address = getAddress("zrc20", destination)
-    const contract = new ethers.Contract(ZRC20Address, ZRC20.abi, signer)
+    const contract = new ethers.Contract(ZRC20Address as any, ZRC20.abi, signer)
     const value = ethers.utils.parseUnits(
       sourceAmount,
       destinationTokenSelected.decimals
@@ -691,7 +706,7 @@ const Transfer = () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
-    const tx = await sendZRC20(
+    const tx = await client.sendZRC20(
       signer,
       sourceAmount,
       from,
@@ -712,7 +727,7 @@ const Transfer = () => {
       sourceTokenSelected.chain_name
     )
     const custodyContract = new ethers.Contract(
-      custodyAddress,
+      custodyAddress as any,
       ERC20Custody.abi,
       signer
     )
