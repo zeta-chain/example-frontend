@@ -16,7 +16,12 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
         network: "testnet",
         chains: {
           zeta_testnet: {
-            api: [{ url: "https://jsonrpc-t.zeta.nodestake.top", type: "evm" }], // temporary endpoint
+            api: [
+              {
+                url: `https://zetachain-testnet-archive.allthatnode.com:8545/${process.env.NEXT_PUBLIC_ATN_KEY}`,
+                type: "evm",
+              },
+            ],
           },
         },
       })
