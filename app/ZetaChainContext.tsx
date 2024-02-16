@@ -1,6 +1,5 @@
 // ZetaChainContext.tsx
 import React, { ReactNode, createContext, useContext, useState } from "react"
-// @ts-ignore
 import { ZetaChainClient } from "@zetachain/toolkit/client"
 
 const ZetaChainContext = createContext<any>(undefined!)
