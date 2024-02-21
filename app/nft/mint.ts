@@ -1,7 +1,7 @@
 import { useContext } from "react"
 import { networks } from "@zetachain/networks"
 import { getAddress } from "@zetachain/protocol-contracts"
-import { prepareData } from "@zetachain/toolkit/helpers"
+import { prepareData } from "@zetachain/toolkit/client"
 import { parseEther } from "viem"
 import { useAccount } from "wagmi"
 

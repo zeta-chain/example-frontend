@@ -8,7 +8,7 @@ import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import { prepareData } from "@zetachain/toolkit/helpers"
+import { prepareData } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 import {
