@@ -24,6 +24,17 @@ the [ZetaChain Toolkit](https://github.com/zeta-chain/toolkit/).
 - Node.js v18
 - Yarn
 
+The ZetaChain Toolkit is initialized with a custom RPC endpoint for ZetaChain to
+ensure that requests are not rate-limited. By default we're using an RPC endpoint
+provided by [AllThatNode](https://www.allthatnode.com/zetachain.dsrv).
+
+Before starting the development server:
+
+- Sign up for a free tier account at [AllThatNode](https://www.allthatnode.com/)
+  and copy the API key from the dashboard into a `.env.local` file as a
+  `NEXT_PUBLIC_ATN_API_KEY` variable.
+- Or replace the RPC in `ZetaChainContext.tsx` with the endpoint of your choice.
+
 ## Getting Started
 
 Start a development server:

@@ -2,14 +2,12 @@
 
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
-import { divide } from "lodash"
 import {
   ArrowBigUp,
   ChevronDown,
   ChevronUp,
   MessageCircle,
   RefreshCw,
-  Zap,
 } from "lucide-react"
 import { formatUnits } from "viem"
 import { useAccount } from "wagmi"

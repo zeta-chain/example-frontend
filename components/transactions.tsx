@@ -1,7 +1,6 @@
 "use client"
 
 import { useContext } from "react"
-// @ts-ignore
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
