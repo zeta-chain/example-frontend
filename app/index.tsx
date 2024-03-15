@@ -189,7 +189,10 @@ export default function Index({ children }: RootLayoutProps) {
         if (!isConnected) {
           return setBalances([])
         }
-        const b = await client.getBalances(address, btc)
+        const b = await client.getBalances({
+          evmAddress: address as string,
+          btcAddress: btc,
+        })
         setBalances(b)
       } catch (e) {
         console.log(e)
@@ -207,7 +210,8 @@ export default function Index({ children }: RootLayoutProps) {
         if (!isConnected) {
           return setFees([])
         }
-        setFees(await client.getFees(500000))
+        const fees = await client.getFees(500000)
+        setFees(fees)
       } catch (e) {
         console.log(e)
       }
@@ -362,7 +366,7 @@ export default function Index({ children }: RootLayoutProps) {
             })
           })
 
-        client.trackCCTX(i.inboundHash, false, emitter)
+        client.trackCCTX({ hash: i.inboundHash, json: false, emitter })
         setCCTXs([...cctxs, { inboundHash: i.inboundHash, desc: i.desc }])
       }
     }

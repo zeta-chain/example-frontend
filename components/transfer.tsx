@@ -5,9 +5,7 @@ import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
-import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
-import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
 import { prepareData } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
@@ -140,13 +138,16 @@ const Transfer = () => {
 
   // Set cross-chain fee and whether address can be changed
   useEffect(() => {
+    const dest = destinationTokenSelected?.chain_name
     if (fees) {
       if (sendType === "crossChainZeta") {
-        const dest = destinationTokenSelected?.chain_name
         const isZeta = dest === "zeta_testnet"
-        const amount = isZeta
-          ? 0
-          : parseFloat(fees?.["feesCCM"][dest]?.totalFee)
+        const chainID = client.getChainId(dest)?.toString()
+        const chainFee = fees.messaging.find((f: any) => f.chainID === chainID)
+        if (!chainFee) {
+          throw new Error("Fee not found")
+        }
+        const amount = isZeta ? 0 : chainFee.totalFee
         const formatted = amount === 0 ? "0 ZETA" : `~${amount.toFixed(2)} ZETA`
         setCrossChainFee({
           amount,
@@ -154,9 +155,12 @@ const Transfer = () => {
           formatted,
         })
       } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-        const fee =
-          fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
-        const amount = parseFloat(fee)
+        const { address } = sourceTokenSelected
+        const chainFee = fees.omnichain.find((f: any) => f.contract === address)
+        if (!chainFee) {
+          throw new Error("Fee not found")
+        }
+        const amount = parseFloat(chainFee.totalFee)
         const symbol = balances.find((c: any) => {
           if (
             c?.chain_id === destinationTokenSelected?.chain_id &&
@@ -198,7 +202,7 @@ const Transfer = () => {
       parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
       const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
       const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
-      const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
+      const routerAddress = getAddress("uniswapV2Router02", "zeta_testnet")
       const router = new ethers.Contract(
         routerAddress as any,
         UniswapV2Factory.abi,
@@ -234,7 +238,8 @@ const Transfer = () => {
           ).toFixed(2)
         )
       } catch (e) {
-        console.error(e)
+        console.error("Cannot get a quote from Uniswap", e)
+        setDestinationAmountIsLoading(false)
       }
     }
   }, [sourceAmount, sourceTokenSelected, destinationTokenSelected, sendType])
@@ -606,15 +611,15 @@ const Transfer = () => {
   }
 
   m.crossChainZeta = async () => {
-    const from = sourceTokenSelected.chain_name
-    const to = destinationTokenSelected.chain_name
-    const tx = await client.sendZETA(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string
-    )
+    const { chain_name: from } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+    const tx = await client.sendZeta({
+      amount: sourceAmount,
+      chain: from,
+      destination: to,
+      recipient: address as string,
+    })
+
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
@@ -623,21 +628,16 @@ const Transfer = () => {
   }
 
   m.withdrawBTC = async () => {
-    const from = sourceTokenSelected.chain_name
-    const to = destinationTokenSelected.chain_name
-    const btc = bitcoinAddress
-    const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      btc,
-      token
-    )
+    const { symbol, contract, chain_name: from } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+    const tx = await client.withdraw({
+      amount: sourceAmount,
+      zrc20: contract,
+      recipient: bitcoinAddress,
+    })
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
@@ -678,84 +678,56 @@ const Transfer = () => {
   }
 
   m.withdrawZRC20 = async () => {
-    const destination = destinationTokenSelected.chain_name
-    const ZRC20Address = getAddress("zrc20", destination)
-    const contract = new ethers.Contract(ZRC20Address as any, ZRC20.abi, signer)
-    const value = ethers.utils.parseUnits(
-      sourceAmount,
-      destinationTokenSelected.decimals
-    )
-    await contract.approve(ZRC20Address, value)
-    const to =
-      destination === "btc_testnet"
+    const { chain_name: from, symbol, contract } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+
+    const recipient =
+      to === "btc_testnet"
         ? ethers.utils.toUtf8Bytes(bitcoinAddress)
         : addressSelected
-    const tx = await contract.withdraw(to, value)
-    const token = sourceTokenSelected.symbol
-    const from = sourceTokenSelected.chain_name
-    const dest = destinationTokenSelected.chain_name
+
+    const tx = await client.withdraw({
+      amount: sourceAmount,
+      zrc20: contract,
+      recipient,
+    })
+
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
   m.depositNative = async () => {
-    const from = sourceTokenSelected.chain_name
-    const to = destinationTokenSelected.chain_name
-    const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string,
-      token
-    )
+    const { chain_name: from, symbol } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+    const tx = await client.deposit({
+      amount: sourceAmount,
+      chain: from,
+    })
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
   m.depositERC20 = async () => {
-    const custodyAddress = getAddress(
-      "erc20Custody",
-      sourceTokenSelected.chain_name
-    )
-    const custodyContract = new ethers.Contract(
-      custodyAddress as any,
-      ERC20Custody.abi,
-      signer
-    )
-    const assetAddress = sourceTokenSelected.contract
-    const amount = ethers.utils.parseUnits(
-      sourceAmount,
-      sourceTokenSelected.decimals
-    )
-    try {
-      const contract = new ethers.Contract(assetAddress, ERC20_ABI.abi, signer)
-      await (await contract.approve(custodyAddress, amount)).wait()
-      const tx = await custodyContract.deposit(
-        addressSelected,
-        assetAddress,
-        amount,
-        "0x"
-      )
-      await tx.wait()
-      const token = sourceTokenSelected.symbol
-      const from = sourceTokenSelected.chain_name
-      const dest = destinationTokenSelected.chain_name
-      const inbound = {
-        inboundHash: tx.hash,
-        desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
-      }
-      setInbounds([...inbounds, inbound])
-    } catch (error) {
-      console.error("Error during deposit: ", error)
+    const { chain_name: from, symbol, contract } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+
+    const tx = await client.deposit({
+      amount: sourceAmount,
+      chain: from,
+      erc20: contract,
+      recipient: addressSelected,
+    })
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
+    setInbounds([...inbounds, inbound])
   }
 
   m.transferBTC = () => {
