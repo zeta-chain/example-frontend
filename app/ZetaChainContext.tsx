@@ -1,5 +1,13 @@
-import React, { ReactNode, createContext, useContext, useState } from "react"
+import React, {
+  ReactNode,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react"
 import { ZetaChainClient } from "@zetachain/toolkit/client"
+
+import { useEthersSigner } from "@/lib/ethers"
 
 const ZetaChainContext = createContext<{ client: ZetaChainClient } | undefined>(
   undefined
@@ -10,10 +18,14 @@ interface ZetaChainProviderProps {
 }
 
 export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
-  const [client] = useState(
-    () =>
-      new ZetaChainClient({
+  const [client, setClient] = useState<ZetaChainClient>()
+  const signer = useEthersSigner()
+
+  useEffect(() => {
+    if (signer) {
+      const newClient = new ZetaChainClient({
         network: "testnet",
+        signer: signer,
         chains: {
           zeta_testnet: {
             api: [
@@ -25,7 +37,9 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
           },
         },
       })
-  )
+      setClient(newClient)
+    }
+  }, [signer])
 
   return (
     <ZetaChainContext.Provider value={{ client }}>

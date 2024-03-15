@@ -198,7 +198,7 @@ const Transfer = () => {
       parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
       const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
       const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
-      const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
+      const routerAddress = getAddress("uniswapV2Router02", "zeta_testnet")
       const router = new ethers.Contract(
         routerAddress as any,
         UniswapV2Factory.abi,
@@ -608,13 +608,13 @@ const Transfer = () => {
   m.crossChainZeta = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
-    const tx = await client.sendZETA(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string
-    )
+    const tx = await client.sendZeta({
+      amount: sourceAmount,
+      chain: from,
+      destination: to,
+      recipient: address as string,
+    })
+
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
@@ -623,21 +623,16 @@ const Transfer = () => {
   }
 
   m.withdrawBTC = async () => {
-    const from = sourceTokenSelected.chain_name
-    const to = destinationTokenSelected.chain_name
-    const btc = bitcoinAddress
-    const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      btc,
-      token
-    )
+    const { symbol, contract, chain_name: from } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+    const tx = await client.withdraw({
+      amount: sourceAmount,
+      zrc20: contract,
+      recipient: bitcoinAddress,
+    })
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
@@ -705,14 +700,10 @@ const Transfer = () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string,
-      token
-    )
+    const tx = await client.deposit({
+      amount: sourceAmount,
+      chain: from,
+    })
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
