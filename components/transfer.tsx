@@ -5,9 +5,7 @@ import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
-import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
-import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
 import { prepareData } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
@@ -162,7 +160,7 @@ const Transfer = () => {
         if (!chainFee) {
           throw new Error("Fee not found")
         }
-        const amount = parseFloat(chainFee)
+        const amount = parseFloat(chainFee.totalFee)
         const symbol = balances.find((c: any) => {
           if (
             c?.chain_id === destinationTokenSelected?.chain_id &&
@@ -240,7 +238,8 @@ const Transfer = () => {
           ).toFixed(2)
         )
       } catch (e) {
-        console.error(e)
+        console.error("Cannot get a quote from Uniswap", e)
+        setDestinationAmountIsLoading(false)
       }
     }
   }, [sourceAmount, sourceTokenSelected, destinationTokenSelected, sendType])
