@@ -1,7 +1,9 @@
 import React, { ReactNode, createContext, useContext, useState } from "react"
 import { ZetaChainClient } from "@zetachain/toolkit/client"
 
-const ZetaChainContext = createContext<any>(undefined!)
+const ZetaChainContext = createContext<{ client: ZetaChainClient } | undefined>(
+  undefined
+)
 
 interface ZetaChainProviderProps {
   children: ReactNode
@@ -16,7 +18,7 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
           zeta_testnet: {
             api: [
               {
-                url: `https://zetachain-testnet-archive.allthatnode.com:8545/${process.env.NEXT_PUBLIC_ATN_KEY}`,
+                url: `https://zetachain-athens-evm.blockpi.network/v1/rpc/${process.env.NEXT_PUBLIC_API_KEY}`,
                 type: "evm",
               },
             ],
@@ -32,7 +34,7 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
   )
 }
 
-export function useZetaChain(): any {
+export function useZetaChain() {
   const context = useContext(ZetaChainContext)
   if (context === undefined) {
     throw new Error("useZetaChain must be used within a ZetaChainProvider")

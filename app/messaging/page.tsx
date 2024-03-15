@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/select"
 import { AppContext } from "@/app/index"
 
+import { useZetaChain } from "../ZetaChainContext"
+
 const contracts: any = {
   goerli_testnet: "0x122F9Cca5121F23b74333D5FBd0c5D9B413bc002",
   mumbai_testnet: "0x392bBEC0537D48640306D36525C64442E98FA780",
@@ -45,6 +47,7 @@ const contracts: any = {
 }
 
 const MessagingPage = () => {
+  const { client } = useZetaChain()
   const [message, setMessage] = useState("")
   const [destinationNetwork, setDestinationNetwork] = useState("")
   const [destinationChainID, setDestinationChainID] = useState(null)
@@ -137,7 +140,12 @@ const MessagingPage = () => {
       if (!currentNetworkName || !destinationNetwork) {
         throw new Error("Network is not selected")
       }
-      const feeZETA = fees.feesCCM[destinationNetwork].totalFee
+      const chainID = client.getChainId(destinationNetwork)?.toString()
+      const chainFee = fees.messaging.find((f: any) => f.chainID === chainID)
+      if (!chainFee) {
+        throw new Error("Messaging fee not found")
+      }
+      const feeZETA = chainFee.totalFee
       let fee
       if (currentNetworkName === "mumbai_testnet") {
         fee = await convertZETAtoMATIC(feeZETA)
