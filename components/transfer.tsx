@@ -606,8 +606,8 @@ const Transfer = () => {
   }
 
   m.crossChainZeta = async () => {
-    const from = sourceTokenSelected.chain_name
-    const to = destinationTokenSelected.chain_name
+    const { chain_name: from } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
     const tx = await client.sendZeta({
       amount: sourceAmount,
       chain: from,
@@ -673,40 +673,37 @@ const Transfer = () => {
   }
 
   m.withdrawZRC20 = async () => {
-    const destination = destinationTokenSelected.chain_name
-    const ZRC20Address = getAddress("zrc20", destination)
-    const contract = new ethers.Contract(ZRC20Address as any, ZRC20.abi, signer)
-    const value = ethers.utils.parseUnits(
-      sourceAmount,
-      destinationTokenSelected.decimals
-    )
-    await contract.approve(ZRC20Address, value)
-    const to =
-      destination === "btc_testnet"
+    const { chain_name: from, symbol, contract } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+
+    const recipient =
+      to === "btc_testnet"
         ? ethers.utils.toUtf8Bytes(bitcoinAddress)
         : addressSelected
-    const tx = await contract.withdraw(to, value)
-    const token = sourceTokenSelected.symbol
-    const from = sourceTokenSelected.chain_name
-    const dest = destinationTokenSelected.chain_name
+
+    const tx = await client.withdraw({
+      amount: sourceAmount,
+      zrc20: contract,
+      recipient,
+    })
+
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
 
   m.depositNative = async () => {
-    const from = sourceTokenSelected.chain_name
-    const to = destinationTokenSelected.chain_name
-    const token = sourceTokenSelected.symbol
+    const { chain_name: from, symbol } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
     const tx = await client.deposit({
       amount: sourceAmount,
       chain: from,
     })
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
   }
