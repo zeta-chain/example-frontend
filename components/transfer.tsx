@@ -140,13 +140,16 @@ const Transfer = () => {
 
   // Set cross-chain fee and whether address can be changed
   useEffect(() => {
+    const dest = destinationTokenSelected?.chain_name
     if (fees) {
       if (sendType === "crossChainZeta") {
-        const dest = destinationTokenSelected?.chain_name
         const isZeta = dest === "zeta_testnet"
-        const amount = isZeta
-          ? 0
-          : parseFloat(fees?.["feesCCM"][dest]?.totalFee)
+        const chainID = client.getChainId(dest)?.toString()
+        const chainFee = fees.messaging.find((f: any) => f.chainID === chainID)
+        if (!chainFee) {
+          throw new Error("Fee not found")
+        }
+        const amount = isZeta ? 0 : chainFee.totalFee
         const formatted = amount === 0 ? "0 ZETA" : `~${amount.toFixed(2)} ZETA`
         setCrossChainFee({
           amount,
@@ -154,9 +157,12 @@ const Transfer = () => {
           formatted,
         })
       } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-        const fee =
-          fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
-        const amount = parseFloat(fee)
+        const { address } = sourceTokenSelected
+        const chainFee = fees.omnichain.find((f: any) => f.contract === address)
+        if (!chainFee) {
+          throw new Error("Fee not found")
+        }
+        const amount = parseFloat(chainFee)
         const symbol = balances.find((c: any) => {
           if (
             c?.chain_id === destinationTokenSelected?.chain_id &&
@@ -709,41 +715,20 @@ const Transfer = () => {
   }
 
   m.depositERC20 = async () => {
-    const custodyAddress = getAddress(
-      "erc20Custody",
-      sourceTokenSelected.chain_name
-    )
-    const custodyContract = new ethers.Contract(
-      custodyAddress as any,
-      ERC20Custody.abi,
-      signer
-    )
-    const assetAddress = sourceTokenSelected.contract
-    const amount = ethers.utils.parseUnits(
-      sourceAmount,
-      sourceTokenSelected.decimals
-    )
-    try {
-      const contract = new ethers.Contract(assetAddress, ERC20_ABI.abi, signer)
-      await (await contract.approve(custodyAddress, amount)).wait()
-      const tx = await custodyContract.deposit(
-        addressSelected,
-        assetAddress,
-        amount,
-        "0x"
-      )
-      await tx.wait()
-      const token = sourceTokenSelected.symbol
-      const from = sourceTokenSelected.chain_name
-      const dest = destinationTokenSelected.chain_name
-      const inbound = {
-        inboundHash: tx.hash,
-        desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
-      }
-      setInbounds([...inbounds, inbound])
-    } catch (error) {
-      console.error("Error during deposit: ", error)
+    const { chain_name: from, symbol, contract } = sourceTokenSelected
+    const { chain_name: to } = destinationTokenSelected
+
+    const tx = await client.deposit({
+      amount: sourceAmount,
+      chain: from,
+      erc20: contract,
+      recipient: addressSelected,
+    })
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${sourceAmount} ${symbol} from ${from} to ${to}`,
     }
+    setInbounds([...inbounds, inbound])
   }
 
   m.transferBTC = () => {

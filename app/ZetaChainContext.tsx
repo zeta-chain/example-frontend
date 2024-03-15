@@ -41,6 +41,10 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
     }
   }, [signer])
 
+  if (!client) {
+    return <div>Loading...</div>
+  }
+
   return (
     <ZetaChainContext.Provider value={{ client }}>
       {children}
