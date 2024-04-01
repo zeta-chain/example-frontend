@@ -198,7 +198,7 @@ const Transfer = () => {
       parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
       const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
       const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
-      const routerAddress = getAddress("uniswapv2Router02", "zeta_testnet")
+      const routerAddress = getAddress("uniswapV2Router02", "zeta_testnet")
       const router = new ethers.Contract(
         routerAddress as any,
         UniswapV2Factory.abi,
