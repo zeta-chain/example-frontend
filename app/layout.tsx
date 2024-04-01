@@ -21,8 +21,8 @@ import {
 import { WagmiConfig, configureChains, createConfig } from "wagmi"
 import {
   bscTestnet,
-  goerli,
   polygonMumbai,
+  sepolia,
   zetachainAthensTestnet,
 } from "wagmi/chains"
 import { publicProvider } from "wagmi/providers/public"
@@ -33,7 +33,7 @@ interface RootLayoutProps {
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
-    goerli,
+    sepolia,
     polygonMumbai,
     bscTestnet,
     {

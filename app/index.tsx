@@ -189,7 +189,10 @@ export default function Index({ children }: RootLayoutProps) {
         if (!isConnected) {
           return setBalances([])
         }
-        const b = await client.getBalances(address, btc)
+        const b = await client.getBalances({
+          evmAddress: address,
+          btcAddress: btc,
+        })
         setBalances(b)
       } catch (e) {
         console.log(e)
