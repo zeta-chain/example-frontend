@@ -8,6 +8,7 @@ import { useContractWrite, usePrepareContractWrite } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
 import CrossChainMessage from "./CrossChainMessage.json"
@@ -20,8 +21,11 @@ const GiveawayPage = () => {
     prizeAmount: "",
     maxParticipants: "",
     nftContract: "",
+    amount: "",
   })
+  const [currentChainId, setCurrentChainId] = useState(null)
   const zetaChainRPC = getEndpoints("evm", "zeta_testnet")[0]?.url
+  const sepoliaRPC = getEndpoints("evm", "sepolia_testnet")[0]?.url
 
   const contracts = {
     zeta_testnet: "0xA3F803A329Da0838df8A72409798dF89e3fEc927",
@@ -58,6 +62,26 @@ const GiveawayPage = () => {
     fetchGiveaways()
   }, [])
 
+  useEffect(() => {
+    const getCurrentChainId = async () => {
+      try {
+        if (window.ethereum) {
+          const provider = new ethers.providers.Web3Provider(window.ethereum)
+          const { chainId } = await provider.getNetwork()
+          setCurrentChainId(chainId)
+        }
+      } catch (error) {
+        console.error("Error getting chain ID:", error)
+      }
+    }
+
+    getCurrentChainId()
+
+    window.ethereum.on("chainChanged", (chainId) => {
+      setCurrentChainId(parseInt(chainId, 16))
+    })
+  }, [])
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData({
@@ -78,9 +102,10 @@ const GiveawayPage = () => {
       BigInt(formData.blockHeight || "0"),
       parseEther(formData.prizeAmount || "0"),
       BigInt(formData.maxParticipants || "0"),
-      formData.nftContract || "",
+      formData.nftContract,
       BigInt(11155111),
     ],
+    value: parseEther(formData.amount || "0"),
     enabled:
       !!formData.blockHeight &&
       !!formData.prizeAmount &&
@@ -97,9 +122,26 @@ const GiveawayPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (write) {
-      write()
+      try {
+        await write()
+      } catch (error) {
+        console.error("Transaction error:", error)
+      }
     } else {
       console.error("Unable to write to contract")
+    }
+  }
+
+  const handleParticipate = async (giveawayId) => {
+    try {
+      const contract = new ethers.Contract(
+        contracts.sepolia_testnet,
+        CrossChainMessage.abi,
+        signer
+      )
+      await contract.participate(giveawayId)
+    } catch (error) {
+      console.error("Error participating in giveaway:", error)
     }
   }
 
@@ -115,18 +157,31 @@ const GiveawayPage = () => {
           ) : giveaways.length === 0 ? (
             <p>No giveaways available</p>
           ) : (
-            <ul>
+            <div className="flex flex-col w-full items-start space-y-4">
               {giveaways.map((giveaway, index) => (
-                <li key={index}>
-                  <p>Creator: {giveaway.creator}</p>
-                  <p>Block Height: {giveaway.blockHeight.toString()}</p>
-                  <p>Prize Amount: {giveaway.prizeAmount.toString()}</p>
-                  <p>Max Participants: {giveaway.maxParticipants.toString()}</p>
-                  <p>NFT Contract: {giveaway.nftContract}</p>
-                  <p>Giveaway ID: {giveaway.giveawayId.toString()}</p>
-                </li>
+                <Card className="w-full p-4 space-y-4" key={index}>
+                  <div>
+                    <p>Creator: {giveaway.creator}</p>
+                    <p>Block Height: {giveaway.blockHeight.toString()}</p>
+                    <p>Prize Amount: {giveaway.prizeAmount.toString()}</p>
+                    <p>
+                      Max Participants: {giveaway.maxParticipants.toString()}
+                    </p>
+                    <p>NFT Contract: {giveaway.nftContract}</p>
+                    <p>Giveaway ID: {giveaway.giveawayId.toString()}</p>
+                  </div>
+                  <div>
+                    <Button
+                      onClick={() => handleParticipate(giveaway.giveawayId)}
+                      disabled={currentChainId !== 11155111}
+                      variant="outline"
+                    >
+                      Participate
+                    </Button>
+                  </div>
+                </Card>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
@@ -163,6 +218,13 @@ const GiveawayPage = () => {
                 value={formData.nftContract}
                 onChange={handleInputChange}
                 placeholder="NFT Contract"
+                required
+              />
+              <Input
+                name="amount"
+                value={formData.amount}
+                onChange={handleInputChange}
+                placeholder="Amount"
                 required
               />
               <Button type="submit">Create Giveaway</Button>
