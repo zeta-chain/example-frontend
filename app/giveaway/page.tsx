@@ -1,9 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
+import Link from "next/link"
 import { getEndpoints } from "@zetachain/networks"
 import { ethers } from "ethers"
 import { parseEther } from "ethers/lib/utils"
+import { RefreshCw, UserCircleIcon } from "lucide-react"
 import { useContractWrite, usePrepareContractWrite } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
@@ -38,36 +40,56 @@ const GiveawayPage = () => {
   }
   const signer = useEthersSigner()
 
-  useEffect(() => {
-    const fetchGiveaways = async () => {
-      try {
-        const provider = new ethers.providers.JsonRpcProvider(zetaChainRPC)
-        const contract = new ethers.Contract(
-          contracts.zeta_testnet,
-          CrossChainMessage.abi,
-          provider
-        )
+  const getRandomEmojiFromSeed = (seed: number): string => {
+    // Unicode range for emojis (this range can be expanded)
+    const emojiRangeStart = 0x1f600
+    const emojiRangeEnd = 0x1f64f
+    const randomCodePoint =
+      emojiRangeStart + (seed % (emojiRangeEnd - emojiRangeStart + 1))
+    return String.fromCodePoint(randomCodePoint)
+  }
 
-        const giveawayCounter = await contract.giveawayCounter()
-        const allGiveaways = []
-
-        for (let i = giveawayCounter - 1; i >= 0; i--) {
-          const giveaway = await contract.giveaways(i)
-          allGiveaways.push(giveaway)
-          await fetchRequirements(giveaway.giveawayId.toString())
-          await fetchParticipants(giveaway.giveawayId.toString())
-        }
-
-        setGiveaways(allGiveaways as any)
-      } catch (error) {
-        console.error("Error fetching giveaways:", error)
-      } finally {
-        setIsLoading(false)
-      }
+  const ethAddressToSingleEmoji = (address: string): string => {
+    // Remove the '0x' prefix if it exists
+    if (address.startsWith("0x")) {
+      address = address.slice(2)
     }
 
-    fetchGiveaways()
-  }, [])
+    // Generate a numeric seed from the address by summing the char codes
+    const seed = address
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0)
+
+    // Get a single random emoji using the seed
+    return getRandomEmojiFromSeed(seed)
+  }
+
+  const fetchGiveaways = async () => {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(zetaChainRPC)
+      const contract = new ethers.Contract(
+        contracts.zeta_testnet,
+        CrossChainMessage.abi,
+        provider
+      )
+
+      const giveawayCounter = await contract.giveawayCounter()
+      const allGiveaways = []
+
+      for (let i = giveawayCounter - 1; i >= 0; i--) {
+        const giveaway = await contract.giveaways(i)
+        allGiveaways.push(giveaway)
+        await fetchRequirements(giveaway.giveawayId.toString())
+        await fetchParticipants(giveaway.giveawayId.toString())
+      }
+
+      setGiveaways(allGiveaways as any)
+    } catch (error) {
+      console.error("Error fetching giveaways:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const fetchRequirements = async (giveawayId: string) => {
     try {
@@ -136,6 +158,7 @@ const GiveawayPage = () => {
         setCurrentChainId(parseInt(chainId, 16))
       })
     }
+    fetchGiveaways()
   }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,6 +215,24 @@ const GiveawayPage = () => {
     }
   }
 
+  const hexToColor = (hex: string): string => {
+    // Remove the '0x' prefix if it exists
+    if (hex.startsWith("0x")) {
+      hex = hex.slice(2)
+    }
+
+    // Ensure the hex string is at least 6 characters long by repeating it if necessary
+    while (hex.length < 6) {
+      hex += hex
+    }
+
+    // Take the first 6 characters for the color
+    const color = hex.slice(0, 6)
+
+    // Format as a hex color
+    return `#${color}`
+  }
+
   const handleParticipate = async (giveawayId: any) => {
     try {
       const contract = new ethers.Contract(
@@ -221,13 +262,29 @@ const GiveawayPage = () => {
     }
   }
 
+  const getRandomRotation = (): number => {
+    const minRotation = -15
+    const maxRotation = 15
+    return Math.random() * (maxRotation - minRotation) + minRotation
+  }
+
+  const refreshData = async () => {
+    setIsLoading(true)
+    await fetchGiveaways()
+  }
+
   return (
     <div className="p-4">
       <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
         <div className="sm:col-span-2 overflow-x-scroll">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4">
-            Giveaways
-          </h1>
+          <div className="flex items-center justify-start mt-6 mb-4 gap-1">
+            <h1 className="text-2xl font-bold leading-tight tracking-tight">
+              Giveaways
+            </h1>
+            <Button size="icon" variant="ghost" onClick={refreshData}>
+              <RefreshCw className={`h-4 w-4 ${isLoading && "animate-spin"}`} />
+            </Button>
+          </div>
           {isLoading ? (
             <p>Loading giveaways...</p>
           ) : giveaways.length === 0 ? (
@@ -235,9 +292,80 @@ const GiveawayPage = () => {
           ) : (
             <div className="flex flex-col w-full items-start space-y-4">
               {giveaways.map((giveaway, index) => (
-                <Card className="w-full p-4 space-y-4" key={index}>
+                <Card className="w-full p-6 space-y-4" key={index}>
                   <div>
-                    <p>Creator: {giveaway.creator}</p>
+                    <div className="grid gap-y-6">
+                      <div className="grid grid-cols-2">
+                        <div>
+                          <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold">
+                            Prize
+                          </h2>
+                          <h3 className="text-2xl font-bold leading-tight tracking-tight">
+                            {`${ethers.utils.formatEther(
+                              giveaway.prizeAmount.toString()
+                            )} ZETA`}
+                          </h3>
+                        </div>
+                        <div className="uppercase text-xs tracking-wider font-bold flex justify-end space-x-4">
+                          <div className="flex">
+                            {
+                              participants[giveaway.giveawayId.toString()]
+                                ?.length
+                            }
+                            <UserCircleIcon className="h-4 h-4" />
+                          </div>
+                          <div>
+                            {giveaway.nftContract !==
+                              "0x0000000000000000000000000000000000000000" &&
+                            requirements[giveaway.giveawayId.toString()]
+                              ? "Ongoing"
+                              : "Coming soon"}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 items-end">
+                        <div className="space-y-2">
+                          <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold">
+                            Requirements to Qualify
+                          </h2>
+                          <div>
+                            <Link
+                              href="/giveaway/nft"
+                              className="flex pt-2 space-x-4 items-center"
+                            >
+                              <div
+                                className="flex items-center justify-center rounded-lg"
+                                style={{
+                                  transform: `rotate(${getRandomRotation()}deg)`,
+                                  backgroundColor: hexToColor(
+                                    giveaway.nftContract
+                                  ),
+                                }}
+                              >
+                                <div className="text-2xl py-4 px-3">
+                                  {ethAddressToSingleEmoji(
+                                    giveaway.nftContract
+                                  )}
+                                </div>
+                              </div>
+                              <div>Own an NFT</div>
+                            </Link>
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() =>
+                              handleParticipate(giveaway.giveawayId)
+                            }
+                            disabled={currentChainId !== 11155111}
+                            variant="outline"
+                          >
+                            Participate
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    {/* <p>Creator: {giveaway.creator}</p>
                     <p>Block Height: {giveaway.blockHeight.toString()}</p>
                     <p>Prize Amount: {giveaway.prizeAmount.toString()}</p>
                     <p>
@@ -277,7 +405,7 @@ const GiveawayPage = () => {
                       variant="outline"
                     >
                       Mint NFT
-                    </Button>
+                    </Button> */}
                   </div>
                 </Card>
               ))}

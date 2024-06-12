@@ -233,10 +233,10 @@ export default function Index({ children }: RootLayoutProps) {
   )
 
   useEffect(() => {
-    fetchBalances(true)
-    fetchFeesList()
-    fetchStakingDelegations()
-    fetchPrices()
+    // fetchBalances(true)
+    // fetchFeesList()
+    // fetchStakingDelegations()
+    // fetchPrices()
   }, [isConnected, address])
 
   const fetchPrices = useCallback(
