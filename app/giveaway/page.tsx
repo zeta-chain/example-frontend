@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
-import { getEndpoints } from "@zetachain/networks"
 import { ethers } from "ethers"
 import { parseEther } from "ethers/lib/utils"
 import {
@@ -11,7 +10,7 @@ import {
   RefreshCw,
   UserCircleIcon,
 } from "lucide-react"
-import { useContractWrite, usePrepareContractWrite } from "wagmi"
+import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
 import { Button } from "@/components/ui/button"
@@ -26,6 +25,23 @@ import {
 } from "./helpers"
 
 const GiveawayPage = () => {
+  const contracts = {
+    zeta_testnet: "0x9D8d5c67802AB0CB2f17260C2F9e2EC631Ca16fe",
+    sepolia_testnet: "0x6EA97C9f23a3889B12d322F446C4b9017D981FCE",
+  }
+
+  const [currentBlockHeight, setCurrentBlockHeight] = useState<number | null>(
+    null
+  )
+  const fetchCurrentBlockHeight = async () => {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(zetaChainRPC)
+      const blockNumber = await provider.getBlockNumber()
+      setCurrentBlockHeight(blockNumber)
+    } catch (error) {
+      console.error("Error fetching current block height:", error)
+    }
+  }
   const [requirements, setRequirements] = useState<{ [key: string]: string }>(
     {}
   )
@@ -39,6 +55,7 @@ const GiveawayPage = () => {
     prizeAmount: "",
     maxParticipants: "",
     nftContract: "",
+    title: "",
   })
   const [currentChainId, setCurrentChainId] = useState<number | null>(null)
   const [userAddress, setUserAddress] = useState<string | null>(null)
@@ -47,15 +64,23 @@ const GiveawayPage = () => {
   const [nftOwnership, setNftOwnership] = useState<{ [key: string]: boolean }>(
     {}
   )
+  const { address, isConnected } = useAccount()
 
-  const contracts = {
-    zeta_testnet: "0xC275e1f5Aff9136BF544b9c67b7D514E9941004C",
-    sepolia_testnet: "0x10b083940b3A90DB162C591954Cb33136b0Aae15",
-  }
   const signer = useEthersSigner()
 
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms))
+  const handleDistributeRewards = async (giveawayId: any) => {
+    try {
+      const contract = new ethers.Contract(
+        contracts.zeta_testnet,
+        CrossChainMessage.abi,
+        signer
+      )
+      await contract.distributeRewards(giveawayId)
+      refreshData() // Refresh data after distributing rewards
+    } catch (error) {
+      console.error("Error distributing rewards:", error)
+    }
+  }
 
   const fetchGiveaways = async () => {
     try {
@@ -79,11 +104,11 @@ const GiveawayPage = () => {
         if (
           giveaway.nftContract !==
             "0x0000000000000000000000000000000000000000" &&
-          userAddress
+          address
         ) {
           await checkNftOwnership(
             giveaway.nftContract,
-            userAddress,
+            address,
             giveaway.giveawayId.toString()
           )
         }
@@ -191,14 +216,20 @@ const GiveawayPage = () => {
       }
     }
 
-    getCurrentChainId()
+    const fetchInitialData = async () => {
+      await getCurrentChainId()
+      await fetchCurrentBlockHeight()
+    }
+
+    fetchInitialData()
 
     if (w.ethereum) {
-      w.ethereum.on("chainChanged", (chainId: string) => {
+      w.ethereum.on("chainChanged", async (chainId: string) => {
         setCurrentChainId(parseInt(chainId, 16))
+        await fetchCurrentBlockHeight()
       })
     }
-  }, [userAddress])
+  }, [address])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -226,6 +257,7 @@ const GiveawayPage = () => {
       maxParticipants,
       formData.nftContract,
       BigInt(11155111),
+      formData.title,
     ],
     value: amount,
     enabled:
@@ -243,14 +275,14 @@ const GiveawayPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (write) {
+    if (write && currentChainId === 7001) {
       try {
         await write()
       } catch (error) {
         console.error("Transaction error:", error)
       }
     } else {
-      console.error("Unable to write to contract")
+      console.error("Unable to write to contract or incorrect chain ID")
     }
   }
 
@@ -299,6 +331,7 @@ const GiveawayPage = () => {
                     <div className="grid gap-y-6">
                       <div className="grid grid-cols-2">
                         <div>
+                          <div className="mb-4">{giveaway.title}</div>
                           <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold">
                             Prize
                           </h2>
@@ -371,8 +404,8 @@ const GiveawayPage = () => {
                             </Link>
                           </div>
                         </div>
-                        {userAddress && (
-                          <div className="flex justify-end">
+                        {address && (
+                          <div className="flex justify-end gap-2">
                             <Button
                               onClick={() =>
                                 handleParticipate(giveaway.giveawayId)
@@ -381,16 +414,32 @@ const GiveawayPage = () => {
                                 currentChainId !== 11155111 ||
                                 participants[
                                   giveaway.giveawayId.toString()
-                                ]?.includes(userAddress)
+                                ]?.includes(address) ||
+                                !nftOwnership[giveaway.giveawayId.toString()]
                               }
                               variant="outline"
                             >
                               {participants[
                                 giveaway.giveawayId.toString()
-                              ]?.includes(userAddress)
+                              ]?.includes(address)
                                 ? "You're in"
                                 : "Participate"}
                             </Button>
+                            {currentBlockHeight !== null &&
+                              currentBlockHeight >
+                                parseInt(giveaway.blockHeight.toString()) &&
+                              giveaway.nftContract !==
+                                "0x0000000000000000000000000000000000000000" &&
+                              requirements[giveaway.giveawayId.toString()] && (
+                                <Button
+                                  onClick={() =>
+                                    handleDistributeRewards(giveaway.giveawayId)
+                                  }
+                                  disabled={currentChainId !== 7001}
+                                >
+                                  Get rewards!
+                                </Button>
+                              )}
                           </div>
                         )}
                       </div>
@@ -408,6 +457,14 @@ const GiveawayPage = () => {
           </h1>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col w-full items-start space-y-4">
+              <Input
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                placeholder="Title"
+                className="flex w-full"
+                required
+              />
               <Input
                 name="blockHeight"
                 value={formData.blockHeight}
@@ -440,19 +497,19 @@ const GiveawayPage = () => {
                 placeholder="NFT Contract"
                 required
               />
-              <Button type="submit">Create Giveaway</Button>
+              <Button type="submit" disabled={currentChainId !== 7001}>
+                Create Giveaway
+              </Button>
             </div>
           </form>
-          {isPrepareError && (
-            <p className="text-red-500">
-              Error preparing transaction: {prepareError?.message}
-            </p>
-          )}
-          {isWriteError && (
-            <p className="text-red-500">
-              Error writing transaction: {writeError?.message}
-            </p>
-          )}
+          <div className="text-xs my-4 text-red-500">
+            {isPrepareError && (
+              <p>Error preparing transaction: {prepareError?.message}</p>
+            )}
+            {isWriteError && (
+              <p>Error writing transaction: {writeError?.message}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
