@@ -2,10 +2,12 @@
 
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
+import { format } from "date-fns"
 import { ethers } from "ethers"
 import { parseEther } from "ethers/lib/utils"
 import {
   ArrowUpRight,
+  Calendar as CalendarIcon,
   CircleCheck,
   RefreshCw,
   UserCircleIcon,
@@ -14,8 +16,14 @@ import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 import CrossChainMessage from "./CrossChainMessage.json"
 import {
@@ -51,12 +59,12 @@ const GiveawayPage = () => {
   )
   const [isLoading, setIsLoading] = useState(true)
   const [formData, setFormData] = useState({
-    blockHeight: "",
     prizeAmount: "",
     maxParticipants: "",
     nftContract: "",
     title: "",
   })
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [currentChainId, setCurrentChainId] = useState<number | null>(null)
   const [userAddress, setUserAddress] = useState<string | null>(null)
   const zetaChainRPC = `https://zetachain-athens.g.allthatnode.com/archive/evm/${process.env.NEXT_PUBLIC_ATN_KEY}`
@@ -191,7 +199,6 @@ const GiveawayPage = () => {
         provider
       )
       const balance = await contract.balanceOf(userAddress)
-      console.log("nft check", nftContract, userAddress, balance)
       setNftOwnership((prev) => ({
         ...prev,
         [giveawayId]: balance.toNumber() > 0,
@@ -213,7 +220,7 @@ const GiveawayPage = () => {
       const hasRequirements = requirements[giveaway.giveawayId.toString()]
 
       if (!hasRequirements) {
-        return "Coming soon"
+        return "Starting soon"
       }
 
       if (hasRequirements && currentBlockHeight < giveawayBlockHeight) {
@@ -236,10 +243,22 @@ const GiveawayPage = () => {
         return "Completed"
       }
 
-      return "Unknown"
+      return "..."
     }
 
     const w = window as any
+
+    giveaways.forEach((giveaway) => {
+      setGiveawayStatus((prev) => ({
+        ...prev,
+        [giveaway.giveawayId.toString()]: determineGiveawayStatus(giveaway),
+      }))
+    })
+  }, [address, currentBlockHeight, requirements, giveaways])
+
+  useEffect(() => {
+    const w = window as any
+
     const getCurrentChainId = async () => {
       try {
         if (w.ethereum) {
@@ -249,9 +268,6 @@ const GiveawayPage = () => {
           const signer = provider.getSigner()
           const address = await signer.getAddress()
           setUserAddress(address)
-
-          // Fetch giveaways once the user address is set
-          await fetchGiveaways()
         }
       } catch (error) {
         console.error("Error getting chain ID or address:", error)
@@ -261,6 +277,7 @@ const GiveawayPage = () => {
     const fetchInitialData = async () => {
       await getCurrentChainId()
       await fetchCurrentBlockHeight()
+      await fetchGiveaways()
     }
 
     fetchInitialData()
@@ -271,14 +288,7 @@ const GiveawayPage = () => {
         await fetchCurrentBlockHeight()
       })
     }
-
-    giveaways.forEach((giveaway) => {
-      setGiveawayStatus((prev) => ({
-        ...prev,
-        [giveaway.giveawayId.toString()]: determineGiveawayStatus(giveaway),
-      }))
-    })
-  }, [address, currentBlockHeight, requirements, giveaways])
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -288,6 +298,15 @@ const GiveawayPage = () => {
     })
   }
 
+  const calculateBlockHeight = (date: any, currentBlock: number | null) => {
+    if (!date || !currentBlock) return 0
+    const now = new Date()
+    const secondsDifference = (date.getTime() - now.getTime()) / 1000
+    const blocksDifference = Math.ceil(secondsDifference / 5)
+    return currentBlock + blocksDifference
+  }
+
+  const blockHeight = calculateBlockHeight(selectedDate, currentBlockHeight)
   const prizeAmount = parseEther(formData.prizeAmount || "0").toBigInt()
   const maxParticipants = BigInt(formData.maxParticipants || "0")
   const amount = prizeAmount * maxParticipants + BigInt(4 * 10 ** 18)
@@ -301,7 +320,7 @@ const GiveawayPage = () => {
     abi: CrossChainMessage.abi,
     functionName: "createGiveaway",
     args: [
-      BigInt(formData.blockHeight || "0"),
+      BigInt(blockHeight || "0"),
       prizeAmount,
       maxParticipants,
       formData.nftContract,
@@ -310,7 +329,7 @@ const GiveawayPage = () => {
     ],
     value: amount,
     enabled:
-      !!formData.blockHeight &&
+      !!blockHeight &&
       !!formData.prizeAmount &&
       !!formData.maxParticipants &&
       !!formData.nftContract,
@@ -324,6 +343,12 @@ const GiveawayPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    console.log("Form Data:", formData)
+    console.log("Block Height:", blockHeight)
+    console.log("Prize Amount:", prizeAmount.toString())
+    console.log("Max Participants:", maxParticipants.toString())
+    console.log("NFT Contract:", formData.nftContract)
+    console.log("Amount:", amount.toString())
     if (write && currentChainId === 7001) {
       try {
         await write()
@@ -333,6 +358,10 @@ const GiveawayPage = () => {
     } else {
       console.error("Unable to write to contract or incorrect chain ID")
     }
+  }
+
+  const handleDateSelect = (day: Date | undefined) => {
+    setSelectedDate(day ?? undefined)
   }
 
   const handleParticipate = async (giveawayId: any) => {
@@ -472,6 +501,7 @@ const GiveawayPage = () => {
                                 : "Participate"}
                             </Button>
                             {currentBlockHeight !== null &&
+                              !giveaway.completed &&
                               currentBlockHeight >
                                 parseInt(giveaway.blockHeight.toString()) &&
                               giveaway.nftContract !==
@@ -502,36 +532,54 @@ const GiveawayPage = () => {
             New Giveaway
           </h1>
           <form onSubmit={handleSubmit}>
-            <div className="flex flex-col w-full items-start space-y-4">
+            <div className="flex flex-col w-full items-start">
               <Input
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Title"
-                className="flex w-full"
+                className="flex w-full mb-4"
                 required
               />
-              <Input
-                name="blockHeight"
-                value={formData.blockHeight}
-                type="number"
-                onChange={handleInputChange}
-                placeholder="Block Height"
-                className="flex w-full"
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={`w-full justify-start mb-4 text-left font-normal ${
+                      !selectedDate && "text-muted-foreground"
+                    }`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? (
+                      format(selectedDate, "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate as any}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <Input
                 name="prizeAmount"
                 type="number"
                 value={formData.prizeAmount}
                 onChange={handleInputChange}
                 placeholder="Prize Amount"
+                className="mb-4"
                 required
               />
               <Input
                 name="maxParticipants"
                 type="number"
                 value={formData.maxParticipants}
+                className="mb-4"
                 onChange={handleInputChange}
                 placeholder="Max Participants"
                 required
@@ -540,6 +588,7 @@ const GiveawayPage = () => {
                 name="nftContract"
                 value={formData.nftContract}
                 onChange={handleInputChange}
+                className="mb-4"
                 placeholder="NFT Contract"
                 required
               />
@@ -548,7 +597,7 @@ const GiveawayPage = () => {
               </Button>
             </div>
           </form>
-          <div className="text-xs my-4 text-red-500">
+          <div className="text-xs my-4 text-red-500 flex flex-wrap">
             {isPrepareError && (
               <p>Error preparing transaction: {prepareError?.message}</p>
             )}
