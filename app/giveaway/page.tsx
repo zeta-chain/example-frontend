@@ -5,7 +5,7 @@ import Link from "next/link"
 import { getEndpoints } from "@zetachain/networks"
 import { ethers } from "ethers"
 import { parseEther } from "ethers/lib/utils"
-import { RefreshCw, UserCircleIcon } from "lucide-react"
+import { ArrowUpRight, RefreshCw, UserCircleIcon } from "lucide-react"
 import { useContractWrite, usePrepareContractWrite } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
@@ -14,6 +14,11 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
 import CrossChainMessage from "./CrossChainMessage.json"
+import {
+  ethAddressToSingleEmoji,
+  getRandomRotation,
+  hexToColor,
+} from "./helpers"
 
 const GiveawayPage = () => {
   const [requirements, setRequirements] = useState<{ [key: string]: string }>(
@@ -39,30 +44,6 @@ const GiveawayPage = () => {
     sepolia_testnet: "0x10b083940b3A90DB162C591954Cb33136b0Aae15",
   }
   const signer = useEthersSigner()
-
-  const getRandomEmojiFromSeed = (seed: number): string => {
-    // Unicode range for emojis (this range can be expanded)
-    const emojiRangeStart = 0x1f600
-    const emojiRangeEnd = 0x1f64f
-    const randomCodePoint =
-      emojiRangeStart + (seed % (emojiRangeEnd - emojiRangeStart + 1))
-    return String.fromCodePoint(randomCodePoint)
-  }
-
-  const ethAddressToSingleEmoji = (address: string): string => {
-    // Remove the '0x' prefix if it exists
-    if (address.startsWith("0x")) {
-      address = address.slice(2)
-    }
-
-    // Generate a numeric seed from the address by summing the char codes
-    const seed = address
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0)
-
-    // Get a single random emoji using the seed
-    return getRandomEmojiFromSeed(seed)
-  }
 
   const fetchGiveaways = async () => {
     try {
@@ -100,7 +81,6 @@ const GiveawayPage = () => {
         provider
       )
       const giveawayRequirements = await contract.requirements(giveawayId)
-      console.log(giveawayRequirements)
       if (giveawayRequirements === "0x0000000000000000000000000000000000000000")
         return
       setRequirements((prev) => ({
@@ -121,7 +101,7 @@ const GiveawayPage = () => {
         provider
       )
       const participantCounter = await contract.participantCounters(giveawayId)
-      const participantsList = []
+      const participantsList: any = []
 
       for (let i = 0; i < participantCounter; i++) {
         const participant = await contract.participants(giveawayId, i)
@@ -215,24 +195,6 @@ const GiveawayPage = () => {
     }
   }
 
-  const hexToColor = (hex: string): string => {
-    // Remove the '0x' prefix if it exists
-    if (hex.startsWith("0x")) {
-      hex = hex.slice(2)
-    }
-
-    // Ensure the hex string is at least 6 characters long by repeating it if necessary
-    while (hex.length < 6) {
-      hex += hex
-    }
-
-    // Take the first 6 characters for the color
-    const color = hex.slice(0, 6)
-
-    // Format as a hex color
-    return `#${color}`
-  }
-
   const handleParticipate = async (giveawayId: any) => {
     try {
       const contract = new ethers.Contract(
@@ -247,25 +209,6 @@ const GiveawayPage = () => {
     } catch (error) {
       console.error("Error participating in giveaway:", error)
     }
-  }
-
-  const handleMint = (nftContractAddress: string) => async () => {
-    try {
-      const nftContract = new ethers.Contract(
-        nftContractAddress,
-        ["function mintTo(address recipient) public returns (uint256)"],
-        signer
-      )
-      if (signer) await nftContract.mintTo(await signer.getAddress())
-    } catch (error) {
-      console.error("Error minting NFT:", error)
-    }
-  }
-
-  const getRandomRotation = (): number => {
-    const minRotation = -15
-    const maxRotation = 15
-    return Math.random() * (maxRotation - minRotation) + minRotation
   }
 
   const refreshData = async () => {
@@ -311,7 +254,8 @@ const GiveawayPage = () => {
                             {
                               participants[giveaway.giveawayId.toString()]
                                 ?.length
-                            }
+                            }{" "}
+                            / {giveaway.maxParticipants.toString()}
                             <UserCircleIcon className="h-4 h-4" />
                           </div>
                           <div>
@@ -330,11 +274,14 @@ const GiveawayPage = () => {
                           </h2>
                           <div>
                             <Link
-                              href="/giveaway/nft"
+                              href={{
+                                pathname: "/giveaway/nft",
+                                query: { address: giveaway.nftContract },
+                              }}
                               className="flex pt-2 space-x-4 items-center"
                             >
                               <div
-                                className="flex items-center justify-center rounded-lg"
+                                className="flex items-center justify-center rounded-lg transition-transform"
                                 style={{
                                   transform: `rotate(${getRandomRotation()}deg)`,
                                   backgroundColor: hexToColor(
@@ -348,7 +295,10 @@ const GiveawayPage = () => {
                                   )}
                                 </div>
                               </div>
-                              <div>Own an NFT</div>
+                              <div className="flex items-center">
+                                <span>Own an NFT on Ethereum</span>{" "}
+                                <ArrowUpRight className="h-4 w-4" />
+                              </div>
                             </Link>
                           </div>
                         </div>
@@ -365,47 +315,6 @@ const GiveawayPage = () => {
                         </div>
                       </div>
                     </div>
-                    {/* <p>Creator: {giveaway.creator}</p>
-                    <p>Block Height: {giveaway.blockHeight.toString()}</p>
-                    <p>Prize Amount: {giveaway.prizeAmount.toString()}</p>
-                    <p>
-                      Max Participants: {giveaway.maxParticipants.toString()}
-                    </p>
-                    <p>NFT Contract: {giveaway.nftContract}</p>
-                    <p>Giveaway ID: {giveaway.giveawayId.toString()}</p>
-                    {giveaway.nftContract !==
-                      "0x0000000000000000000000000000000000000000" &&
-                    requirements[giveaway.giveawayId.toString()] ? (
-                      <p className="text-green-500">Has Requirements</p>
-                    ) : (
-                      <p className="text-red-500">No Requirements</p>
-                    )}
-                  </div>
-                  <div>
-                    <h3>Participants:</h3>
-                    <ul>
-                      {participants[giveaway.giveawayId.toString()]?.map(
-                        (participant, idx) => (
-                          <li key={idx}>{participant}</li>
-                        )
-                      )}
-                    </ul>
-                  </div>
-                  <div className="flex space-x-4">
-                    <Button
-                      onClick={() => handleParticipate(giveaway.giveawayId)}
-                      disabled={currentChainId !== 11155111}
-                      variant="outline"
-                    >
-                      Participate
-                    </Button>
-                    <Button
-                      onClick={handleMint(giveaway.nftContract)}
-                      disabled={currentChainId !== 11155111}
-                      variant="outline"
-                    >
-                      Mint NFT
-                    </Button> */}
                   </div>
                 </Card>
               ))}
@@ -422,6 +331,7 @@ const GiveawayPage = () => {
               <Input
                 name="blockHeight"
                 value={formData.blockHeight}
+                type="number"
                 onChange={handleInputChange}
                 placeholder="Block Height"
                 className="flex w-full"
@@ -429,6 +339,7 @@ const GiveawayPage = () => {
               />
               <Input
                 name="prizeAmount"
+                type="number"
                 value={formData.prizeAmount}
                 onChange={handleInputChange}
                 placeholder="Prize Amount"
@@ -436,6 +347,7 @@ const GiveawayPage = () => {
               />
               <Input
                 name="maxParticipants"
+                type="number"
                 value={formData.maxParticipants}
                 onChange={handleInputChange}
                 placeholder="Max Participants"

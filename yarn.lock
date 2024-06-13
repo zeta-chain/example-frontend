@@ -6841,10 +6841,10 @@ lru_map@^0.3.3:
   resolved "https://registry.yarnpkg.com/lru_map/-/lru_map-0.3.3.tgz#b5c8351b9464cbd750335a79650a0ec0e56118dd"
   integrity sha512-Pn9cox5CsMYngeDbmChANltQl+5pi6XmTrraMSzhPmMBbmgcxmqWry0U3PGapCU1yB4/LqCcom7qhHZiF/jGfQ==
 
-lucide-react@^0.288.0:
-  version "0.288.0"
-  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.288.0.tgz#cc9fda209fe4ec6e572efca38f7d3e3cde7422eb"
-  integrity sha512-ikhb/9LOkq9orPoLV9lLC4UYyoXQycBhIgH7H59ahOkk0mkcAqkD52m84RXedE/qVqZHW8rEJquInT4xGmsNqw==
+lucide-react@^0.394.0:
+  version "0.394.0"
+  resolved "https://registry.yarnpkg.com/lucide-react/-/lucide-react-0.394.0.tgz#ea496bcdb0a1295219936766f70b48235624e1ef"
+  integrity sha512-PzTbJ0bsyXRhH59k5qe7MpTd5MxlpYZUcM9kGSwvPGAfnn0J6FElDwu2EX6Vuh//F7y60rcVJiFQ7EK9DCMgfw==
 
 make-plural@*:
   version "7.3.0"
