@@ -16,7 +16,15 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
           zeta_testnet: {
             api: [
               {
-                url: `https://zetachain-evm.blockpi.network:443/v1/rpc/public`,
+                url: `https://zetachain-testnet-archive.allthatnode.com:8545/${process.env.NEXT_PUBLIC_ATN_KEY}`,
+                type: "evm",
+              },
+            ],
+          },
+          sepolia_testnet: {
+            api: [
+              {
+                url: `https://ethereum-sepolia.g.allthatnode.com/full/evm/${process.env.NEXT_PUBLIC_ATN_KEY}`,
                 type: "evm",
               },
             ],

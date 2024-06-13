@@ -5,7 +5,12 @@ import Link from "next/link"
 import { getEndpoints } from "@zetachain/networks"
 import { ethers } from "ethers"
 import { parseEther } from "ethers/lib/utils"
-import { ArrowUpRight, RefreshCw, UserCircleIcon } from "lucide-react"
+import {
+  ArrowUpRight,
+  CircleCheck,
+  RefreshCw,
+  UserCircleIcon,
+} from "lucide-react"
 import { useContractWrite, usePrepareContractWrite } from "wagmi"
 
 import { useEthersSigner } from "@/lib/ethers"
@@ -36,14 +41,21 @@ const GiveawayPage = () => {
     nftContract: "",
   })
   const [currentChainId, setCurrentChainId] = useState<number | null>(null)
-  const zetaChainRPC = getEndpoints("evm", "zeta_testnet")[0]?.url
-  const sepoliaRPC = getEndpoints("evm", "sepolia_testnet")[0]?.url
+  const [userAddress, setUserAddress] = useState<string | null>(null)
+  const zetaChainRPC = `https://zetachain-athens.g.allthatnode.com/archive/evm/${process.env.NEXT_PUBLIC_ATN_KEY}`
+  const sepoliaRPC = `https://ethereum-sepolia.g.allthatnode.com/full/evm/${process.env.NEXT_PUBLIC_ATN_KEY}`
+  const [nftOwnership, setNftOwnership] = useState<{ [key: string]: boolean }>(
+    {}
+  )
 
   const contracts = {
     zeta_testnet: "0xC275e1f5Aff9136BF544b9c67b7D514E9941004C",
     sepolia_testnet: "0x10b083940b3A90DB162C591954Cb33136b0Aae15",
   }
   const signer = useEthersSigner()
+
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms))
 
   const fetchGiveaways = async () => {
     try {
@@ -62,6 +74,21 @@ const GiveawayPage = () => {
         allGiveaways.push(giveaway)
         await fetchRequirements(giveaway.giveawayId.toString())
         await fetchParticipants(giveaway.giveawayId.toString())
+
+        // Check NFT ownership for each giveaway
+        if (
+          giveaway.nftContract !==
+            "0x0000000000000000000000000000000000000000" &&
+          userAddress
+        ) {
+          await checkNftOwnership(
+            giveaway.nftContract,
+            userAddress,
+            giveaway.giveawayId.toString()
+          )
+        }
+
+        // await delay(500)
       }
 
       setGiveaways(allGiveaways as any)
@@ -117,6 +144,33 @@ const GiveawayPage = () => {
     }
   }
 
+  const checkNftOwnership = async (
+    nftContract: string,
+    userAddress: string,
+    giveawayId: string
+  ) => {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(sepoliaRPC)
+      const contract = new ethers.Contract(
+        nftContract,
+        ["function balanceOf(address owner) view returns (uint256)"],
+        provider
+      )
+      const balance = await contract.balanceOf(userAddress)
+      console.log("nft check", nftContract, userAddress, balance)
+      setNftOwnership((prev) => ({
+        ...prev,
+        [giveawayId]: balance.toNumber() > 0,
+      }))
+    } catch (error) {
+      console.error("Error checking NFT ownership:", error)
+      setNftOwnership((prev) => ({
+        ...prev,
+        [giveawayId]: false,
+      }))
+    }
+  }
+
   useEffect(() => {
     const w = window as any
     const getCurrentChainId = async () => {
@@ -125,9 +179,15 @@ const GiveawayPage = () => {
           const provider = new ethers.providers.Web3Provider(w.ethereum)
           const { chainId } = await provider.getNetwork()
           setCurrentChainId(chainId)
+          const signer = provider.getSigner()
+          const address = await signer.getAddress()
+          setUserAddress(address)
+
+          // Fetch giveaways once the user address is set
+          await fetchGiveaways()
         }
       } catch (error) {
-        console.error("Error getting chain ID:", error)
+        console.error("Error getting chain ID or address:", error)
       }
     }
 
@@ -138,8 +198,7 @@ const GiveawayPage = () => {
         setCurrentChainId(parseInt(chainId, 16))
       })
     }
-    fetchGiveaways()
-  }, [])
+  }, [userAddress])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -295,24 +354,45 @@ const GiveawayPage = () => {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex items-center">
-                                <span>Own an NFT on Ethereum</span>{" "}
-                                <ArrowUpRight className="h-4 w-4" />
+                              <div>
+                                <div className="flex items-center">
+                                  <span>Own an NFT on Ethereum</span>{" "}
+                                  <ArrowUpRight className="h-4 w-4" />
+                                </div>
+                                {nftOwnership[
+                                  giveaway.giveawayId.toString()
+                                ] && (
+                                  <div className="text-gray-500 text-sm flex items-center gap-1">
+                                    <CircleCheck className="h-4 w-4" />
+                                    <div>You already qualify</div>
+                                  </div>
+                                )}
                               </div>
                             </Link>
                           </div>
                         </div>
-                        <div className="flex justify-end">
-                          <Button
-                            onClick={() =>
-                              handleParticipate(giveaway.giveawayId)
-                            }
-                            disabled={currentChainId !== 11155111}
-                            variant="outline"
-                          >
-                            Participate
-                          </Button>
-                        </div>
+                        {userAddress && (
+                          <div className="flex justify-end">
+                            <Button
+                              onClick={() =>
+                                handleParticipate(giveaway.giveawayId)
+                              }
+                              disabled={
+                                currentChainId !== 11155111 ||
+                                participants[
+                                  giveaway.giveawayId.toString()
+                                ]?.includes(userAddress)
+                              }
+                              variant="outline"
+                            >
+                              {participants[
+                                giveaway.giveawayId.toString()
+                              ]?.includes(userAddress)
+                                ? "You're in"
+                                : "Participate"}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
