@@ -82,6 +82,10 @@ const GiveawayPage = () => {
     }
   }
 
+  const [giveawayStatus, setGiveawayStatus] = useState<{
+    [key: string]: string
+  }>({})
+
   const fetchGiveaways = async () => {
     try {
       const provider = new ethers.providers.JsonRpcProvider(zetaChainRPC)
@@ -112,7 +116,6 @@ const GiveawayPage = () => {
             giveaway.giveawayId.toString()
           )
         }
-
         // await delay(500)
       }
 
@@ -124,24 +127,30 @@ const GiveawayPage = () => {
     }
   }
 
-  const fetchRequirements = async (giveawayId: string) => {
-    try {
-      const provider = new ethers.providers.JsonRpcProvider(sepoliaRPC)
-      const contract = new ethers.Contract(
-        contracts.sepolia_testnet,
-        CrossChainMessage.abi,
-        provider
-      )
-      const giveawayRequirements = await contract.requirements(giveawayId)
-      if (giveawayRequirements === "0x0000000000000000000000000000000000000000")
-        return
-      setRequirements((prev) => ({
-        ...prev,
-        [giveawayId]: giveawayRequirements,
-      }))
-    } catch (error) {
-      console.error("Error fetching requirements:", error)
-    }
+  const fetchRequirements = (giveawayId: string) => {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        const provider = new ethers.providers.JsonRpcProvider(sepoliaRPC)
+        const contract = new ethers.Contract(
+          contracts.sepolia_testnet,
+          CrossChainMessage.abi,
+          provider
+        )
+        const giveawayRequirements = await contract.requirements(giveawayId)
+        if (
+          giveawayRequirements === "0x0000000000000000000000000000000000000000"
+        )
+          return resolve()
+        setRequirements((prev) => ({
+          ...prev,
+          [giveawayId]: giveawayRequirements,
+        }))
+        resolve()
+      } catch (error) {
+        console.error("Error fetching requirements:", error)
+        reject(error)
+      }
+    })
   }
 
   const fetchParticipants = async (giveawayId: string) => {
@@ -197,6 +206,39 @@ const GiveawayPage = () => {
   }
 
   useEffect(() => {
+    const determineGiveawayStatus = (giveaway: any) => {
+      if (currentBlockHeight === null) return "Unknown"
+
+      const giveawayBlockHeight = parseInt(giveaway.blockHeight.toString())
+      const hasRequirements = requirements[giveaway.giveawayId.toString()]
+
+      if (!hasRequirements) {
+        return "Coming soon"
+      }
+
+      if (hasRequirements && currentBlockHeight < giveawayBlockHeight) {
+        return "Ongoing"
+      }
+
+      if (
+        hasRequirements &&
+        !giveaway.completed &&
+        currentBlockHeight >= giveawayBlockHeight
+      ) {
+        return "Claim rewards"
+      }
+
+      if (
+        hasRequirements &&
+        currentBlockHeight >= giveawayBlockHeight &&
+        giveaway.completed
+      ) {
+        return "Completed"
+      }
+
+      return "Unknown"
+    }
+
     const w = window as any
     const getCurrentChainId = async () => {
       try {
@@ -229,7 +271,14 @@ const GiveawayPage = () => {
         await fetchCurrentBlockHeight()
       })
     }
-  }, [address])
+
+    giveaways.forEach((giveaway) => {
+      setGiveawayStatus((prev) => ({
+        ...prev,
+        [giveaway.giveawayId.toString()]: determineGiveawayStatus(giveaway),
+      }))
+    })
+  }, [address, currentBlockHeight, requirements, giveaways])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -351,11 +400,8 @@ const GiveawayPage = () => {
                             <UserCircleIcon className="h-4 h-4" />
                           </div>
                           <div>
-                            {giveaway.nftContract !==
-                              "0x0000000000000000000000000000000000000000" &&
-                            requirements[giveaway.giveawayId.toString()]
-                              ? "Ongoing"
-                              : "Coming soon"}
+                            {giveawayStatus[giveaway.giveawayId.toString()] ||
+                              "Loading..."}
                           </div>
                         </div>
                       </div>
@@ -389,7 +435,7 @@ const GiveawayPage = () => {
                               </div>
                               <div>
                                 <div className="flex items-center">
-                                  <span>Own an NFT on Ethereum</span>{" "}
+                                  <span>Own an NFT on Ethereum</span>
                                   <ArrowUpRight className="h-4 w-4" />
                                 </div>
                                 {nftOwnership[
