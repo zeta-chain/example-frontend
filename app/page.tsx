@@ -60,7 +60,7 @@ const BalancesTable = ({
             .slice(0, showAll ? balances.length : 5)
             .map((b: any, index: any) => (
               <TableRow key={index} className="border-none">
-                <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                <TableCell className="rounded-l-xl pl-4">
                   <div>{b.ticker}</div>
                   <div className="text-xs text-gray-400">{b.chain_name}</div>
                 </TableCell>
@@ -68,18 +68,18 @@ const BalancesTable = ({
                 <TableCell className="text-right">
                   {b.price?.toFixed(2)}
                 </TableCell>
-                <TableCell className="rounded-br-xl rounded-tr-xl text-right">
+                <TableCell className="rounded-r-xl text-right">
                   {parseFloat(b.balance).toFixed(2) || "N/A"}
                   {b.ticker === "ZETA" && b.coin_type === "Gas" && (
                     <div>
                       <Button
                         size="sm"
                         variant="link"
-                        className="my-1 p-0 text-xs h-5"
+                        className="my-1 h-5 p-0 text-xs"
                         asChild
                       >
                         <Link href="/staking">
-                          <ArrowBigUp className="h-4 w-4 mr-0.5" />
+                          <ArrowBigUp className="mr-0.5 h-4 w-4" />
                           {stakingAmountTotal > 0 ? (
                             <span>
                               Staked:&nbsp;
@@ -198,10 +198,10 @@ export default function IndexPage() {
 
   return (
     <div>
-      <div className="grid sm:grid-cols-3 gap-x-10">
-        <div className="sm:col-span-2 overflow-x-scroll">
-          <div className="mt-12 mb-8">
-            <div className="px-3 text-sm mb-1 text-gray-400">Total balance</div>
+      <div className="grid gap-x-10 sm:grid-cols-3">
+        <div className="overflow-x-scroll sm:col-span-2">
+          <div className="mb-8 mt-12">
+            <div className="mb-1 px-3 text-sm text-gray-400">Total balance</div>
             <div className="flex items-center justify-start gap-1">
               <h1 className="px-3 text-4xl font-bold tracking-tight">
                 ${formatBalanceTotal(balancesTotal)}

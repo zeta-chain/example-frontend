@@ -17,8 +17,8 @@ export function SiteHeader() {
   const { bitcoinAddress, connectBitcoin } = useContext(AppContext)
 
   return (
-    <header className="bg-background sticky top-0 z-40 w-full">
-      <div className="container px-4 pr-8 flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+    <header className="sticky top-0 z-40 w-full bg-background">
+      <div className="container flex h-16 items-center space-x-4 px-4 pr-8 sm:justify-between sm:space-x-0">
         <MainNav />
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
@@ -28,7 +28,7 @@ export function SiteHeader() {
                   <Button
                     size="icon"
                     className={cn(
-                      "mx-2 bg-white hover:bg-white rounded-xl shadow-rainbowkit hover:scale-1025 transition-all active:scale-95"
+                      "mx-2 rounded-xl bg-white shadow-rainbowkit transition-all hover:scale-1025 hover:bg-white active:scale-95"
                     )}
                     onClick={() => connectBitcoin()}
                   >
@@ -38,7 +38,7 @@ export function SiteHeader() {
                         bitcoinAddress ? "bg-bitcoin" : "bg-gray-500"
                       )}
                     >
-                      <Bitcoin className="w-5 h-5" color="white" />
+                      <Bitcoin className="h-5 w-5" color="white" />
                     </div>
                   </Button>
                 </TooltipTrigger>

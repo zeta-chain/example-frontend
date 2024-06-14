@@ -59,7 +59,7 @@ const PoolsPage = () => {
 
   return (
     <div>
-      <h1 className="leading-10 text-2xl font-bold tracking-tight pl-4">
+      <h1 className="pl-4 text-2xl font-bold leading-10 tracking-tight">
         Pools
       </h1>
       <div className="mt-10">
@@ -70,7 +70,7 @@ const PoolsPage = () => {
               .map((_, index) => (
                 <Skeleton
                   key={index}
-                  className="w-[100%] sm:w-64 min-h-[150px] border-none rounded-xl"
+                  className="min-h-[150px] w-[100%] rounded-xl border-none sm:w-64"
                 />
               ))}
           </div>
@@ -78,7 +78,7 @@ const PoolsPage = () => {
           <div className="flex flex-wrap gap-4">
             {poolsSorted.map((p: any) => (
               <Card
-                className={`p-4 w-[100%] sm:w-64 min-h-[150px] shadow-lg border-none rounded-xl ${
+                className={`min-h-[150px] w-[100%] rounded-xl border-none p-4 shadow-lg sm:w-64 ${
                   p.t0.symbol && p.t1.symbol ? "" : "opacity-50"
                 }`}
               >

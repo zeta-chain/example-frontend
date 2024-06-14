@@ -840,8 +840,8 @@ const Transfer = () => {
   }
 
   return (
-    <div className="shadow-none md:shadow-xl p-0 md:px-5 md:py-7 rounded-2xl md:shadow-gray-100 mb-10">
-      <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
+    <div className="mb-10 rounded-2xl p-0 shadow-none md:px-5 md:py-7 md:shadow-xl md:shadow-gray-100">
+      <h1 className="mb-4 ml-2 mt-6 text-2xl font-bold leading-tight tracking-tight">
         Swap
       </h1>
       <form
@@ -849,9 +849,9 @@ const Transfer = () => {
           e.preventDefault()
         }}
       >
-        <div className="grid grid-cols-4 gap-4 mb-4">
+        <div className="mb-4 grid grid-cols-4 gap-4">
           <Input
-            className="col-span-2 h-full text-xl border-none"
+            className="col-span-2 h-full border-none text-xl"
             onChange={(e) => setSourceAmount(e.target.value)}
             placeholder="0"
             value={sourceAmount}
@@ -865,10 +865,10 @@ const Transfer = () => {
                 variant="outline"
                 role="combobox"
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
+                className="col-span-2 h-full justify-between overflow-x-hidden border-none"
               >
-                <div className="flex flex-col w-full items-start">
-                  <div className="text-xs w-full flex justify-between">
+                <div className="flex w-full flex-col items-start">
+                  <div className="flex w-full justify-between text-xs">
                     <div>
                       {sourceTokenSelected
                         ? sourceTokenSelected.symbol
@@ -888,7 +888,7 @@ const Transfer = () => {
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
+            <PopoverContent className="w-[300px] border-none p-0 shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
@@ -927,17 +927,17 @@ const Transfer = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="grid grid-cols-4 gap-4 mb-4">
-          <div className="col-span-2 relative">
+        <div className="mb-4 grid grid-cols-4 gap-4">
+          <div className="relative col-span-2">
             <Input
-              className="text-xl h-full border-none"
+              className="h-full border-none text-xl"
               type="number"
               placeholder=""
               value={destinationAmount}
               disabled={true}
             />
             {destinationAmountIsLoading && (
-              <div className="translate-y-[-50%] absolute top-[50%] left-[1rem]">
+              <div className="absolute left-[1rem] top-[50%] translate-y-[-50%]">
                 <Loader2 className="h-6 w-6 animate-spin opacity-40" />
               </div>
             )}
@@ -951,9 +951,9 @@ const Transfer = () => {
                 variant="outline"
                 role="combobox"
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
+                className="col-span-2 h-full justify-between overflow-x-hidden border-none"
               >
-                <div className="flex flex-col w-full items-start">
+                <div className="flex w-full flex-col items-start">
                   <div className="text-xs">
                     {destinationTokenSelected
                       ? destinationTokenSelected.symbol
@@ -968,7 +968,7 @@ const Transfer = () => {
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
+            <PopoverContent className="w-[300px] border-none p-0 shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
                 <CommandEmpty>No balances found.</CommandEmpty>
@@ -1007,7 +1007,7 @@ const Transfer = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <div className="space-x-2 flex ml-2 mt-6">
+        <div className="ml-2 mt-6 flex space-x-2">
           {addressSelected && (
             <Popover
               open={customAddressOpen}
@@ -1017,19 +1017,19 @@ const Transfer = () => {
                 <Button
                   disabled={!canChangeAddress}
                   variant="outline"
-                  className="rounded-full w-[110px] text-xs h-6 px-3"
+                  className="h-6 w-[110px] rounded-full px-3 text-xs"
                 >
                   {isAddressSelectedValid ? (
-                    <UserCircle2 className="h-3 w-3 mr-1" />
+                    <UserCircle2 className="mr-1 h-3 w-3" />
                   ) : (
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                    <AlertCircle className="mr-1 h-3 w-3" />
                   )}
                   {formatAddress(addressSelected)}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="rounded-xl flex p-2 space-x-2 w-[390px]">
+              <PopoverContent className="flex w-[390px] space-x-2 rounded-xl p-2">
                 <Input
-                  className="grow border-none text-xs px-2"
+                  className="grow border-none px-2 text-xs"
                   placeholder="Recipient address"
                   onChange={(e) => setCustomAddress(e.target.value)}
                   value={customAddress}
@@ -1053,13 +1053,13 @@ const Transfer = () => {
                 <Button
                   // disabled={true}
                   variant="outline"
-                  className="rounded-full text-xs h-6 px-3"
+                  className="h-6 rounded-full px-3 text-xs"
                 >
                   {crossChainFee.formatted}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="rounded-xl w-auto text-xs">
-                <div className="font-medium text-center">Cross-Chain Fee</div>
+              <PopoverContent className="w-auto rounded-xl text-xs">
+                <div className="text-center font-medium">Cross-Chain Fee</div>
                 <div className="text-slate-400">
                   {crossChainFee?.amount.toFixed(15)}
                 </div>
@@ -1077,9 +1077,9 @@ const Transfer = () => {
                 disabled={sendDisabled}
               >
                 {isSending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="mr-2 h-4 w-4" />
                 )}
                 {sendButtonText}
               </Button>
@@ -1093,9 +1093,9 @@ const Transfer = () => {
               }
             >
               {isLoading && pendingChainId === sourceTokenSelected.chain_id ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <RefreshCcw className="h-4 w-4 mr-2" />
+                <RefreshCcw className="mr-2 h-4 w-4" />
               )}
               Switch Network
             </Button>

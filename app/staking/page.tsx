@@ -477,11 +477,11 @@ const StakingPage = () => {
               return (
                 <TableRow
                   key={v.operator_address}
-                  className="transition-none border-none cursor-pointer relative"
+                  className="relative cursor-pointer border-none transition-none"
                   onClick={() => handleSelectValidator(v)}
                 >
                   <TableCell
-                    className={`pl-4 rounded-bl-xl rounded-tl-xl ${
+                    className={`rounded-l-xl pl-4${
                       v.jailed ? "text-rose-500" : ""
                     }`}
                   >
@@ -499,8 +499,8 @@ const StakingPage = () => {
                     {stakedAmount &&
                       `${(parseFloat(stakedAmount) / 1e18).toFixed(2)}`}
                     {unbonding && (
-                      <div className="text-xs flex items-center gap-1 justify-end text-slate-400">
-                        <Clock4 className="w-3 h-3" />
+                      <div className="flex items-center justify-end gap-1 text-xs text-slate-400">
+                        <Clock4 className="h-3 w-3" />
                         {parseFloat(formatUnits(unbonding, 18)).toFixed(2)}
                       </div>
                     )}
@@ -508,7 +508,7 @@ const StakingPage = () => {
                   <TableCell className="text-right">
                     <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
                   </TableCell>
-                  <TableCell className="rounded-br-xl rounded-tr-xl text-right">
+                  <TableCell className="rounded-r-xl text-right">
                     <span>
                       {(
                         parseFloat(v.commission.commission_rates.rate) * 100
@@ -523,11 +523,11 @@ const StakingPage = () => {
         </Table>
         {sortedValidatorsJailed.length > 0 && showJailedValidators && (
           <div>
-            <Separator className="mx-4 my-4" />
+            <Separator className="m-4" />
             <Table>
               <TableHeader>
                 <TableRow className="border-none hover:bg-transparent">
-                  <TableHead className="text-black flex items-center gap-1">
+                  <TableHead className="flex items-center gap-1 text-black">
                     Jailed Validators
                     <AlertTriangle className="h-4 w-4" />
                   </TableHead>
@@ -541,16 +541,16 @@ const StakingPage = () => {
                 {sortedValidatorsJailed.map((v: any) => (
                   <TableRow
                     key={v.operator_address}
-                    className="transition-none border-none cursor-pointer"
+                    className="cursor-pointer border-none transition-none"
                     onClick={() => handleSelectValidator(v)}
                   >
-                    <TableCell className="pl-4 rounded-bl-xl rounded-tl-xl">
+                    <TableCell className="rounded-l-xl pl-4">
                       {v.description.moniker}
                     </TableCell>
                     <TableCell className="text-right">
                       <span>{parseFloat(v.voting_power).toFixed(2)}</span>%
                     </TableCell>
-                    <TableCell className="rounded-br-xl rounded-tr-xl text-right">
+                    <TableCell className="rounded-r-xl text-right">
                       <span>
                         {(
                           parseFloat(v.commission.commission_rates.rate) * 100
@@ -708,10 +708,10 @@ const StakingPage = () => {
   }
 
   return (
-    <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
-      <div className="sm:col-span-2 overflow-x-scroll">
-        <div className="flex items-center justify-start gap-2 mb-6">
-          <h1 className="leading-10 text-2xl font-bold tracking-tight pl-4">
+    <div className="mt-12 grid gap-x-10 sm:grid-cols-3">
+      <div className="overflow-x-scroll sm:col-span-2">
+        <div className="mb-6 flex items-center justify-start gap-2">
+          <h1 className="pl-4 text-2xl font-bold leading-10 tracking-tight">
             Staking
           </h1>
           <Button size="icon" variant="ghost" onClick={fetchStakingData}>
@@ -721,27 +721,27 @@ const StakingPage = () => {
           </Button>
         </div>
         <div className="mb-6">
-          <Card className="py-6 shadow-none border-none mb-2">
-            <div className="grid sm:grid-cols-3 grid-cols-1 gap-2">
-              <div className="border border-gray-100 p-4 rounded-2xl">
+          <Card className="mb-2 border-none py-6 shadow-none">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="rounded-2xl border border-gray-100 p-4">
                 <div className="text-xs text-muted-foreground">Available</div>
-                <div className="text-xl flex items-center font-semibold">
+                <div className="flex items-center text-xl font-semibold">
                   {parseFloat(zetaBalance).toFixed(4)} ZETA
                 </div>
               </div>
-              <div className="flex flex-col gap-3 border border-gray-100 p-4 rounded-2xl">
+              <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 p-4">
                 <div>
                   <div className="text-xs text-muted-foreground">Staked</div>
-                  <div className="text-xl flex items-center">
+                  <div className="flex items-center text-xl">
                     {parseFloat(formatUnits(stakingAmountTotal, 18)).toFixed(2)}
                     &nbsp;ZETA
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    Unstaking <Clock4 className="w-3 h-3" />
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    Unstaking <Clock4 className="h-3 w-3" />
                   </div>
-                  <div className="text-xl flex items-center">
+                  <div className="flex items-center text-xl">
                     {parseFloat(
                       formatUnits(unbondingDelegationsTotal, 18)
                     ).toFixed(2)}
@@ -749,10 +749,10 @@ const StakingPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="border border-gray-100 rounded-2xl flex flex-col justify-between">
+              <div className="flex flex-col justify-between rounded-2xl border border-gray-100">
                 <div className="p-4">
                   <div className="text-xs text-muted-foreground">Rewards</div>
-                  <div className="text-xl flex items-center">
+                  <div className="flex items-center text-xl">
                     {parseFloat(
                       formatUnits(BigInt(parseInt(stakingRewardsTotal)), 18)
                     ).toFixed(6)}
@@ -766,7 +766,7 @@ const StakingPage = () => {
                     variant="outline"
                     className="w-full rounded-lg"
                   >
-                    <Gift className="w-4 h-4 mr-1" />
+                    <Gift className="mr-1 h-4 w-4" />
                     Claim rewards
                   </Button>
                 </div>
@@ -784,18 +784,18 @@ const StakingPage = () => {
           )}
         </div>
       </div>
-      <div className="sm:col-span-1 relative order-first sm:order-last">
+      <div className="relative order-first sm:order-last sm:col-span-1">
         {selectedValidator && (
-          <div className="sticky max-h-[75vh] transition-all top-20 shadow-none md:shadow-xl p-0 md:px-4 md:py-7 rounded-2xl md:shadow-gray-100 mb-10 overflow-x-hidden">
-            <h1 className="text-2xl flex items-center gap-2 font-bold leading-tight tracking-tight mt-6 mb-4 ml-3">
+          <div className="sticky top-20 mb-10 max-h-[75vh] overflow-x-hidden rounded-2xl p-0 shadow-none transition-all md:px-4 md:py-7 md:shadow-xl md:shadow-gray-100">
+            <h1 className="mb-4 ml-3 mt-6 flex items-center gap-2 text-2xl font-bold leading-tight tracking-tight">
               {selectedValidator?.description.moniker}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="icon" variant="ghost">
-                    <Copy className="w-4 h-4" />
+                    <Copy className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="border-none shadow-2xl rounded-lg">
+                <DropdownMenuContent className="rounded-lg border-none shadow-2xl">
                   <DropdownMenuItem
                     onClick={() =>
                       handleCopy(
@@ -835,17 +835,17 @@ const StakingPage = () => {
               </DropdownMenu>
             </h1>
             {selectedValidator.jailed && (
-              <div className="ml-3 mb-4 flex items-center text-rose-500 text-sm">
-                <AlertTriangle className="h-4 w-4 mr-1" />
+              <div className="mb-4 ml-3 flex items-center text-sm text-rose-500">
+                <AlertTriangle className="mr-1 h-4 w-4" />
                 <div>Validator is jailed</div>
               </div>
             )}
-            <div className="ml-3 mb-2">
+            <div className="mb-2 ml-3">
               {selectedValidator?.description.details}
             </div>
             {isObserver(selectedValidator.operator_address) && (
-              <div className="ml-3 my-4 flex items-center text-sm">
-                <Eye className="h-4 w-4 mr-1" />
+              <div className="my-4 ml-3 flex items-center text-sm">
+                <Eye className="mr-1 h-4 w-4" />
                 <div>This is an observer validator</div>
               </div>
             )}
@@ -856,7 +856,7 @@ const StakingPage = () => {
                     href={selectedValidator?.description.website}
                     target="_blank"
                   >
-                    <Globe2 className="w-4 h-4 mr-1" />
+                    <Globe2 className="mr-1 h-4 w-4" />
                     {selectedValidator?.description.website
                       .replace(/^(https?:\/\/)/, "")
                       .replace(/\/$/, "")}
@@ -865,10 +865,10 @@ const StakingPage = () => {
               </div>
             )}
             {getStakedAmount(selectedValidator.operator_address) && (
-              <Card className="shadow-none rounded-2xl border-gray-100">
+              <Card className="rounded-2xl border-gray-100 shadow-none">
                 <div className="mx-3 my-4 grid grid-cols-2">
                   <div className="text-sm font-semibold">Staked</div>
-                  <div className="text-sm text-right">
+                  <div className="text-right text-sm">
                     {(
                       parseFloat(
                         getStakedAmount(selectedValidator.operator_address)
@@ -885,22 +885,22 @@ const StakingPage = () => {
                       <PopoverTrigger asChild disabled={!isZetaChain}>
                         <Button
                           variant="outline"
-                          className="rounded-lg w-full"
+                          className="w-full rounded-lg"
                           disabled={!isZetaChain}
                         >
-                          <ArrowBigDown className="w-4 h-4 mr-1" />
+                          <ArrowBigDown className="mr-1 h-4 w-4" />
                           Withdraw
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="flex flex-col gap-2 rounded-lg shadow-2xl border-none">
-                        <div className="flex border-solid border-gray-200 rounded-lg border">
+                      <PopoverContent className="flex flex-col gap-2 rounded-lg border-none shadow-2xl">
+                        <div className="flex rounded-lg border border-solid border-gray-200">
                           <Input
                             type="number"
                             placeholder="0"
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
                             min="0"
-                            className="text-xl rounded-lg border-none"
+                            className="rounded-lg border-none text-xl"
                           />
                           <Button
                             onClick={() => {
@@ -918,7 +918,7 @@ const StakingPage = () => {
                           </Button>
                         </div>
                         <Button
-                          className="grow rounded-lg w-full"
+                          className="w-full grow rounded-lg"
                           onClick={handleWithdraw}
                           disabled={!isZetaChain || !withdrawAmountValid}
                         >
@@ -930,21 +930,21 @@ const StakingPage = () => {
                       <PopoverTrigger asChild disabled={!isZetaChain}>
                         <Button
                           variant="outline"
-                          className="rounded-lg w-full"
+                          className="w-full rounded-lg"
                           disabled={!isZetaChain}
                         >
-                          <Redo2 className="w-4 h-4 mr-1" />
+                          <Redo2 className="mr-1 h-4 w-4" />
                           Redelegate
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="flex flex-col gap-2 rounded-lg shadow-2xl border-none">
+                      <PopoverContent className="flex flex-col gap-2 rounded-lg border-none shadow-2xl">
                         <Input
                           type="number"
                           placeholder="0"
                           value={redelegateAmount}
                           onChange={(e) => setRedelegateAmount(e.target.value)}
                           min="0"
-                          className="text-xl rounded-lg"
+                          className="rounded-lg text-xl"
                         />
                         <Popover
                           open={redelegationDropdownOpen}
@@ -952,7 +952,7 @@ const StakingPage = () => {
                         >
                           <PopoverTrigger asChild>
                             <Button
-                              className="w-full flex justify-between px-3"
+                              className="flex w-full justify-between px-3"
                               variant="outline"
                             >
                               <div>
@@ -962,10 +962,10 @@ const StakingPage = () => {
                                     )
                                   : "Select a validator"}
                               </div>
-                              <ChevronDown className="w-4 h-4" />
+                              <ChevronDown className="h-4 w-4" />
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0 rounded-lg shadow-2xl border-none">
+                          <PopoverContent className="w-[300px] rounded-lg border-none p-0 shadow-2xl">
                             <Command>
                               <CommandInput placeholder="Search tokens..." />
                               <CommandEmpty>No balances found.</CommandEmpty>
@@ -981,7 +981,7 @@ const StakingPage = () => {
                                     }}
                                   >
                                     <Check
-                                      className={`mr-2 h-4 w-4 opacity-${
+                                      className={`opacity- mr-2 h-4 w-4${
                                         redelegateValidatorSelected ===
                                         v.operator_address
                                           ? 100
@@ -1004,7 +1004,7 @@ const StakingPage = () => {
                           </PopoverContent>
                         </Popover>
                         <Button
-                          className="grow rounded-lg w-full"
+                          className="w-full grow rounded-lg"
                           disabled={!isZetaChain}
                           onClick={handleRedelegate}
                         >
@@ -1017,9 +1017,9 @@ const StakingPage = () => {
               </Card>
             )}
             {unbondingDelegationsFor(selectedValidator.operator_address) && (
-              <Card className="my-4 shadow-none rounded-2xl border-gray-100 text-sm">
-                <div className="mx-3 my-4 font-semibold flex items-center gap-1">
-                  Unstaking <Clock4 className="w-3 h-3" />
+              <Card className="my-4 rounded-2xl border-gray-100 text-sm shadow-none">
+                <div className="mx-3 my-4 flex items-center gap-1 font-semibold">
+                  Unstaking <Clock4 className="h-3 w-3" />
                 </div>
                 {unbondingDelegationsFor(
                   selectedValidator.operator_address
@@ -1040,20 +1040,20 @@ const StakingPage = () => {
             )}
             <div className="mx-3 my-4 grid grid-cols-2">
               <div className="text-sm">Commission</div>
-              <div className="text-sm text-right font-semibold">
+              <div className="text-right text-sm font-semibold">
                 {selectedValidator.commission.commission_rates.rate * 100}%
               </div>
             </div>
             <div className="mx-3 my-4 grid grid-cols-2">
               <div className="text-sm">Self-delegation</div>
-              <div className="text-sm text-right font-semibold">
+              <div className="text-right text-sm font-semibold">
                 {selectedValidatorSelfDelegation &&
                   formatSelfDelegation(selectedValidatorSelfDelegation) + "%"}
               </div>
             </div>
             <Popover>
               <PopoverTrigger
-                className="px-3 w-full"
+                className="w-full px-3"
                 disabled={!isZetaChain}
                 asChild
               >
@@ -1062,19 +1062,19 @@ const StakingPage = () => {
                   variant="outline"
                   disabled={!isZetaChain}
                 >
-                  <ArrowBigUp className="w-4 h-4 mr-1" />
+                  <ArrowBigUp className="mr-1 h-4 w-4" />
                   Stake
                 </Button>
               </PopoverTrigger>
               <PopoverContent>
-                <div className="flex gap-2 flex-col">
+                <div className="flex flex-col gap-2">
                   <div className="col-span-2">
                     <Input
                       type="number"
                       placeholder="0"
                       value={amount}
                       min="0"
-                      className="text-xl mb-1 rounded-lg"
+                      className="mb-1 rounded-lg text-xl"
                       disabled={isSending || !isZetaChain}
                       onChange={(e) => setAmount(e.target.value)}
                     />

@@ -217,10 +217,10 @@ const MessagingPage = () => {
 
   return (
     <div className="px-4">
-      <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4">
+      <h1 className="mb-4 mt-6 text-2xl font-bold leading-tight tracking-tight">
         Cross-Chain Message
       </h1>
-      <div className="grid grid-cols-1 sm:grid-cols-6 gap-10 items-start">
+      <div className="grid grid-cols-1 items-start gap-10 sm:grid-cols-6">
         <div className="col-span-1 sm:col-span-2">
           <Card className="p-4">
             <form
@@ -304,8 +304,8 @@ const MessagingPage = () => {
           </Card>
         </div>
 
-        <div className="text-sm col-span-1 sm:col-span-3">
-          <div className="max-w-prose leading-6 space-y-2">
+        <div className="col-span-1 text-sm sm:col-span-3">
+          <div className="max-w-prose space-y-2 leading-6">
             <p>
               This is a dapp that uses ZetaChain&apos;s{" "}
               <strong>cross-chain messaging</strong> for sending text messages
@@ -321,8 +321,8 @@ const MessagingPage = () => {
               href="https://www.zetachain.com/docs/developers/cross-chain-messaging/examples/hello-world/"
               target="_blank"
             >
-              <Button variant="outline" className="mt-4 mb-2">
-                <BookOpen className="w-4 h-4 mr-2" />
+              <Button variant="outline" className="mb-2 mt-4">
+                <BookOpen className="mr-2 h-4 w-4" />
                 Tutorial
               </Button>
             </Link>
@@ -332,15 +332,15 @@ const MessagingPage = () => {
               deployed on the following networks:
             </p>
           </div>
-          <pre className="my-4 rounded-md bg-slate-950 p-4 w-full overflow-x-scroll">
+          <pre className="my-4 w-full overflow-x-scroll rounded-md bg-slate-950 p-4">
             <code className="text-white">
               {JSON.stringify(contracts, null, 2)}
             </code>
           </pre>
-          <div className="max-w-prose leading-6 space-y-2">
+          <div className="max-w-prose space-y-2 leading-6">
             <p>Let&apos;s try using the dapp:</p>
           </div>{" "}
-          <ol className="mt-5 text-sm leading-6 space-y-4">
+          <ol className="mt-5 space-y-4 text-sm leading-6">
             <li className="flex">
               <Checkbox
                 className="mr-2 mt-1"

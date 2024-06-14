@@ -41,7 +41,7 @@ const NFTPage = () => {
         cards.push(
           <div
             key={i}
-            className="absolute w-[250px] h-[375px] rounded-3xl shadow-2xl shadow-slate-300 border-white border-8 transition-transform"
+            className="absolute h-[375px] w-[250px] rounded-3xl border-8 border-white shadow-2xl shadow-slate-300 transition-transform"
             style={{
               transform: `rotate(${getRandomRotation()}deg) translateY(${
                 i * 0
@@ -51,14 +51,14 @@ const NFTPage = () => {
             }}
           >
             {i === 4 && (
-              <div className="flex flex-col gap-6 justify-center items-center h-full">
+              <div className="flex h-full flex-col items-center justify-center gap-6">
                 <div className="text-8xl">
                   {ethAddressToSingleEmoji(address)}
                 </div>
                 <div className="justify-center">
                   <Button
                     onClick={handleMint(address)}
-                    className="bg-white/50 hover:bg-white/100 text-black uppercase text-xs tracking-wider font-bold"
+                    className="bg-white/50 text-xs font-bold uppercase tracking-wider text-black hover:bg-white/100"
                   >
                     mint
                   </Button>
@@ -79,7 +79,7 @@ const NFTPage = () => {
           Go back
         </Link>
       </Button>
-      <div className="flex my-[150px] justify-center relative">
+      <div className="relative my-[150px] flex justify-center">
         {address && renderCards()}
       </div>
     </div>

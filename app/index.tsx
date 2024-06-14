@@ -420,7 +420,7 @@ export default function Index({ children }: RootLayoutProps) {
           <NFTProvider>
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
-              <section className="container px-4 mt-4">{children}</section>
+              <section className="container mt-4 px-4">{children}</section>
             </div>
             <Toaster />
           </NFTProvider>

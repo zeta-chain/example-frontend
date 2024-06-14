@@ -12,6 +12,7 @@ import {
   CircleCheck,
   Coins,
   Gem,
+  Image,
   Plus,
   RefreshCw,
   ScanFace,
@@ -449,9 +450,9 @@ const GiveawayPage = () => {
 
   return (
     <div className="p-4">
-      <div className="grid sm:grid-cols-3 gap-x-10 mt-12">
-        <div className="sm:col-span-2 overflow-x-scroll">
-          <div className="flex items-center justify-start mt-6 mb-4 gap-1">
+      <div className="mt-12 grid gap-x-10 sm:grid-cols-3">
+        <div className="overflow-x-scroll sm:col-span-2">
+          <div className="mb-4 mt-6 flex items-center justify-start gap-1">
             <h1 className="text-2xl font-bold leading-tight tracking-tight">
               Giveaways
             </h1>
@@ -464,15 +465,15 @@ const GiveawayPage = () => {
           ) : giveaways.length === 0 ? (
             <p>No giveaways available</p>
           ) : (
-            <div className="flex flex-col w-full items-start space-y-4">
+            <div className="flex w-full flex-col items-start space-y-4">
               {giveaways.map((giveaway, index) => (
-                <Card className="w-full p-6 space-y-4" key={index}>
+                <Card className="w-full space-y-4 p-6" key={index}>
                   <div>
                     <div className="grid gap-y-6">
                       <div className="grid grid-cols-2">
                         <div>
                           <div className="mb-4">{giveaway.title}</div>
-                          <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold">
+                          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
                             Prize
                           </h2>
                           <h3 className="text-2xl font-bold leading-tight tracking-tight">
@@ -481,14 +482,14 @@ const GiveawayPage = () => {
                             )} ZETA`}
                           </h3>
                         </div>
-                        <div className="uppercase text-xs tracking-wider font-bold flex justify-end space-x-4">
+                        <div className="flex justify-end space-x-4 text-xs font-bold uppercase tracking-wider">
                           <div className="flex">
                             {
                               participants[giveaway.giveawayId.toString()]
                                 ?.length
                             }{" "}
                             / {giveaway.maxParticipants.toString()}
-                            <UserCircleIcon className="h-4 h-4" />
+                            <UserCircleIcon className="h-4" />
                           </div>
                           <div>
                             {giveawayStatus[giveaway.giveawayId.toString()] ||
@@ -498,7 +499,7 @@ const GiveawayPage = () => {
                       </div>
                       <div className="grid grid-cols-2 items-end">
                         <div className="space-y-2">
-                          <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold">
+                          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
                             Requirements to Qualify
                           </h2>
                           <div>
@@ -507,7 +508,7 @@ const GiveawayPage = () => {
                                 pathname: "/giveaway/nft",
                                 query: { address: giveaway.nftContract },
                               }}
-                              className="flex pt-2 space-x-4 items-center"
+                              className="flex items-center space-x-4 pt-2"
                             >
                               <div
                                 className="flex items-center justify-center rounded-lg transition-transform"
@@ -518,7 +519,7 @@ const GiveawayPage = () => {
                                   ),
                                 }}
                               >
-                                <div className="text-2xl py-4 px-3">
+                                <div className="px-3 py-4 text-2xl">
                                   {ethAddressToSingleEmoji(
                                     giveaway.nftContract
                                   )}
@@ -532,7 +533,7 @@ const GiveawayPage = () => {
                                 {nftOwnership[
                                   giveaway.giveawayId.toString()
                                 ] && (
-                                  <div className="text-gray-500 text-sm flex items-center gap-1">
+                                  <div className="flex items-center gap-1 text-sm text-gray-500">
                                     <CircleCheck className="h-4 w-4" />
                                     <div>You already qualify</div>
                                   </div>
@@ -589,21 +590,21 @@ const GiveawayPage = () => {
           )}
         </div>
 
-        <div className="sm:col-span-1 relative order-first sm:order-last">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4">
+        <div className="relative order-first sm:order-last sm:col-span-1">
+          <h1 className="mb-4 mt-6 text-2xl font-bold leading-tight tracking-tight">
             New Giveaway
           </h1>
           <form onSubmit={handleSubmit}>
-            <div className="flex flex-col w-full items-start">
+            <div className="flex w-full flex-col items-start">
               <Input
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Title"
-                className="flex w-full mb-4"
+                className="mb-4 flex w-full"
                 required
               />
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center justify-center w-full space-x-2 mb-4">
+              <div className="mb-4 grid w-full grid-cols-[1fr_auto_1fr] items-center justify-center space-x-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -631,7 +632,7 @@ const GiveawayPage = () => {
                 </Popover>
                 <div className="mx-4">or</div>
                 <div className="relative">
-                  <div className="absolute text-xs p-1 p-2 right-0 top-0 text-slate-400">
+                  <div className="absolute right-0 top-0 p-1 text-xs text-slate-400">
                     {currentBlockHeight}
                   </div>
                   <Input
@@ -660,28 +661,28 @@ const GiveawayPage = () => {
                 placeholder="Max Participants"
                 required
               />
-              <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold mb-2">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
                 Requirements to Qualify
               </h2>
 
-              <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
-                <div className="flex gap-2 items-center w-full">
-                  <Coins className="w-5 h-5" />
+              <Card className="mb-2 flex w-full items-center justify-between gap-2 px-4 py-2 text-sm">
+                <div className="flex w-full items-center gap-2">
+                  <Image className="h-5 w-5" />
                   <Input
                     name="nftContract"
                     value={formData.nftContract}
                     onChange={handleInputChange}
-                    className="py-0 px-1 border-0 w-full"
+                    className="w-full border-0 px-1 py-0"
                     placeholder="NFT Contract Address"
                     required
                   />
                 </div>
               </Card>
 
-              <div className="w-full flex justify-center">
+              <div className="flex w-full justify-center">
                 <Button
                   variant="link"
-                  className="text-gray-400 uppercase text-xs tracking-wider font-bold"
+                  className="text-xs font-bold uppercase tracking-wider text-gray-400"
                   onClick={handleToggleShowMore}
                 >
                   {showMore ? "Collapse" : "Add requirement"}
@@ -689,53 +690,53 @@ const GiveawayPage = () => {
               </div>
               {showMore && (
                 <div className="w-full">
-                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                  <Card className="mb-2 flex w-full items-center justify-between gap-2 px-4 py-2 text-sm">
                     <div className="flex gap-2">
-                      <Coins className="w-5 h-5" />
+                      <Coins className="h-5 w-5" />
                       <div>Own ERC-20 tokens</div>
                     </div>
                     <Button variant="ghost">
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </Card>
-                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                  <Card className="mb-2 flex w-full items-center justify-between gap-2 px-4 py-2 text-sm">
                     <div className="flex gap-2">
-                      <Gem className="w-5 h-5" />
+                      <Gem className="h-5 w-5" />
                       <div>XP level</div>
                     </div>
                     <Button variant="ghost">
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </Card>
-                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                  <Card className="mb-2 flex w-full items-center justify-between gap-2 px-4 py-2 text-sm">
                     <div className="flex gap-2">
-                      <Twitter className="w-5 h-5" />
+                      <Twitter className="h-5 w-5" />
                       <div>Twitter sign in</div>
                     </div>
                     <Button variant="ghost">
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </Card>
-                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                  <Card className="mb-2 flex w-full items-center justify-between gap-2 px-4 py-2 text-sm">
                     <div className="flex gap-2">
-                      <Bitcoin className="w-5 h-5" />
+                      <Bitcoin className="h-5 w-5" />
                       <div>Own Bitcoin</div>
                     </div>
                     <Button variant="ghost">
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </Card>
-                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                  <Card className="mb-2 flex w-full items-center justify-between gap-2 px-4 py-2 text-sm">
                     <div className="flex gap-2">
-                      <ScanFace className="w-5 h-5" />
+                      <ScanFace className="h-5 w-5" />
                       <div>Passport verification</div>
                     </div>
                     <Button variant="ghost">
-                      <Plus className="w-4 h-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </Card>
@@ -750,7 +751,7 @@ const GiveawayPage = () => {
               </Button>
             </div>
           </form>
-          <div className="text-xs my-4 text-red-500 overflow-clip whitespace-pre-wrap">
+          <div className="my-4 text-clip whitespace-pre-wrap text-xs text-red-500">
             {isPrepareError && (
               <p>Error preparing transaction: {prepareError?.message}</p>
             )}

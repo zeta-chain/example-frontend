@@ -89,9 +89,9 @@ const NFTPage = () => {
   }
 
   return (
-    <div className="px-4 mt-12">
-      <div className="flex items-center justify-start gap-2 mb-6">
-        <h1 className="leading-10 text-2xl font-bold tracking-tight">
+    <div className="mt-12 px-4">
+      <div className="mb-6 flex items-center justify-start gap-2">
+        <h1 className="text-2xl font-bold leading-10 tracking-tight">
           NFT Library
         </h1>
         <Button size="icon" variant="ghost" onClick={fetchNFTs}>
@@ -100,7 +100,7 @@ const NFTPage = () => {
           />
         </Button>
       </div>
-      <div className="flex flex-wrap gap-5 mt-10">
+      <div className="mt-10 flex flex-wrap gap-5">
         <div>
           <div className="h-60 w-44 rounded-xl p-4 shadow-2xl shadow-gray-300">
             <Input
@@ -108,13 +108,13 @@ const NFTPage = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="text-4xl font-semibold bg-transparent border-none"
+              className="border-none bg-transparent text-4xl font-semibold"
             />
             <Select onValueChange={(e) => setSelectedChain(e)}>
               <SelectTrigger className="w-full border-none bg-transparent text-2xl font-semibold placeholder:text-red-500">
                 <SelectValue placeholder="TOKEN" />
               </SelectTrigger>
-              <SelectContent className="shadow-2xl border-none rounded-lg">
+              <SelectContent className="rounded-lg border-none shadow-2xl">
                 {coins.map((c: any) => (
                   <SelectItem key={c.chain_id} value={c.chain_id}>
                     {c.symbol}
@@ -123,25 +123,25 @@ const NFTPage = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex justify-center -translate-y-[50%]">
+          <div className="flex -translate-y-[50%] justify-center">
             {wrongNetwork ? (
               <Button
                 variant="ghost"
-                className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
+                className="disabled:opacity-1 rounded-full bg-white shadow-2xl shadow-gray-500 transition-all duration-100 ease-out hover:bg-white active:scale-95 disabled:text-zinc-400"
                 disabled={!(amount > 0) || !selectedChain || mintingInProgress}
                 onClick={() => mint(selectedChain)}
               >
                 {mintingInProgress ? (
-                  <Loader className="h-4 w-4 mr-1 animate-spin-slow" />
+                  <Loader className="mr-1 h-4 w-4 animate-spin-slow" />
                 ) : (
-                  <Sparkles className="h-4 w-4 mr-1" />
+                  <Sparkles className="mr-1 h-4 w-4" />
                 )}
                 Mint
               </Button>
             ) : (
               <Button
                 variant="ghost"
-                className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
+                className="disabled:opacity-1 rounded-full bg-white shadow-2xl shadow-gray-500 transition-all duration-100 ease-out hover:bg-white active:scale-95 disabled:text-zinc-400"
                 onClick={() => {
                   handleSwitchNetwork()
                 }}
@@ -169,34 +169,34 @@ const NFTPage = () => {
                       <PopoverTrigger>
                         <Tilt lineGlareBlurAmount="40px" scale={1.05}>
                           <div
-                            className={`text-left relative h-60 w-44 rounded-xl overflow-hidden p-4 ${
+                            className={`relative h-60 w-44 overflow-hidden rounded-xl p-4 text-left ${
                               colors[asset?.chain]
                             }`}
                           >
                             <div
-                              className={`pointer-events-none	transition-all duration-500 bg-black/[.75] w-full h-full absolute top-0 left-0 flex items-center justify-center opacity-${
+                              className={`opacity-	pointer-events-none absolute left-0 top-0 flex h-full w-full items-center justify-center bg-black/[.75] transition-all duration-500${
                                 assetsUpdating.includes(asset.id) ? 100 : 0
                               }`}
                             >
                               <Loader
-                                className="absolute text-white/[.25] animate-spin-slow"
+                                className="absolute animate-spin-slow text-white/[.25]"
                                 size={48}
                               />
                             </div>
 
                             <p
-                              className="text-4xl font-semibold
-                             text-transparent bg-clip-text tracking-tight
-                             bg-gradient-to-br from-white to-transparent
-                             text-shadow"
+                              className="text-shadow bg-gradient-to-br
+                             from-white to-transparent bg-clip-text
+                             text-4xl font-semibold tracking-tight
+                             text-transparent"
                             >
                               {formatAmount(asset?.amount)}
                             </p>
                             <div
-                              className="text-2xl font-semibold
-                             text-transparent bg-clip-text
-                             bg-gradient-to-br from-white to-transparent
-                             text-shadow"
+                              className="text-shadow bg-gradient-to-br
+                             from-white to-transparent
+                             bg-clip-text text-2xl font-semibold
+                             text-transparent"
                             >
                               {
                                 coins.find(
@@ -205,10 +205,10 @@ const NFTPage = () => {
                               }
                             </div>
                             <div
-                              className="text-2xl font-semibold
-                             text-transparent bg-clip-text
-                             bg-gradient-to-br from-white to-transparent
-                             text-shadow mt-5"
+                              className="text-shadow mt-5
+                             bg-gradient-to-br from-white
+                             to-transparent bg-clip-text text-2xl
+                             font-semibold text-transparent"
                             >
                               # {asset.id}
                             </div>
@@ -217,7 +217,7 @@ const NFTPage = () => {
                       </PopoverTrigger>
                       <PopoverContent
                         sideOffset={-20}
-                        className="p-0 w-full transition-all duration-200 ease-linear shadow-2xl shadow-gray-500 rounded-full bg-white border-none"
+                        className="w-full rounded-full border-none bg-white p-0 shadow-2xl shadow-gray-500 transition-all duration-200 ease-linear"
                       >
                         {chain?.id === 7001 ? (
                           <div>
@@ -244,7 +244,7 @@ const NFTPage = () => {
                               </PopoverTrigger>
                               <PopoverContent
                                 align="center"
-                                className="bg-white w-64 -ml-10 rounded-xl p-2 shadow-2xl border-none"
+                                className="-ml-10 w-64 rounded-xl border-none bg-white p-2 shadow-2xl"
                               >
                                 <div className="flex flex-col gap-2">
                                   <Input
@@ -270,7 +270,7 @@ const NFTPage = () => {
                           <div>
                             <Button
                               variant="ghost"
-                              className="transition-all duration-100 ease-out hover:bg-white disabled:opacity-1 disabled:text-zinc-400 active:scale-95 shadow-2xl shadow-gray-500 rounded-full bg-white"
+                              className="disabled:opacity-1 rounded-full bg-white shadow-2xl shadow-gray-500 transition-all duration-100 ease-out hover:bg-white active:scale-95 disabled:text-zinc-400"
                               onClick={() =>
                                 switchNetwork && switchNetwork(7001)
                               }

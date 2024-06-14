@@ -62,12 +62,12 @@ export function MainNav() {
                   />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-transparent w-full max-w-full sm:w-[500px] sm:max-w-full border-none shadow-none flex">
-                <div className="p-7 bg-white rounded-lg shadow-xl height-100 w-full overflow-y-scroll">
+              <SheetContent className="flex w-full max-w-full border-none bg-transparent shadow-none sm:w-[500px] sm:max-w-full">
+                <div className="height-100 w-full overflow-y-scroll rounded-lg bg-white p-7 shadow-xl">
                   <SheetHeader>
                     <SheetDescription></SheetDescription>
                   </SheetHeader>
-                  <h1 className="text-2xl font-extrabold leading-tight tracking-tight mt-6 mb-4">
+                  <h1 className="mb-4 mt-6 text-2xl font-extrabold leading-tight tracking-tight">
                     Transactions
                   </h1>
                   <Transactions />
