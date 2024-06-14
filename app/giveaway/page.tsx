@@ -305,12 +305,26 @@ const GiveawayPage = () => {
     }
   }, [selectedDate, currentBlockHeight])
 
+  useEffect(() => {
+    if (formData.blockHeight && currentBlockHeight) {
+      const estimatedDate = calculateEstimatedDate(
+        parseInt(formData.blockHeight),
+        currentBlockHeight
+      )
+      setSelectedDate(estimatedDate)
+    }
+  }, [formData.blockHeight, currentBlockHeight])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData({
       ...formData,
       [name]: value,
     })
+
+    if (name === "blockHeight") {
+      setSelectedDate(undefined)
+    }
   }
 
   const calculateBlockHeight = (date: any, currentBlock: number | null) => {
@@ -319,6 +333,17 @@ const GiveawayPage = () => {
     const secondsDifference = (date.getTime() - now.getTime()) / 1000
     const blocksDifference = Math.ceil(secondsDifference / 5)
     return currentBlock + blocksDifference
+  }
+
+  const calculateEstimatedDate = (
+    blockHeight: number,
+    currentBlock: number
+  ) => {
+    const blockDifference = blockHeight - currentBlock
+    const secondsDifference = blockDifference * 5
+    const estimatedDate = new Date()
+    estimatedDate.setSeconds(estimatedDate.getSeconds() + secondsDifference)
+    return estimatedDate
   }
 
   const blockHeight = formData.blockHeight
@@ -555,7 +580,6 @@ const GiveawayPage = () => {
           <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4">
             New Giveaway
           </h1>
-          {JSON.stringify(formData)}
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col w-full items-start">
               <Input
