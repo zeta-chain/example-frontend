@@ -41,8 +41,8 @@ import {
 
 const GiveawayPage = () => {
   const contracts = {
-    zeta_testnet: "0x1B5e452Af8a7093584b83B0dc5334ffa8012bd4c",
-    sepolia_testnet: "0xAFaCdA1462549e6FaEEeECEb445023eCEe7826a6",
+    zeta_testnet: "0xd10A44909f82D6f08fa40E6f6d91c001b1B25548",
+    sepolia_testnet: "0xF3d548fC8Dd903B3d7efba2aC1be8683034f1086",
   }
   const [showMore, setShowMore] = useState(false)
 
