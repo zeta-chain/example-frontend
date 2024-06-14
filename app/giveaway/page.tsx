@@ -339,14 +339,6 @@ const GiveawayPage = () => {
     }
   }
 
-  const calculateBlockHeight = (date: any, currentBlock: number | null) => {
-    if (!date || !currentBlock) return 0
-    const now = new Date()
-    const secondsDifference = (date.getTime() - now.getTime()) / 1000
-    const blocksDifference = Math.ceil(secondsDifference / 5)
-    return currentBlock + blocksDifference
-  }
-
   const calculateEstimatedDate = (
     blockHeight: number,
     currentBlock: number
@@ -356,6 +348,14 @@ const GiveawayPage = () => {
     const estimatedDate = new Date()
     estimatedDate.setSeconds(estimatedDate.getSeconds() + secondsDifference)
     return estimatedDate
+  }
+
+  const calculateBlockHeight = (date: any, currentBlock: number | null) => {
+    if (!date || !currentBlock) return 0
+    const now = new Date()
+    const secondsDifference = (date.getTime() - now.getTime()) / 1000
+    const blocksDifference = Math.ceil(secondsDifference / 5)
+    return currentBlock + blocksDifference
   }
 
   const blockHeight = formData.blockHeight
