@@ -63,8 +63,10 @@ const GiveawayPage = () => {
     maxParticipants: "",
     nftContract: "",
     title: "",
+    blockHeight: "",
   })
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+
   const [currentChainId, setCurrentChainId] = useState<number | null>(null)
   const [userAddress, setUserAddress] = useState<string | null>(null)
   const zetaChainRPC = `https://zetachain-athens.g.allthatnode.com/archive/evm/${process.env.NEXT_PUBLIC_ATN_KEY}`
@@ -290,6 +292,19 @@ const GiveawayPage = () => {
     }
   }, [])
 
+  useEffect(() => {
+    if (selectedDate && currentBlockHeight) {
+      const newBlockHeight = calculateBlockHeight(
+        selectedDate,
+        currentBlockHeight
+      )
+      setFormData((prevData) => ({
+        ...prevData,
+        blockHeight: newBlockHeight.toString(),
+      }))
+    }
+  }, [selectedDate, currentBlockHeight])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData({
@@ -306,7 +321,12 @@ const GiveawayPage = () => {
     return currentBlock + blocksDifference
   }
 
-  const blockHeight = calculateBlockHeight(selectedDate, currentBlockHeight)
+  const blockHeight = formData.blockHeight
+    ? parseInt(formData.blockHeight)
+    : selectedDate
+    ? calculateBlockHeight(selectedDate, currentBlockHeight)
+    : 0
+
   const prizeAmount = parseEther(formData.prizeAmount || "0").toBigInt()
   const maxParticipants = BigInt(formData.maxParticipants || "0")
   const amount = prizeAmount * maxParticipants + BigInt(4 * 10 ** 18)
@@ -362,6 +382,10 @@ const GiveawayPage = () => {
 
   const handleDateSelect = (day: Date | undefined) => {
     setSelectedDate(day ?? undefined)
+    setFormData({
+      ...formData,
+      blockHeight: "",
+    })
   }
 
   const handleParticipate = async (giveawayId: any) => {
@@ -531,6 +555,7 @@ const GiveawayPage = () => {
           <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4">
             New Giveaway
           </h1>
+          {JSON.stringify(formData)}
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col w-full items-start">
               <Input
@@ -541,31 +566,42 @@ const GiveawayPage = () => {
                 className="flex w-full mb-4"
                 required
               />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={`w-full justify-start mb-4 text-left font-normal ${
-                      !selectedDate && "text-muted-foreground"
-                    }`}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? (
-                      format(selectedDate, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate as any}
-                    onSelect={handleDateSelect}
-                    initialFocus
+              <div className="flex items-center justify-center w-full space-x-2 mb-4">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={`flex-1 justify-start text-left font-normal ${
+                        !selectedDate && "text-muted-foreground"
+                      }`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(selectedDate, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate as any}
+                      onSelect={handleDateSelect}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <div className="mx-4 flex-shrink-0">or</div>
+                <div className="flex-1">
+                  <Input
+                    name="blockHeight"
+                    value={formData.blockHeight}
+                    onChange={handleInputChange}
+                    placeholder="Block height"
                   />
-                </PopoverContent>
-              </Popover>
+                </div>
+              </div>
               <Input
                 name="prizeAmount"
                 type="number"
