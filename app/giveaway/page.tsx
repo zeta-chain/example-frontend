@@ -7,9 +7,15 @@ import { ethers } from "ethers"
 import { parseEther } from "ethers/lib/utils"
 import {
   ArrowUpRight,
+  Bitcoin,
   Calendar as CalendarIcon,
   CircleCheck,
+  Coins,
+  Gem,
+  Plus,
   RefreshCw,
+  ScanFace,
+  Twitter,
   UserCircleIcon,
 } from "lucide-react"
 import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi"
@@ -34,8 +40,13 @@ import {
 
 const GiveawayPage = () => {
   const contracts = {
-    zeta_testnet: "0x9D8d5c67802AB0CB2f17260C2F9e2EC631Ca16fe",
-    sepolia_testnet: "0x6EA97C9f23a3889B12d322F446C4b9017D981FCE",
+    zeta_testnet: "0x4A32767A436Be427a6bc17E99B88eC8200b53e1c",
+    sepolia_testnet: "0x1303B2d1Ecde800BA1C955Cb15A5D08c9B43760c",
+  }
+  const [showMore, setShowMore] = useState(false)
+
+  const handleToggleShowMore = () => {
+    setShowMore(!showMore)
   }
 
   const [currentBlockHeight, setCurrentBlockHeight] = useState<number | null>(
@@ -388,15 +399,17 @@ const GiveawayPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    console.log("Form Data:", formData)
-    console.log("Block Height:", blockHeight)
-    console.log("Prize Amount:", prizeAmount.toString())
-    console.log("Max Participants:", maxParticipants.toString())
-    console.log("NFT Contract:", formData.nftContract)
-    console.log("Amount:", amount.toString())
     if (write && currentChainId === 7001) {
       try {
         await write()
+        setFormData({
+          prizeAmount: "",
+          maxParticipants: "",
+          nftContract: "",
+          title: "",
+          blockHeight: "",
+        })
+        setSelectedDate(undefined)
       } catch (error) {
         console.error("Transaction error:", error)
       }
@@ -546,7 +559,7 @@ const GiveawayPage = () => {
                               {participants[
                                 giveaway.giveawayId.toString()
                               ]?.includes(address)
-                                ? "You're in"
+                                ? "Joined"
                                 : "Participate"}
                             </Button>
                             {currentBlockHeight !== null &&
@@ -590,12 +603,12 @@ const GiveawayPage = () => {
                 className="flex w-full mb-4"
                 required
               />
-              <div className="flex items-center justify-center w-full space-x-2 mb-4">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center justify-center w-full space-x-2 mb-4">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
-                      className={`flex-1 justify-start text-left font-normal ${
+                      className={`justify-start text-left font-normal ${
                         !selectedDate && "text-muted-foreground"
                       }`}
                     >
@@ -616,8 +629,11 @@ const GiveawayPage = () => {
                     />
                   </PopoverContent>
                 </Popover>
-                <div className="mx-4 flex-shrink-0">or</div>
-                <div className="flex-1">
+                <div className="mx-4">or</div>
+                <div className="relative">
+                  <div className="absolute text-xs p-1 p-2 right-0 top-0 text-slate-400">
+                    {currentBlockHeight}
+                  </div>
                   <Input
                     name="blockHeight"
                     value={formData.blockHeight}
@@ -644,20 +660,97 @@ const GiveawayPage = () => {
                 placeholder="Max Participants"
                 required
               />
-              <Input
-                name="nftContract"
-                value={formData.nftContract}
-                onChange={handleInputChange}
-                className="mb-4"
-                placeholder="NFT Contract"
-                required
-              />
-              <Button type="submit" disabled={currentChainId !== 7001}>
+              <h2 className="text-gray-400 uppercase text-xs tracking-wider font-bold mb-2">
+                Requirements to Qualify
+              </h2>
+
+              <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                <div className="flex gap-2 items-center w-full">
+                  <Coins className="w-5 h-5" />
+                  <Input
+                    name="nftContract"
+                    value={formData.nftContract}
+                    onChange={handleInputChange}
+                    className="py-0 px-1 border-0 w-full"
+                    placeholder="NFT Contract Address"
+                    required
+                  />
+                </div>
+              </Card>
+
+              <div className="w-full flex justify-center">
+                <Button
+                  variant="link"
+                  className="text-gray-400 uppercase text-xs tracking-wider font-bold"
+                  onClick={handleToggleShowMore}
+                >
+                  {showMore ? "Collapse" : "Add requirement"}
+                </Button>
+              </div>
+              {showMore && (
+                <div className="w-full">
+                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                    <div className="flex gap-2">
+                      <Coins className="w-5 h-5" />
+                      <div>Own ERC-20 tokens</div>
+                    </div>
+                    <Button variant="ghost">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add
+                    </Button>
+                  </Card>
+                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                    <div className="flex gap-2">
+                      <Gem className="w-5 h-5" />
+                      <div>XP level</div>
+                    </div>
+                    <Button variant="ghost">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add
+                    </Button>
+                  </Card>
+                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                    <div className="flex gap-2">
+                      <Twitter className="w-5 h-5" />
+                      <div>Twitter sign in</div>
+                    </div>
+                    <Button variant="ghost">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add
+                    </Button>
+                  </Card>
+                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                    <div className="flex gap-2">
+                      <Bitcoin className="w-5 h-5" />
+                      <div>Own Bitcoin</div>
+                    </div>
+                    <Button variant="ghost">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add
+                    </Button>
+                  </Card>
+                  <Card className="w-full px-4 py-2 flex gap-2 text-sm items-center justify-between mb-2">
+                    <div className="flex gap-2">
+                      <ScanFace className="w-5 h-5" />
+                      <div>Passport verification</div>
+                    </div>
+                    <Button variant="ghost">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add
+                    </Button>
+                  </Card>
+                </div>
+              )}
+              <Button
+                className="mt-6"
+                type="submit"
+                disabled={currentChainId !== 7001}
+              >
                 Create Giveaway
               </Button>
             </div>
           </form>
-          <div className="text-xs my-4 text-red-500 flex flex-wrap">
+          <div className="text-xs my-4 text-red-500 overflow-clip whitespace-pre-wrap">
             {isPrepareError && (
               <p>Error preparing transaction: {prepareError?.message}</p>
             )}
