@@ -87,7 +87,7 @@ export default function Index({ children }: RootLayoutProps) {
       w.xfi.bitcoin.changeNetwork("testnet")
       const btc = (await w.xfi.bitcoin.getAccounts())[0]
       await setBitcoinAddress(btc)
-      // fetchBalances(true, btc)
+      fetchBalances(true, btc)
     }
   }
 

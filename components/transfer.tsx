@@ -849,7 +849,7 @@ const Transfer = () => {
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         Swap
       </h1>
-      {JSON.stringify(fees)}
+      {JSON.stringify(balances)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
