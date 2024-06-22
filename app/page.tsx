@@ -199,7 +199,7 @@ export default function IndexPage() {
   return (
     <div>
       <div className="grid sm:grid-cols-3 gap-x-10">
-        <div className="sm:col-span-2 overflow-x-scroll">
+        <div className="sm:col-span-2 overflow-x-scroll mb-20">
           <div className="mt-12 mb-8">
             <div className="px-3 text-sm mb-1 text-gray-400">Total balance</div>
             <div className="flex items-center justify-start gap-1">
@@ -227,14 +227,6 @@ export default function IndexPage() {
           ) : (
             <ConnectWallet />
           )}
-          <div className="my-5 flex space-x-2">
-            <Link href="/messaging" legacyBehavior passHref>
-              <Button variant="outline">
-                <MessageCircle className="mr-1 h-5 w-5" strokeWidth={1.5} />
-                Cross-Chain Messaging
-              </Button>
-            </Link>
-          </div>
         </div>
         <div className="mr-4">
           <Transfer />

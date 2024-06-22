@@ -45,7 +45,7 @@ import { AppContext } from "@/app/index"
 const Transfer = () => {
   const { client } = useZetaChain()
   const omnichainSwapContractAddress =
-    "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
+    "0x4A7A0D413105cb67f874bA4752fd477C616Cc334"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
     useContext(AppContext)
@@ -154,22 +154,27 @@ const Transfer = () => {
           formatted,
         })
       } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-        const fee =
-          fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
-        const amount = parseFloat(fee)
-        const symbol = balances.find((c: any) => {
-          if (
-            c?.chain_id === destinationTokenSelected?.chain_id &&
-            c?.coin_type === "Gas"
-          ) {
-            return c
-          }
-        })?.symbol
-        setCrossChainFee({
-          amount,
-          symbol,
-          formatted: `~${amount.toFixed(2)} ${symbol}`,
-        })
+        try {
+          const fee = fees?.["omnichain"].find(
+            (x: any) => x.address === destinationTokenSelected.zrc20
+          )
+          const amount = parseFloat(fee.totalFee)
+          const symbol = balances.find((c: any) => {
+            if (
+              c?.chain_id === destinationTokenSelected?.chain_id &&
+              c?.coin_type === "Gas"
+            ) {
+              return c
+            }
+          })?.symbol
+          setCrossChainFee({
+            amount,
+            symbol,
+            formatted: `~${amount.toFixed(2)} ${symbol}`,
+          })
+        } catch (e) {
+          console.error(e)
+        }
       } else {
         setCrossChainFee(null)
       }
@@ -844,6 +849,7 @@ const Transfer = () => {
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         Swap
       </h1>
+      {JSON.stringify(fees)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
