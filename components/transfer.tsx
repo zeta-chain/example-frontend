@@ -211,25 +211,18 @@ const Transfer = () => {
 
   // Set destination amount for a cross-chain swap
   const getQuoteCrossChainSwap = useCallback(async () => {
+    const s = sourceTokenSelected
+    const d = destinationTokenSelected
     if (
       sourceAmount &&
       parseFloat(sourceAmount) > 0 &&
-      (destinationTokenSelected?.zrc20 ||
-        (destinationTokenSelected?.coin_type === "ZRC20" &&
-          destinationTokenSelected?.contract)) &&
-      sourceTokenSelected?.zrc20
+      (d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)) &&
+      s?.zrc20
     ) {
       try {
         setDestinationAmountIsLoading(true)
-        const dstToken =
-          destinationTokenSelected.coin_type === "ZRC20"
-            ? destinationTokenSelected.contract
-            : destinationTokenSelected.zrc20
-        const q = await client.getQuote(
-          sourceAmount,
-          sourceTokenSelected.zrc20,
-          dstToken
-        )
+        const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+        const q = await client.getQuote(sourceAmount, s.zrc20, target)
         const quote = utils.formatUnits(q.amount, q.decimals)
         setDestinationAmountIsLoading(false)
         setDestinationAmount(quote)
