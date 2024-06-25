@@ -132,6 +132,11 @@ const Transfer = () => {
       enabled: false,
       priority: 0,
     },
+    insufficientLiquidity: {
+      message: "Insufficient liquidity",
+      enabled: false,
+      priority: 0,
+    },
   })
 
   const priorityErrors = Object.entries(errors)
@@ -165,7 +170,11 @@ const Transfer = () => {
         const isZeta = dest === "zeta_testnet"
         const amount = isZeta
           ? 0
-          : parseFloat(fees?.["feesCCM"][dest]?.totalFee)
+          : parseFloat(
+              fees?.["messaging"].find(
+                (x: any) => x.chainID === destinationTokenSelected.chain_id
+              ).totalFee
+            )
         const formatted = amount === 0 ? "0 ZETA" : `~${amount.toFixed(2)} ZETA`
         setCrossChainFee({
           amount,
@@ -213,29 +222,37 @@ const Transfer = () => {
   const getQuoteCrossChainSwap = useCallback(async () => {
     const s = sourceTokenSelected
     const d = destinationTokenSelected
-    if (
-      sourceAmount &&
-      parseFloat(sourceAmount) > 0 &&
-      (d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)) &&
-      s?.zrc20
-    ) {
+    const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
+    const sAmountValid = sourceAmount && parseFloat(sourceAmount)
+    const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
+    if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && s?.zrc20) {
       try {
-        setDestinationAmountIsLoading(true)
         const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-        const q = await client.getQuote(sourceAmount, s.zrc20, target)
+        const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
+        // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
+        const dAddress = dIsZETA ? WZETA.contract : target
+        updateError("insufficientLiquidity", { enabled: false })
+        setDestinationAmountIsLoading(true)
+        const q = await client.getQuote(sourceAmount, s.zrc20, dAddress)
         const quote = utils.formatUnits(q.amount, q.decimals)
-        setDestinationAmountIsLoading(false)
         setDestinationAmount(quote)
-      } catch (e) {
-        console.error(e)
+      } catch (e: any) {
+        console.error(e.reason)
+        if (e.reason) {
+          updateError("insufficientLiquidity", { enabled: true })
+        }
+      } finally {
+        setDestinationAmountIsLoading(false)
       }
     }
   }, [sourceAmount, sourceTokenSelected, destinationTokenSelected, sendType])
 
   // Set destination amount
   useEffect(() => {
-    const st = calculateSendType()
+    const st = computeSendType(destinationTokenSelected)
+    setSendType(st)
     setDestinationAmount("")
+    if (!st) return
     if (
       [
         "crossChainSwap",
@@ -416,13 +433,8 @@ const Transfer = () => {
     }
   }, [chain, sourceTokenSelected])
 
-  const calculateSendType = () => {
+  const computeSendType = (d: any) => {
     const s = sourceTokenSelected
-    const d = destinationTokenSelected
-    const t = (x: any) => {
-      setSendType(x)
-      return x
-    }
     if (s && d) {
       const fromZETA = /\bzeta\b/i.test(s?.symbol)
       const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
@@ -447,9 +459,9 @@ const Transfer = () => {
       const fromToZETAorWZETA = fromZETAorWZETA || toZETAorWZETA
 
       if (fromZETAorWZETA && toZETAorWZETA && !sameChain)
-        return t("crossChainZeta")
-      if (fromZETA && toWZETA) return t("wrapZeta")
-      if (fromWZETA && toZETA) return t("unwrapZeta")
+        return "crossChainZeta"
+      if (fromZETA && toWZETA) return "wrapZeta"
+      if (fromWZETA && toZETA) return "unwrapZeta"
       if (
         sameToken &&
         !fromZetaChain &&
@@ -458,7 +470,7 @@ const Transfer = () => {
         toZRC20 &&
         !fromBTC
       )
-        return t("depositNative")
+        return "depositNative"
       if (
         sameToken &&
         !fromZetaChain &&
@@ -468,31 +480,39 @@ const Transfer = () => {
         !fromBTC &&
         s.zrc20 === d.contract
       )
-        return t("depositERC20")
+        return "depositERC20"
       if (sameToken && fromZetaChain && !toZetaChain && !fromBTC)
-        return t("withdrawZRC20")
+        return "withdrawZRC20"
       if (sameToken && sameChain && fromGas && toGas && !fromToBitcoin)
-        return t("transferNativeEVM")
+        return "transferNativeEVM"
       if (sameToken && sameChain && fromERC20 && toERC20 && !fromToBitcoin)
-        return t("transferERC20EVM")
+        return "transferERC20EVM"
       if (!fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC)
-        return t("crossChainSwap")
+        return "crossChainSwap"
       if (fromBTC && !toBitcoin && !fromToZetaChain && !toZETAorWZETA)
-        return t("crossChainSwapBTC")
+        return "crossChainSwapBTC"
       if (fromBTC && !fromZetaChain && toZetaChain && toZRC20)
-        return t("crossChainSwapBTCTransfer")
-      if (!fromZetaChain && toZetaChain && toZRC20 && !fromToZETAorWZETA)
-        return t("crossChainSwapTransfer")
-      if (fromToBitcoin) return t("transferBTC")
-      if (fromBTC && !fromZetaChain && toZetaChain) return t("depositBTC")
-      if (fromBTC && fromZetaChain && !toZetaChain) return t("withdrawBTC")
+        return "crossChainSwapBTCTransfer"
+      if (
+        !fromZetaChain &&
+        toZetaChain &&
+        (toZRC20 || toZETA) &&
+        !fromZETAorWZETA
+      )
+        return "crossChainSwapTransfer"
+      if (fromToBitcoin) return "transferBTC"
+      if (fromBTC && !fromZetaChain && toZetaChain) return "depositBTC"
+      if (fromBTC && fromZetaChain && !toZetaChain) return "withdrawBTC"
+      if (fromZetaChain && !toZetaChain && toERC20)
+        return "fromZetaChainSwapAndWithdraw"
+    } else {
+      return null
     }
-    t(null)
   }
 
   // Set send type
   useEffect(() => {
-    calculateSendType()
+    setSendType(computeSendType(destinationTokenSelected))
   }, [sourceTokenSelected, destinationTokenSelected])
 
   // Set source and destination balances
@@ -973,8 +993,12 @@ const Transfer = () => {
                   {destinationBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
-                      className="hover:cursor-pointer"
+                      className={cn(
+                        "hover:cursor-pointer",
+                        !computeSendType(balances) && "opacity-25"
+                      )}
                       value={balances.id}
+                      disabled={!computeSendType(balances)}
                       onSelect={(c) => {
                         setDestinationToken(c === destinationToken ? null : c)
                         setDestinationTokenOpen(false)
