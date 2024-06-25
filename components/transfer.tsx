@@ -42,6 +42,8 @@ import {
 import { useZetaChain } from "@/app/ZetaChainContext"
 import { AppContext } from "@/app/index"
 
+import SwapToAnyToken from "./SwapToAnyToken.json"
+
 const roundToSignificantDigits = (
   value: number,
   significantDigits: number
@@ -225,7 +227,8 @@ const Transfer = () => {
     const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
     const sAmountValid = sourceAmount && parseFloat(sourceAmount)
     const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
-    if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && s?.zrc20) {
+    const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
+    if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
       try {
         const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
         const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
@@ -233,7 +236,7 @@ const Transfer = () => {
         const dAddress = dIsZETA ? WZETA.contract : target
         updateError("insufficientLiquidity", { enabled: false })
         setDestinationAmountIsLoading(true)
-        const q = await client.getQuote(sourceAmount, s.zrc20, dAddress)
+        const q = await client.getQuote(sourceAmount, sourceAddress, dAddress)
         const quote = utils.formatUnits(q.amount, q.decimals)
         setDestinationAmount(quote)
       } catch (e: any) {
@@ -259,6 +262,7 @@ const Transfer = () => {
         "crossChainSwapBTC",
         "crossChainSwapBTCTransfer",
         "crossChainSwapTransfer",
+        "fromZetaChainSwapAndWithdraw",
       ].includes(st)
     ) {
       getQuoteCrossChainSwap()
@@ -433,81 +437,96 @@ const Transfer = () => {
     }
   }, [chain, sourceTokenSelected])
 
+  const sendTypeDetails: any = {
+    crossChainZeta: { title: "Transfer" },
+    wrapZeta: { title: "Wrap" },
+    unwrapZeta: { title: "Unwrap" },
+    depositNative: { title: "Deposit" },
+    depositERC20: { title: "Deposit" },
+    withdrawZRC20: { title: "Withdraw" },
+    transferNativeEVM: { title: "Send" },
+    transferERC20EVM: { title: "Send" },
+    crossChainSwap: { title: "Swap" },
+    crossChainSwapBTC: { title: "Swap" },
+    crossChainSwapBTCTransfer: { title: "Deposit and Swap" },
+    crossChainSwapTransfer: { title: "Deposit and Swap" },
+    transferBTC: { title: "Send" },
+    depositBTC: { title: "Deposit" },
+    withdrawBTC: { title: "Withdraw" },
+    fromZetaChainSwapAndWithdraw: { title: "Swap and Withdraw" },
+  }
+
   const computeSendType = (d: any) => {
     const s = sourceTokenSelected
-    if (s && d) {
-      const fromZETA = /\bzeta\b/i.test(s?.symbol)
-      const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
-      const fromZetaChain = s.chain_name === "zeta_testnet"
-      const fromBTC = s.symbol === "tBTC"
-      const fromBitcoin = s.chain_name === "btc_testnet"
-      const fromWZETA = s.symbol === "WZETA"
-      const fromGas = s.coin_type === "Gas"
-      const fromERC20 = s.coin_type === "ERC20"
-      const toZETAorWZETA = /\bw?zeta\b/i.test(d?.symbol)
-      const toWZETA = d.symbol === "WZETA"
-      const toZETA = d.symbol === "ZETA"
-      const toZetaChain = d.chain_name === "zeta_testnet"
-      const toGas = d.coin_type === "Gas"
-      const toERC20 = d.coin_type === "ERC20"
-      const toZRC20 = d.coin_type === "ZRC20"
-      const toBitcoin = d.chain_name === "btc_testnet"
-      const sameToken = s.ticker === d.ticker
-      const sameChain = s.chain_name === d.chain_name
-      const fromToBitcoin = fromBitcoin && toBitcoin
-      const fromToZetaChain = fromZetaChain || toZetaChain
-      const fromToZETAorWZETA = fromZETAorWZETA || toZETAorWZETA
+    if (!s || !d) return null
 
-      if (fromZETAorWZETA && toZETAorWZETA && !sameChain)
-        return "crossChainZeta"
-      if (fromZETA && toWZETA) return "wrapZeta"
-      if (fromWZETA && toZETA) return "unwrapZeta"
-      if (
+    const fromZETA = /\bzeta\b/i.test(s?.symbol)
+    const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
+    const fromZetaChain = s.chain_name === "zeta_testnet"
+    const fromBTC = s.symbol === "tBTC"
+    const fromBitcoin = s.chain_name === "btc_testnet"
+    const fromWZETA = s.symbol === "WZETA"
+    const fromGas = s.coin_type === "Gas"
+    const fromERC20 = s.coin_type === "ERC20"
+    const toZETAorWZETA = /\bw?zeta\b/i.test(d?.symbol)
+    const toWZETA = d.symbol === "WZETA"
+    const toZETA = d.symbol === "ZETA"
+    const toZetaChain = d.chain_name === "zeta_testnet"
+    const toGas = d.coin_type === "Gas"
+    const toERC20 = d.coin_type === "ERC20"
+    const toZRC20 = d.coin_type === "ZRC20"
+    const toBitcoin = d.chain_name === "btc_testnet"
+    const sameToken = s.ticker === d.ticker
+    const sameChain = s.chain_name === d.chain_name
+    const fromToBitcoin = fromBitcoin && toBitcoin
+    const fromToZetaChain = fromZetaChain || toZetaChain
+    const fromToZETAorWZETA = fromZETAorWZETA || toZETAorWZETA
+
+    const conditions = {
+      crossChainZeta: () => fromZETAorWZETA && toZETAorWZETA && !sameChain,
+      wrapZeta: () => fromZETA && toWZETA,
+      unwrapZeta: () => fromWZETA && toZETA,
+      depositNative: () =>
         sameToken &&
         !fromZetaChain &&
         toZetaChain &&
         fromGas &&
         toZRC20 &&
-        !fromBTC
-      )
-        return "depositNative"
-      if (
+        !fromBTC,
+      depositERC20: () =>
         sameToken &&
         !fromZetaChain &&
         toZetaChain &&
         fromERC20 &&
         toZRC20 &&
         !fromBTC &&
-        s.zrc20 === d.contract
-      )
-        return "depositERC20"
-      if (sameToken && fromZetaChain && !toZetaChain && !fromBTC)
-        return "withdrawZRC20"
-      if (sameToken && sameChain && fromGas && toGas && !fromToBitcoin)
-        return "transferNativeEVM"
-      if (sameToken && sameChain && fromERC20 && toERC20 && !fromToBitcoin)
-        return "transferERC20EVM"
-      if (!fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC)
-        return "crossChainSwap"
-      if (fromBTC && !toBitcoin && !fromToZetaChain && !toZETAorWZETA)
-        return "crossChainSwapBTC"
-      if (fromBTC && !fromZetaChain && toZetaChain && toZRC20)
-        return "crossChainSwapBTCTransfer"
-      if (
+        s.zrc20 === d.contract,
+      withdrawZRC20: () =>
+        sameToken && fromZetaChain && !toZetaChain && !fromBTC,
+      transferNativeEVM: () =>
+        sameToken && sameChain && fromGas && toGas && !fromToBitcoin,
+      transferERC20EVM: () =>
+        sameToken && sameChain && fromERC20 && toERC20 && !fromToBitcoin,
+      crossChainSwap: () =>
+        !fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC,
+      // crossChainSwapBTC: () =>
+      //   fromBTC && !toBitcoin && !fromToZetaChain && !toZETAorWZETA,
+      // crossChainSwapBTCTransfer: () =>
+      //   fromBTC && !fromZetaChain && toZetaChain && toZRC20,
+      crossChainSwapTransfer: () =>
         !fromZetaChain &&
         toZetaChain &&
         (toZRC20 || toZETA) &&
-        !fromZETAorWZETA
-      )
-        return "crossChainSwapTransfer"
-      if (fromToBitcoin) return "transferBTC"
-      if (fromBTC && !fromZetaChain && toZetaChain) return "depositBTC"
-      if (fromBTC && fromZetaChain && !toZetaChain) return "withdrawBTC"
-      if (fromZetaChain && !toZetaChain && toERC20)
-        return "fromZetaChainSwapAndWithdraw"
-    } else {
-      return null
+        !fromZETAorWZETA,
+      // transferBTC: () => fromToBitcoin,
+      // depositBTC: () => fromBTC && !fromZetaChain && toZetaChain,
+      // withdrawBTC: () => fromBTC && fromZetaChain && !toZetaChain,
+      fromZetaChainSwapAndWithdraw: () =>
+        fromZetaChain && !toZetaChain && (toERC20 || toGas),
     }
+
+    const result = Object.entries(conditions).find(([_, check]) => check())
+    return result ? result[0] : null
   }
 
   // Set send type
@@ -735,6 +754,32 @@ const Transfer = () => {
     setInbounds([...inbounds, inbound])
   }
 
+  m.fromZetaChainSwapAndWithdraw = async () => {
+    const swapContract = new ethers.Contract(
+      omnichainSwapContractAddress,
+      SwapToAnyToken.abi,
+      signer
+    )
+    const amount = ethers.utils.parseUnits(
+      sourceAmount,
+      sourceTokenSelected.decimals
+    )
+    const sourceToken = sourceTokenSelected.contract
+    const destinationToken = destinationTokenSelected.zrc20
+    const erc20Contract = new ethers.Contract(
+      sourceToken,
+      ERC20_ABI.abi,
+      signer
+    )
+    const approve = await erc20Contract.approve(
+      omnichainSwapContractAddress,
+      amount
+    )
+    const recipient = ethers.utils.arrayify(addressSelected)
+    await approve.wait()
+    swapContract.swap(sourceToken, amount, destinationToken, recipient, true)
+  }
+
   m.depositERC20 = async () => {
     const custodyAddress = getAddress(
       "erc20Custody",
@@ -785,7 +830,7 @@ const Transfer = () => {
     )
   }
 
-  m.crossChainSwapHandle = async ({ withdraw }: { withdraw: bool }) => {
+  m.crossChainSwapHandle = async ({ withdraw }: { withdraw: boolean }) => {
     const d = destinationTokenSelected
     const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
     let recipient
@@ -858,9 +903,8 @@ const Transfer = () => {
   return (
     <div className="shadow-none md:shadow-xl p-0 md:px-5 md:py-7 rounded-2xl md:shadow-gray-100 mb-10">
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
-        Swap
+        {sendTypeDetails[sendType]?.title || "Swap"}
       </h1>
-      {JSON.stringify(sendType)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -1038,14 +1082,14 @@ const Transfer = () => {
                 <Button
                   disabled={!canChangeAddress}
                   variant="outline"
-                  className="rounded-full w-[110px] text-xs h-6 px-3"
+                  className="rounded-full text-xs h-6 px-2"
                 >
                   {isAddressSelectedValid ? (
                     <UserCircle2 className="h-3 w-3 mr-1" />
                   ) : (
                     <AlertCircle className="h-3 w-3 mr-1" />
                   )}
-                  {formatAddress(addressSelected)}
+                  <div>{formatAddress(addressSelected)}</div>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="rounded-xl flex p-2 space-x-2 w-[390px]">

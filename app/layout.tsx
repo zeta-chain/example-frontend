@@ -19,12 +19,7 @@ import {
   connectorsForWallets,
 } from "@rainbow-me/rainbowkit"
 import { WagmiConfig, configureChains, createConfig } from "wagmi"
-import {
-  bscTestnet,
-  polygonMumbai,
-  sepolia,
-  zetachainAthensTestnet,
-} from "wagmi/chains"
+import { bscTestnet, sepolia, zetachainAthensTestnet } from "wagmi/chains"
 import { publicProvider } from "wagmi/providers/public"
 
 interface RootLayoutProps {
@@ -34,7 +29,6 @@ interface RootLayoutProps {
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
     sepolia,
-    polygonMumbai,
     bscTestnet,
     {
       ...zetachainAthensTestnet,
