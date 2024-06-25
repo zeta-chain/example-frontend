@@ -8,7 +8,7 @@ import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import { prepareData } from "@zetachain/toolkit/client"
+import { prepareData, withdraw } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 import {
@@ -42,10 +42,29 @@ import {
 import { useZetaChain } from "@/app/ZetaChainContext"
 import { AppContext } from "@/app/index"
 
+const roundToSignificantDigits = (
+  value: number,
+  significantDigits: number
+): number => {
+  if (value === 0) return 0
+  const digits =
+    -Math.floor(Math.log10(Math.abs(value))) + (significantDigits - 1)
+  const factor = Math.pow(10, digits)
+  return Math.round(value * factor) / factor
+}
+
+const roundNumber = (value: number): number => {
+  if (value >= 1) {
+    return parseFloat(value.toFixed(1))
+  } else {
+    return roundToSignificantDigits(value, 2)
+  }
+}
+
 const Transfer = () => {
   const { client } = useZetaChain()
   const omnichainSwapContractAddress =
-    "0x4A7A0D413105cb67f874bA4752fd477C616Cc334"
+    "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
     useContext(AppContext)
@@ -170,7 +189,7 @@ const Transfer = () => {
           setCrossChainFee({
             amount,
             symbol,
-            formatted: `~${amount.toFixed(2)} ${symbol}`,
+            formatted: `~${roundNumber(amount)} ${symbol}`,
           })
         } catch (e) {
           console.error(e)
@@ -200,44 +219,20 @@ const Transfer = () => {
           destinationTokenSelected?.contract)) &&
       sourceTokenSelected?.zrc20
     ) {
-      parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
-      const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
-      const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
-      const routerAddress = getAddress("uniswapV2Router02", "zeta_testnet")
-      const router = new ethers.Contract(
-        routerAddress as any,
-        UniswapV2Factory.abi,
-        provider
-      )
-
-      const amountIn = ethers.utils.parseEther(sourceAmount)
-      const zetaToken = "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf"
-      const srcToken = sourceTokenSelected.zrc20
-      const dstToken =
-        destinationTokenSelected.coin_type === "ZRC20"
-          ? destinationTokenSelected.contract
-          : destinationTokenSelected.zrc20
-      let zetaOut
       try {
-        zetaOut = await router.getAmountsOut(
-          parseUnits(sourceAmount, sourceTokenSelected.decimals),
-          [srcToken, zetaToken]
+        setDestinationAmountIsLoading(true)
+        const dstToken =
+          destinationTokenSelected.coin_type === "ZRC20"
+            ? destinationTokenSelected.contract
+            : destinationTokenSelected.zrc20
+        const q = await client.getQuote(
+          sourceAmount,
+          sourceTokenSelected.zrc20,
+          dstToken
         )
-      } catch (e) {
-        console.error(e)
-      }
-      let dstOut
-      try {
-        dstOut = await router.getAmountsOut(zetaOut[1], [zetaToken, dstToken])
+        const quote = utils.formatUnits(q.amount, q.decimals)
         setDestinationAmountIsLoading(false)
-        setDestinationAmount(
-          parseFloat(
-            ethers.utils.formatUnits(
-              dstOut[1],
-              destinationTokenSelected.decimals
-            )
-          ).toFixed(2)
-        )
+        setDestinationAmount(quote)
       } catch (e) {
         console.error(e)
       }
@@ -548,7 +543,7 @@ const Transfer = () => {
 
   let m = {} as any
 
-  m.crossChainSwapBTCHandle = (action: string) => {
+  m.crossChainSwapBTCHandle = ({ withdraw }: { withdraw: boolean }) => {
     if (!address) {
       console.error("EVM address undefined.")
       return
@@ -562,7 +557,9 @@ const Transfer = () => {
     const contract = omnichainSwapContractAddress.replace(/^0x/, "")
     const zrc20 = destinationTokenSelected.zrc20.replace(/^0x/, "")
     const dest = address.replace(/^0x/, "")
-    const memo = `hex::${contract}${action}${zrc20}${dest}`
+    // TODO: test with Bitcoin to see if this actually works
+    const withdrawFlag = withdraw ? "00" : "01"
+    const memo = `hex::${contract}${zrc20}${dest}${withdrawFlag}`
     window.xfi.bitcoin.request(
       bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
@@ -775,7 +772,7 @@ const Transfer = () => {
     )
   }
 
-  m.crossChainSwapHandle = async (action: string) => {
+  m.crossChainSwapHandle = async ({ withdraw }: { withdraw: bool }) => {
     const d = destinationTokenSelected
     const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
     let recipient
@@ -792,8 +789,8 @@ const Transfer = () => {
 
     const data = prepareData(
       omnichainSwapContractAddress,
-      ["uint8", "address", "bytes"],
-      [action, zrc20, recipient]
+      ["address", "bytes", "bool"],
+      [zrc20, recipient, withdraw]
     )
 
     const to = getAddress("tss", sourceTokenSelected.chain_name)
@@ -814,10 +811,11 @@ const Transfer = () => {
     }
   }
 
-  m.crossChainSwap = () => m.crossChainSwapHandle("1")
-  m.crossChainSwapTransfer = () => m.crossChainSwapHandle("2")
-  m.crossChainSwapBTC = () => m.crossChainSwapBTCHandle("01")
-  m.crossChainSwapBTCTransfer = () => m.crossChainSwapBTCHandle("02")
+  m.crossChainSwap = () => m.crossChainSwapHandle({ withdtaw: true })
+  m.crossChainSwapTransfer = () => m.crossChainSwapHandle({ withdraw: false })
+  m.crossChainSwapBTC = () => m.crossChainSwapBTCHandle({ withdraw: true })
+  m.crossChainSwapBTCTransfer = () =>
+    m.crossChainSwapBTCHandle({ withdraw: false })
 
   const handleSend = async () => {
     setIsSending(true)
@@ -849,7 +847,7 @@ const Transfer = () => {
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         Swap
       </h1>
-      {JSON.stringify(balances)}
+      {JSON.stringify(sendType)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
