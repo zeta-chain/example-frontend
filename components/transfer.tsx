@@ -11,6 +11,7 @@ import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
 import { prepareData, withdraw } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
+import debounce from "lodash/debounce"
 import {
   AlertCircle,
   Check,
@@ -164,10 +165,48 @@ const Transfer = () => {
     setDestinationTokenSelected(token ? token : false)
   }, [destinationToken])
 
-  // Set cross-chain fee and whether address can be changed
+  // Set cross-chain fees
   useEffect(() => {
-    if (fees) {
-      if (sendType === "crossChainZeta") {
+    console.log("Setting cross-chain fees...")
+    if (["fromZetaChainSwapAndWithdraw", "crossChainSwap"].includes(sendType)) {
+      swapAndWithdrawSetFee()
+    } else if (["crossChainZeta"].includes(sendType)) {
+      zetaTransferSetFee()
+    } else {
+      setCrossChainFee(null)
+    }
+  }, [sourceAmount, sendType, destinationTokenSelected])
+
+  const swapAndWithdrawSetFee = useCallback(
+    debounce(async () => {
+      if (
+        ["fromZetaChainSwapAndWithdraw", "crossChainSwap"].includes(sendType)
+      ) {
+        console.log("swapAndWithdrawSetFee...")
+        const s = sourceTokenSelected
+        const d = destinationTokenSelected
+        const st = s.coin_type === "ZRC20" ? s.contract : s.zrc20
+        const dt = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+        if (st && dt) {
+          const fee = await client.getWithdrawFeeInInputToken(st, dt)
+          const feeAmount = roundNumber(
+            parseFloat(utils.formatUnits(fee.amount, fee.decimals))
+          )
+          setCrossChainFee({
+            amount: utils.formatUnits(fee.amount, fee.decimals),
+            symbol: s.symbol,
+            decimals: fee.decimals,
+            formatted: `${feeAmount} ${s.symbol}`,
+          })
+        }
+      }
+    }, 500),
+    [sourceAmount, sendType, destinationTokenSelected]
+  )
+
+  const zetaTransferSetFee = useCallback(async () => {
+    if (sendType === "crossChainZeta") {
+      try {
         const dest = destinationTokenSelected?.chain_name
         const isZeta = dest === "zeta_testnet"
         const amount = isZeta
@@ -183,33 +222,14 @@ const Transfer = () => {
           symbol: "ZETA",
           formatted,
         })
-      } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-        try {
-          const fee = fees?.["omnichain"].find(
-            (x: any) => x.address === destinationTokenSelected.zrc20
-          )
-          const amount = parseFloat(fee.totalFee)
-          const symbol = balances.find((c: any) => {
-            if (
-              c?.chain_id === destinationTokenSelected?.chain_id &&
-              c?.coin_type === "Gas"
-            ) {
-              return c
-            }
-          })?.symbol
-          setCrossChainFee({
-            amount,
-            symbol,
-            formatted: `~${roundNumber(amount)} ${symbol}`,
-          })
-        } catch (e) {
-          console.error(e)
-        }
-      } else {
-        setCrossChainFee(null)
+      } catch (e) {
+        console.error(e)
       }
     }
+  }, [sourceAmount, sendType, destinationTokenSelected])
 
+  // Set whether address can be changed
+  useEffect(() => {
     setCanChangeAddress(
       [
         "transferNativeEVM",
@@ -220,67 +240,94 @@ const Transfer = () => {
     )
   }, [sourceAmount, sendType, destinationTokenSelected])
 
-  // Set destination amount for a cross-chain swap
-  const getQuoteCrossChainSwap = useCallback(async () => {
-    const s = sourceTokenSelected
-    const d = destinationTokenSelected
-    const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
-    const sAmountValid = sourceAmount && parseFloat(sourceAmount)
-    const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
-    const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
-    if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
-      try {
-        const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-        const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
-        // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
-        const dAddress = dIsZETA ? WZETA.contract : target
-        updateError("insufficientLiquidity", { enabled: false })
-        setDestinationAmountIsLoading(true)
-        const q = await client.getQuote(sourceAmount, sourceAddress, dAddress)
-        const quote = utils.formatUnits(q.amount, q.decimals)
-        setDestinationAmount(quote)
-      } catch (e: any) {
-        console.error(e.reason)
-        if (e.reason) {
-          updateError("insufficientLiquidity", { enabled: true })
-        }
-      } finally {
-        setDestinationAmountIsLoading(false)
-      }
-    }
-  }, [sourceAmount, sourceTokenSelected, destinationTokenSelected, sendType])
-
   // Set destination amount
-  useEffect(() => {
-    const st = computeSendType(destinationTokenSelected)
-    setSendType(st)
-    setDestinationAmount("")
-    if (!st) return
-    if (
-      [
-        "crossChainSwap",
-        "crossChainSwapBTC",
-        "crossChainSwapBTCTransfer",
-        "crossChainSwapTransfer",
-        "fromZetaChainSwapAndWithdraw",
-      ].includes(st)
-    ) {
-      getQuoteCrossChainSwap()
-      return
-    } else if (["crossChainZeta"].includes(st)) {
-      const delta = parseFloat(sourceAmount) - crossChainFee?.amount
-      if (sourceAmount && delta > 0) {
-        setDestinationAmount(delta.toFixed(2).toString())
+  useEffect(
+    debounce(() => {
+      console.log("Setting destination amount...")
+      const st = computeSendType(destinationTokenSelected)
+      setSendType(st)
+      setDestinationAmount("")
+      if (!st) return
+      if (
+        [
+          "crossChainSwap",
+          "crossChainSwapBTC",
+          "fromZetaChainSwapAndWithdraw",
+        ].includes(st)
+      ) {
+        getQuoteCrossChainSwap({ withdraw: true })
+        return
+      } else if (
+        ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(st)
+      ) {
+        getQuoteCrossChainSwap({ withdraw: false })
+      } else if (["crossChainZeta"].includes(st)) {
+        const delta = parseFloat(sourceAmount) - crossChainFee?.amount
+        if (sourceAmount && delta > 0) {
+          setDestinationAmount(delta.toFixed(2).toString())
+        }
       }
-    }
-    setDestinationAmountIsLoading(false)
-  }, [
-    sourceAmount,
-    sourceTokenSelected,
-    destinationTokenSelected,
-    crossChainFee,
-    sendType,
-  ])
+      setDestinationAmountIsLoading(false)
+    }, 500),
+    [sourceAmount, sourceTokenSelected, destinationTokenSelected, crossChainFee]
+  )
+
+  // Set destination amount for a cross-chain swap
+  const getQuoteCrossChainSwap = useCallback(
+    debounce(async ({ withdraw }: { withdraw: any }) => {
+      console.log("getQuoteCrossChainSwap...")
+      const s = sourceTokenSelected
+      const d = destinationTokenSelected
+      const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
+      const sAmountValid = sourceAmount && parseFloat(sourceAmount)
+      const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
+      const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
+
+      if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
+        try {
+          if (!crossChainFee) return
+          const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+          const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
+          // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
+          const dAddress = dIsZETA ? WZETA.contract : target
+          updateError("insufficientLiquidity", { enabled: false })
+          setDestinationAmountIsLoading(true)
+
+          // Deduct the withdraw fee (calculated in input tokens) from the input token amount
+          const AmountMinusFee = utils
+            .parseUnits(sourceAmount, sourceTokenSelected.decimals)
+            .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
+
+          const amountMinusFeeFormatted = utils.formatUnits(
+            AmountMinusFee,
+            sourceTokenSelected.decimals
+          )
+          console.log(withdraw ? amountMinusFeeFormatted : sourceAmount)
+          const q = await client.getQuote(
+            withdraw ? amountMinusFeeFormatted : sourceAmount,
+            sourceAddress,
+            dAddress
+          )
+          const quote = utils.formatUnits(q.amount, q.decimals)
+          setDestinationAmount(roundNumber(parseFloat(quote)).toString())
+        } catch (e: any) {
+          console.error(e.reason)
+          if (e.reason) {
+            updateError("insufficientLiquidity", { enabled: true })
+          }
+        } finally {
+          setDestinationAmountIsLoading(false)
+        }
+      }
+    }, 500),
+    [
+      sourceAmount,
+      sourceTokenSelected,
+      destinationTokenSelected,
+      sendType,
+      crossChainFee,
+    ]
+  )
 
   const updateError = (errorKey: any, update: any) => {
     setErrors((prevErrors: any) => ({
@@ -328,8 +375,7 @@ const Transfer = () => {
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
     } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-      const gtFee =
-        parseFloat(destinationAmount) > parseFloat(crossChainFee?.amount)
+      const gtFee = parseFloat(sourceAmount) > parseFloat(crossChainFee?.amount)
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
     } else {
@@ -522,7 +568,7 @@ const Transfer = () => {
       // depositBTC: () => fromBTC && !fromZetaChain && toZetaChain,
       // withdrawBTC: () => fromBTC && fromZetaChain && !toZetaChain,
       fromZetaChainSwapAndWithdraw: () =>
-        fromZetaChain && !toZetaChain && (toERC20 || toGas),
+        fromZetaChain && !toZetaChain && !toZETAorWZETA && (toERC20 || toGas),
     }
 
     const result = Object.entries(conditions).find(([_, check]) => check())
@@ -777,7 +823,18 @@ const Transfer = () => {
     )
     const recipient = ethers.utils.arrayify(addressSelected)
     await approve.wait()
-    swapContract.swap(sourceToken, amount, destinationToken, recipient, true)
+    const tx = await swapContract.swap(
+      sourceToken,
+      amount,
+      destinationToken,
+      recipient,
+      true
+    )
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${sourceAmount} ${sourceToken.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
+    }
+    setInbounds([...inbounds, inbound])
   }
 
   m.depositERC20 = async () => {
@@ -905,6 +962,7 @@ const Transfer = () => {
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         {sendTypeDetails[sendType]?.title || "Swap"}
       </h1>
+      {JSON.stringify(sendType)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -1125,9 +1183,7 @@ const Transfer = () => {
               </PopoverTrigger>
               <PopoverContent className="rounded-xl w-auto text-xs">
                 <div className="font-medium text-center">Cross-Chain Fee</div>
-                <div className="text-slate-400">
-                  {crossChainFee?.amount.toFixed(15)}
-                </div>
+                <div className="text-slate-400">{crossChainFee?.amount}</div>
               </PopoverContent>
             </Popover>
           )}
