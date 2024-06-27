@@ -309,7 +309,22 @@ const Transfer = () => {
 
   // Set destination amount
   useEffect(() => {
-    console.log("Setting destination amount...")
+    const fetchQuoteCrossChain = async (
+      s: any,
+      d: any,
+      sourceAmount: any,
+      withdraw: boolean
+    ) => {
+      console.log("Setting destination amount...")
+      setDestinationAmount("")
+      setDestinationAmountIsLoading(true)
+      const quote = await getQuoteCrossChain(s, d, sourceAmount, withdraw)
+      if (quote) {
+        setDestinationAmount(roundNumber(parseFloat(quote)).toString())
+        setDestinationAmountIsLoading(false)
+      }
+    }
+    const debouncedFetchQuoteCrossChain = debounce(fetchQuoteCrossChain, 500)
     setDestinationAmount("")
     if (!sendType) return
     if (
@@ -319,30 +334,30 @@ const Transfer = () => {
         "fromZetaChainSwapAndWithdraw",
       ].includes(sendType)
     ) {
-      getQuoteCrossChain(
+      debouncedFetchQuoteCrossChain(
         sourceTokenSelected,
         destinationTokenSelected,
         sourceAmount,
         true
       )
-      return
     } else if (
       ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(sendType)
     ) {
-      getQuoteCrossChain(
+      debouncedFetchQuoteCrossChain(
         sourceTokenSelected,
         destinationTokenSelected,
         sourceAmount,
         false
       )
-      return
     } else if (["crossChainZeta"].includes(sendType)) {
       const delta = parseFloat(sourceAmount) - crossChainFee?.amount
       if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
       }
     }
-    setDestinationAmountIsLoading(false)
+    return () => {
+      debouncedFetchQuoteCrossChain.cancel()
+    }
   }, [
     sourceTokenSelected,
     destinationTokenSelected,
@@ -362,36 +377,30 @@ const Transfer = () => {
     const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
 
     if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
-      try {
-        setDestinationAmount("")
-        updateError("insufficientLiquidity", { enabled: false })
-        let am
-        if (withdraw && crossChainFee) {
-          // Deduct the withdraw fee (calculated in input tokens) from the input token amount
-          const AmountMinusFee = utils
-            .parseUnits(sourceAmount, sourceTokenSelected.decimals)
-            .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
+      // setDestinationAmount("")
+      // updateError("insufficientLiquidity", { enabled: false })
+      let amount
+      if (withdraw && crossChainFee) {
+        // Deduct the withdraw fee (calculated in input tokens) from the input token amount
+        const AmountMinusFee = utils
+          .parseUnits(sourceAmount, sourceTokenSelected.decimals)
+          .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
 
-          am = utils.formatUnits(AmountMinusFee, sourceTokenSelected.decimals)
-        } else {
-          am = sourceAmount
-        }
-        const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-        const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
-        // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
-        const dAddress = dIsZETA ? WZETA.contract : target
-        setDestinationAmountIsLoading(true)
-        const q = await client.getQuote(am, sourceAddress, dAddress)
-        const quote = utils.formatUnits(q.amount, q.decimals)
-        setDestinationAmount(roundNumber(parseFloat(quote)).toString())
-      } catch (e: any) {
-        console.error(e.reason)
-        if (e.reason) {
-          updateError("insufficientLiquidity", { enabled: true })
-        }
-      } finally {
-        setDestinationAmountIsLoading(false)
+        amount = utils.formatUnits(AmountMinusFee, sourceTokenSelected.decimals)
+      } else {
+        amount = sourceAmount
       }
+      const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+      const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
+      // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
+      const dAddress = dIsZETA ? WZETA.contract : target
+      // setDestinationAmountIsLoading(true)
+      const q = await client.getQuote(amount, sourceAddress, dAddress)
+      return utils.formatUnits(q.amount, q.decimals)
+      // setDestinationAmount(roundNumber(parseFloat(quote)).toString())
+      // updateError("insufficientLiquidity", { enabled: true })
+
+      // setDestinationAmountIsLoading(false)
     }
   }
 
