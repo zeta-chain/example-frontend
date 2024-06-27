@@ -308,51 +308,47 @@ const Transfer = () => {
   }, [sourceAmount, sendType, destinationTokenSelected])
 
   // Set destination amount
-  useEffect(
-    debounce(() => {
-      console.log("Setting destination amount...")
-      setDestinationAmount("")
-      if (!sendType) return
-      const params = [
+  useEffect(() => {
+    console.log("Setting destination amount...")
+    setDestinationAmount("")
+    if (!sendType) return
+    if (
+      [
+        "crossChainSwap",
+        "crossChainSwapBTC",
+        "fromZetaChainSwapAndWithdraw",
+      ].includes(sendType)
+    ) {
+      getQuoteCrossChain(
         sourceTokenSelected,
         destinationTokenSelected,
         sourceAmount,
-      ]
-      if (
-        [
-          "crossChainSwap",
-          "crossChainSwapBTC",
-          "fromZetaChainSwapAndWithdraw",
-        ].includes(sendType)
-      ) {
-        getQuoteCrossChain(
-          sourceTokenSelected,
-          destinationTokenSelected,
-          sourceAmount,
-          true
-        )
-        return
-      } else if (
-        ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(
-          sendType
-        )
-      ) {
-        getQuoteCrossChain(
-          sourceTokenSelected,
-          destinationTokenSelected,
-          sourceAmount,
-          false
-        )
-      } else if (["crossChainZeta"].includes(sendType)) {
-        const delta = parseFloat(sourceAmount) - crossChainFee?.amount
-        if (sourceAmount && delta > 0) {
-          setDestinationAmount(delta.toFixed(2).toString())
-        }
+        true
+      )
+      return
+    } else if (
+      ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(sendType)
+    ) {
+      getQuoteCrossChain(
+        sourceTokenSelected,
+        destinationTokenSelected,
+        sourceAmount,
+        false
+      )
+      return
+    } else if (["crossChainZeta"].includes(sendType)) {
+      const delta = parseFloat(sourceAmount) - crossChainFee?.amount
+      if (sourceAmount && delta > 0) {
+        setDestinationAmount(delta.toFixed(2).toString())
       }
-      setDestinationAmountIsLoading(false)
-    }, 500),
-    [sourceTokenSelected, destinationTokenSelected, sourceAmount, crossChainFee]
-  )
+    }
+    setDestinationAmountIsLoading(false)
+  }, [
+    sourceTokenSelected,
+    destinationTokenSelected,
+    sourceAmount,
+    crossChainFee,
+  ])
 
   const getQuoteCrossChain = async (
     s: any,
@@ -367,29 +363,25 @@ const Transfer = () => {
 
     if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
       try {
-        if (!crossChainFee) return
+        setDestinationAmount("")
+        updateError("insufficientLiquidity", { enabled: false })
+        let am
+        if (withdraw && crossChainFee) {
+          // Deduct the withdraw fee (calculated in input tokens) from the input token amount
+          const AmountMinusFee = utils
+            .parseUnits(sourceAmount, sourceTokenSelected.decimals)
+            .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
+
+          am = utils.formatUnits(AmountMinusFee, sourceTokenSelected.decimals)
+        } else {
+          am = sourceAmount
+        }
         const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
         const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
         // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
         const dAddress = dIsZETA ? WZETA.contract : target
-        updateError("insufficientLiquidity", { enabled: false })
         setDestinationAmountIsLoading(true)
-
-        // Deduct the withdraw fee (calculated in input tokens) from the input token amount
-        const AmountMinusFee = utils
-          .parseUnits(sourceAmount, sourceTokenSelected.decimals)
-          .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
-
-        const amountMinusFeeFormatted = utils.formatUnits(
-          AmountMinusFee,
-          sourceTokenSelected.decimals
-        )
-        console.log(withdraw ? amountMinusFeeFormatted : sourceAmount)
-        const q = await client.getQuote(
-          withdraw ? amountMinusFeeFormatted : sourceAmount,
-          sourceAddress,
-          dAddress
-        )
+        const q = await client.getQuote(am, sourceAddress, dAddress)
         const quote = utils.formatUnits(q.amount, q.decimals)
         setDestinationAmount(roundNumber(parseFloat(quote)).toString())
       } catch (e: any) {
