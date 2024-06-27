@@ -325,8 +325,10 @@ const Transfer = () => {
       }
     }
     const debouncedFetchQuoteCrossChain = debounce(fetchQuoteCrossChain, 500)
-    setDestinationAmount("")
-    if (!sendType) return
+    if (!sendType) {
+      setDestinationAmountIsLoading(false)
+      return
+    }
     if (
       [
         "crossChainSwap",
@@ -372,11 +374,11 @@ const Transfer = () => {
     withdraw: boolean
   ) => {
     const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
-    const sAmountValid = sourceAmount && parseFloat(sourceAmount)
+    const isAmountValid = sourceAmount && parseFloat(sourceAmount)
     const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
     const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
-
-    if (sAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
+    if (!isAmountValid) return "0"
+    if (isAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
       // setDestinationAmount("")
       // updateError("insufficientLiquidity", { enabled: false })
       let amount
