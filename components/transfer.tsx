@@ -8,7 +8,11 @@ import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
 import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import { prepareData, withdraw } from "@zetachain/toolkit/client"
+import {
+  ZetaChainClient,
+  prepareData,
+  withdraw,
+} from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 import debounce from "lodash/debounce"
@@ -93,7 +97,6 @@ const Transfer = () => {
     useState(false)
   const [destinationBalances, setDestinationBalances] = useState<any>()
   const [isRightChain, setIsRightChain] = useState(true)
-  // const [sendType, setSendType] = useState<any>()
   const [crossChainFee, setCrossChainFee] = useState<any>()
   const [isSending, setIsSending] = useState(false)
   const [addressSelected, setAddressSelected] = useState<any>(null)
@@ -379,11 +382,8 @@ const Transfer = () => {
     const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
     if (!isAmountValid) return "0"
     if (isAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
-      // setDestinationAmount("")
-      // updateError("insufficientLiquidity", { enabled: false })
       let amount
       if (withdraw && crossChainFee) {
-        // Deduct the withdraw fee (calculated in input tokens) from the input token amount
         const AmountMinusFee = utils
           .parseUnits(sourceAmount, sourceTokenSelected.decimals)
           .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
@@ -394,15 +394,9 @@ const Transfer = () => {
       }
       const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
       const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
-      // TODO: Doesn't exactly work for WZETA, because the quoter returns same address
       const dAddress = dIsZETA ? WZETA.contract : target
-      // setDestinationAmountIsLoading(true)
       const q = await client.getQuote(amount, sourceAddress, dAddress)
       return utils.formatUnits(q.amount, q.decimals)
-      // setDestinationAmount(roundNumber(parseFloat(quote)).toString())
-      // updateError("insufficientLiquidity", { enabled: true })
-
-      // setDestinationAmountIsLoading(false)
     }
   }
 
@@ -708,14 +702,15 @@ const Transfer = () => {
     const to = destinationTokenSelected.chain_name
     const btc = bitcoinAddress
     const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      btc,
-      token
-    )
+    const client = new ZetaChainClient({
+      network: "testnet",
+      signer: signer as any,
+    })
+    const tx = await client.deposit({
+      chain: from,
+      amount: sourceAmount,
+      recipient: addressSelected,
+    })
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
@@ -760,18 +755,20 @@ const Transfer = () => {
 
   m.withdrawZRC20 = async () => {
     const destination = destinationTokenSelected.chain_name
-    const ZRC20Address = getAddress("zrc20", destination)
-    const contract = new ethers.Contract(ZRC20Address as any, ZRC20.abi, signer)
-    const value = ethers.utils.parseUnits(
-      sourceAmount,
-      destinationTokenSelected.decimals
-    )
-    await contract.approve(ZRC20Address, value)
-    const to =
-      destination === "btc_testnet"
-        ? ethers.utils.toUtf8Bytes(bitcoinAddress)
-        : addressSelected
-    const tx = await contract.withdraw(to, value)
+    const zrc20 = getAddress("zrc20", destination)
+    if (!zrc20) {
+      console.error("ZRC-20 address not found")
+      return
+    }
+    const client = new ZetaChainClient({
+      network: "testnet",
+      signer: signer as any,
+    })
+    const tx = await client.withdraw({
+      amount: sourceAmount,
+      zrc20,
+      recipient: addressSelected,
+    })
     const token = sourceTokenSelected.symbol
     const from = sourceTokenSelected.chain_name
     const dest = destinationTokenSelected.chain_name
@@ -786,14 +783,15 @@ const Transfer = () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string,
-      token
-    )
+    const client = new ZetaChainClient({
+      network: "testnet",
+      signer: signer as any,
+    })
+    const tx = await client.deposit({
+      chain: from,
+      amount: sourceAmount,
+      recipient: addressSelected,
+    })
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
