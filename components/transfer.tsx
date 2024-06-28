@@ -70,8 +70,14 @@ const Transfer = () => {
   const omnichainSwapContractAddress =
     "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
-    useContext(AppContext)
+  const {
+    balances,
+    balancesLoading,
+    bitcoinAddress,
+    setInbounds,
+    inbounds,
+    fees,
+  } = useContext(AppContext)
   const { chain } = useNetwork()
 
   const signer = useEthersSigner()
@@ -122,6 +128,7 @@ const Transfer = () => {
     const toGas = d.coin_type === "Gas"
     const toERC20 = d.coin_type === "ERC20"
     const toZRC20 = d.coin_type === "ZRC20"
+    const fromZRC20 = s.coin_type === "ZRC20"
     const toBitcoin = d.chain_name === "btc_testnet"
     const sameToken = s.ticker === d.ticker
     const sameChain = s.chain_name === d.chain_name
@@ -153,7 +160,10 @@ const Transfer = () => {
       transferNativeEVM: () =>
         sameToken && sameChain && fromGas && toGas && !fromToBitcoin,
       transferERC20EVM: () =>
-        sameToken && sameChain && fromERC20 && toERC20 && !fromToBitcoin,
+        sameToken &&
+        sameChain &&
+        ((fromERC20 && toERC20) || (fromZRC20 && toZRC20)) &&
+        !fromToBitcoin,
       crossChainSwap: () =>
         !fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC,
       // crossChainSwapBTC: () =>
@@ -312,6 +322,7 @@ const Transfer = () => {
   // Set destination amount
   useEffect(() => {
     setDestinationAmount("")
+    updateError("insufficientLiquidity", { enabled: false })
     const fetchQuoteCrossChain = async (
       s: any,
       d: any,
@@ -535,7 +546,8 @@ const Transfer = () => {
     isSending ||
     !isAddressSelectedValid ||
     destinationAmountIsLoading ||
-    !destinationAmount
+    !destinationAmount ||
+    balancesLoading
 
   useEffect(() => {
     if (isSending) {
@@ -1035,7 +1047,7 @@ const Transfer = () => {
             onChange={(e) => setSourceAmount(e.target.value)}
             placeholder="0"
             value={sourceAmount}
-            disabled={isSending}
+            disabled={isSending || balancesLoading}
             type="number"
             step="any"
           />
@@ -1044,8 +1056,9 @@ const Transfer = () => {
               <Button
                 variant="outline"
                 role="combobox"
+                disabled={balancesLoading}
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
+                className="justify-between col-span-2 text-left h-full overflow-x-hidden border-none"
               >
                 <div className="flex flex-col w-full items-start">
                   <div className="text-xs w-full flex justify-between">
@@ -1071,7 +1084,7 @@ const Transfer = () => {
             <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
-                <CommandEmpty>No balances found.</CommandEmpty>
+                <CommandEmpty>No available tokens found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
                   {sourceBalances?.map((balances: any) => (
                     <CommandItem
@@ -1130,8 +1143,9 @@ const Transfer = () => {
               <Button
                 variant="outline"
                 role="combobox"
+                disabled={balancesLoading}
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
+                className="justify-between text-left col-span-2 h-full overflow-x-hidden border-none"
               >
                 <div className="flex flex-col w-full items-start">
                   <div className="text-xs">
@@ -1151,7 +1165,7 @@ const Transfer = () => {
             <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
-                <CommandEmpty>No balances found.</CommandEmpty>
+                <CommandEmpty>No available tokens found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
                   {destinationBalances?.map((balances: any) => (
                     <CommandItem
@@ -1238,7 +1252,7 @@ const Transfer = () => {
                 <Button
                   // disabled={true}
                   variant="outline"
-                  className="rounded-full text-xs h-6 px-3"
+                  className="rounded-full text-xs h-6 px-3 whitespace-nowrap overflow-hidden"
                 >
                   {crossChainFee.formatted}
                 </Button>
