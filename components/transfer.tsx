@@ -1,18 +1,11 @@
 "use client"
 
-import { useCallback, useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
-import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
-import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
-import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import {
-  ZetaChainClient,
-  prepareData,
-  withdraw,
-} from "@zetachain/toolkit/client"
+import { ZetaChainClient, prepareData } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 import debounce from "lodash/debounce"
