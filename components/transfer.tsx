@@ -312,6 +312,7 @@ const Transfer = () => {
 
   // Set destination amount
   useEffect(() => {
+    setDestinationAmount("")
     const fetchQuoteCrossChain = async (
       s: any,
       d: any,
@@ -359,6 +360,8 @@ const Transfer = () => {
       if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
       }
+    } else {
+      setDestinationAmount(sourceAmount)
     }
     return () => {
       debouncedFetchQuoteCrossChain.cancel()
@@ -376,10 +379,20 @@ const Transfer = () => {
     sourceAmount: any,
     withdraw: boolean
   ) => {
+    console.log("getQuoteCrossChain")
     const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
     const isAmountValid = sourceAmount && parseFloat(sourceAmount)
+    const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
     const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
-    const sourceAddress = s.coin_type === "ZRC20" ? s.contract : s.zrc20
+    const sIsZETA = s.coin_type === "Gas" && d.chain_id === 7001
+    let sourceAddress
+    if (s.coin_type === "ZRC20") {
+      sourceAddress = s.contract
+    } else if (sIsZETA) {
+      sourceAddress = WZETA.contract
+    } else {
+      sourceAddress = s.zrc20
+    }
     if (!isAmountValid) return "0"
     if (isAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
       let amount
@@ -393,7 +406,6 @@ const Transfer = () => {
         amount = sourceAmount
       }
       const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-      const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
       const dAddress = dIsZETA ? WZETA.contract : target
       const q = await client.getQuote(amount, sourceAddress, dAddress)
       return utils.formatUnits(q.amount, q.decimals)
