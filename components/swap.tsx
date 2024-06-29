@@ -65,7 +65,7 @@ const formatAddress = (address: any) => {
   return `${address.slice(0, 4)}...${address.slice(-4)}`
 }
 
-const Transfer = () => {
+const Swap = () => {
   const { client } = useZetaChain()
   const omnichainSwapContractAddress =
     "0xb459F14260D1dc6484CE56EB0826be317171e91F"
@@ -1282,4 +1282,4 @@ const Transfer = () => {
   )
 }
 
-export default Transfer
+export default Swap

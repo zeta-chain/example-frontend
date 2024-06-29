@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import Transfer from "@/components/transfer"
+import Swap from "@/components/swap"
 import { AppContext } from "@/app/index"
 
 const LoadingSkeleton = () => {
@@ -229,7 +229,7 @@ export default function IndexPage() {
           )}
         </div>
         <div className="mr-4">
-          <Transfer />
+          <Swap />
         </div>
       </div>
     </div>
