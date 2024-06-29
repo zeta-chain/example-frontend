@@ -347,7 +347,7 @@ const MessagingPage = () => {
                 disabled
                 checked={!!destinationNetwork}
               />
-              <span className={cn(!!destinationNetwork && "line-through")}>
+              <span className={`${!!destinationNetwork && "line-through"}`}>
                 First, select the destination network
               </span>
             </li>
@@ -361,13 +361,13 @@ const MessagingPage = () => {
             )}
             <li className="flex">
               <Checkbox className="mr-2 mt-1" disabled checked={!!message} />
-              <span className={cn(!!message && "line-through")}>
+              <span className={`${!!message && "line-through"}`}>
                 Next, write a message in the input field
               </span>
             </li>
             <li className="flex">
               <Checkbox className="mr-2 mt-1" disabled checked={completed} />
-              <span className={cn(completed && "line-through")}>
+              <span className={`${completed && "line-through"}`}>
                 Finally, click Send message and confirm in your wallet
               </span>
             </li>

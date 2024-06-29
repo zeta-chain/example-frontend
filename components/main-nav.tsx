@@ -43,10 +43,9 @@ export function MainNav() {
           <NavigationMenuItem>
             <Link href="/" legacyBehavior passHref>
               <NavigationMenuLink
-                className={cn(
-                  navigationMenuTriggerStyle(),
+                className={`${navigationMenuTriggerStyle()} ${
                   pathname === "/" ? "bg-accent" : ""
-                )}
+                }`}
               >
                 <Home className="mr-1 h-4 w-4" />
                 Home
@@ -58,7 +57,7 @@ export function MainNav() {
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Settings
-                    className={cn("h-4 w-4", inProgress && "animate-spin")}
+                    className={`h-4 w-4 ${inProgress && "animate-spin"}`}
                   />
                 </Button>
               </SheetTrigger>

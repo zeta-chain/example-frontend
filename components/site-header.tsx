@@ -27,16 +27,11 @@ export function SiteHeader() {
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
-                    className={cn(
-                      "mx-2 bg-white hover:bg-white rounded-xl shadow-rainbowkit hover:scale-1025 transition-all active:scale-95"
-                    )}
+                    className={"mx-2 bg-white hover:bg-white rounded-xl shadow-rainbowkit hover:scale-1025 transition-all active:scale-95"}
                     onClick={() => connectBitcoin()}
                   >
                     <div
-                      className={cn(
-                        "rounded-full p-0.5",
-                        bitcoinAddress ? "bg-bitcoin" : "bg-gray-500"
-                      )}
+                      className={`rounded-full p-0.5 ${bitcoinAddress ? "bg-bitcoin" : "bg-gray-500"}`}
                     >
                       <Bitcoin className="w-5 h-5" color="white" />
                     </div>

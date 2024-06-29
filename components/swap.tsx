@@ -1076,12 +1076,11 @@ const Swap = () => {
                       }}
                     >
                       <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
+                        className={`mr-2 h-4 w-4 ${
                           sourceToken === balances.id
                             ? "opacity-100"
                             : "opacity-0"
-                        )}
+                        }`}
                       />
                       <div className="w-full">
                         <div className="flex justify-between">
@@ -1149,11 +1148,10 @@ const Swap = () => {
                   {destinationBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
-                      className={cn(
-                        "hover:cursor-pointer",
+                      className={`hover:cursor-pointer ${
                         !computeSendType(sourceTokenSelected, balances) &&
-                          "opacity-25"
-                      )}
+                        "opacity-25"
+                      }`}
                       value={balances.id}
                       disabled={!computeSendType(sourceTokenSelected, balances)}
                       onSelect={(c) => {
@@ -1162,12 +1160,11 @@ const Swap = () => {
                       }}
                     >
                       <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
+                        className={`mr-2 h-4 w-4 ${
                           destinationToken === balances.id
                             ? "opacity-100"
                             : "opacity-0"
-                        )}
+                        }`}
                       />
                       <div className="w-full">
                         <div className="flex justify-between">

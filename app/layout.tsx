@@ -1,6 +1,7 @@
 "use client"
 
 import "@/styles/globals.css"
+import { JetBrains_Mono as FontMono, Inter as FontSans } from "next/font/google"
 import {
   injectedWallet,
   metaMaskWallet,
@@ -8,7 +9,6 @@ import {
   xdefiWallet,
 } from "@rainbow-me/rainbowkit/wallets"
 
-import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import Index from "@/app/index"
 
@@ -57,16 +57,18 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 })
 
+export const fontSans = FontSans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
+
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
       <html lang="en" suppressHydrationWarning>
         <head />
         <body
-          className={cn(
-            "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
-          )}
+          className={`min-h-screen bg-background font-sans antialiased ${fontSans.variable}`}
         >
           <WagmiConfig config={wagmiConfig}>
             <RainbowKitProvider chains={chains}>
