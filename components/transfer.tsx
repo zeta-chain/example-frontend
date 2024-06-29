@@ -1020,7 +1020,6 @@ const Transfer = () => {
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         {sendTypeDetails[sendType as any]?.title || "Swap"}
       </h1>
-      {JSON.stringify(client)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
