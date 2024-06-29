@@ -255,7 +255,6 @@ const Transfer = () => {
 
   useEffect(() => {
     const fetchCrossChainFee = async () => {
-      console.log("Fetching cross-chain fee...")
       setCrossChainFee(null)
       const fee = await getCrossChainFee(
         sourceTokenSelected,
@@ -329,7 +328,6 @@ const Transfer = () => {
       sourceAmount: any,
       withdraw: boolean
     ) => {
-      console.log("Setting destination amount...")
       setDestinationAmount("")
       setDestinationAmountIsLoading(true)
       try {
@@ -402,7 +400,6 @@ const Transfer = () => {
     sourceAmount: any,
     withdraw: boolean
   ) => {
-    console.log("getQuoteCrossChain")
     const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
     const isAmountValid = sourceAmount && parseFloat(sourceAmount)
     const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
@@ -873,7 +870,6 @@ const Transfer = () => {
     )
     const sourceToken = sourceTokenSelected.contract
     const destinationToken = destinationTokenSelected.contract
-    console.log(destinationTokenSelected)
     const erc20Contract = new ethers.Contract(
       sourceToken,
       ERC20_ABI.abi,
@@ -885,7 +881,6 @@ const Transfer = () => {
     )
     const recipient = ethers.utils.arrayify(addressSelected)
     await approve.wait()
-    console.log(sourceToken, amount, destinationToken, recipient, false)
     const tx = await swapContract.swap(
       sourceToken,
       amount,
