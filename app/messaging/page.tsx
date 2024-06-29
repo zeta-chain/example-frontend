@@ -2,6 +2,7 @@
 
 import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
+import { useAppContext } from "@/context/AppContext"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import Quoter from "@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json"
 import { getExplorers } from "@zetachain/networks"
@@ -35,7 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AppContext } from "@/app/index"
 
 const contracts: any = {
   goerli_testnet: "0x122F9Cca5121F23b74333D5FBd0c5D9B413bc002",
@@ -72,7 +72,7 @@ const MessagingPage = () => {
       (networks as any)[destinationNetwork]?.chain_id ?? null
     )
   }, [destinationNetwork])
-  const { inbounds, setInbounds, fees } = useContext(AppContext)
+  const { inbounds, setInbounds, fees } = useAppContext()
 
   const {
     config,

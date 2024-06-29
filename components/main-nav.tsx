@@ -3,6 +3,7 @@
 import { useContext } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAppContext } from "@/context/AppContext"
 import { Home, Settings } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,11 +23,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import Transactions from "@/components/transactions"
-import { AppContext } from "@/app/index"
 
 export function MainNav() {
   const pathname = usePathname()
-  const { cctxs } = useContext(AppContext)
+  const { cctxs } = useAppContext()
 
   const inProgress =
     cctxs.filter(

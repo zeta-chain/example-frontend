@@ -1,4 +1,5 @@
 import { useContext } from "react"
+import { useAppContext } from "@/context/AppContext"
 import { networks } from "@zetachain/networks"
 import { getAddress } from "@zetachain/protocol-contracts"
 import { prepareData } from "@zetachain/toolkit/client"
@@ -6,7 +7,6 @@ import { parseEther } from "viem"
 import { useAccount } from "wagmi"
 
 import { useEthersSigner } from "@/hooks/useEthersSigner"
-import { AppContext } from "@/app/index"
 
 import { useNFT } from "./useNFT"
 
@@ -14,7 +14,7 @@ export const useMint = () => {
   const { amount, setAmount, setMintingInProgress, omnichainContract } =
     useNFT()
   const { bitcoinAddress, setInbounds, inbounds, connectBitcoin } =
-    useContext(AppContext)
+    useAppContext()
   const { address } = useAccount()
   const signer = useEthersSigner()
 

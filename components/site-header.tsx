@@ -1,4 +1,5 @@
 import { useContext } from "react"
+import { AppProvider } from "@/context/AppContext"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { Bitcoin } from "lucide-react"
 
@@ -10,10 +11,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { MainNav } from "@/components/main-nav"
-import { AppContext } from "@/app/index"
 
 export function SiteHeader() {
-  const { bitcoinAddress, connectBitcoin } = useContext(AppContext)
+  // const { bitcoinAddress, connectBitcoin } = useContext(AppContext)
 
   return (
     <header className="bg-background sticky top-0 z-40 w-full">

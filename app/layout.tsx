@@ -9,9 +9,9 @@ import {
   xdefiWallet,
 } from "@rainbow-me/rainbowkit/wallets"
 
+import { ZetaChainProvider } from "@/hooks/useZetaChainClient"
 import Index from "@/app/index"
 
-import { ZetaChainProvider } from "../hooks/useZetaChainClient"
 import "@rainbow-me/rainbowkit/styles.css"
 import {
   RainbowKitProvider,
@@ -56,28 +56,26 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 })
 
-export const fontSans = FontSans({
+const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 })
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <>
-      <html lang="en" suppressHydrationWarning>
-        <head />
-        <body
-          className={`min-h-screen bg-background font-sans antialiased ${fontSans.variable}`}
-        >
-          <WagmiConfig config={wagmiConfig}>
-            <RainbowKitProvider chains={chains}>
-              <ZetaChainProvider>
-                <Index>{children}</Index>
-              </ZetaChainProvider>
-            </RainbowKitProvider>
-          </WagmiConfig>
-        </body>
-      </html>
-    </>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body
+        className={`min-h-screen bg-background font-sans antialiased ${fontSans.variable}`}
+      >
+        <WagmiConfig config={wagmiConfig}>
+          <RainbowKitProvider chains={chains}>
+            <ZetaChainProvider>
+              <Index>{children}</Index>
+            </ZetaChainProvider>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </body>
+    </html>
   )
 }

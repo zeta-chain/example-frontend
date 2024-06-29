@@ -1,6 +1,7 @@
 "use client"
 
 import { useContext, useEffect, useState } from "react"
+import { useAppContext } from "@/context/AppContext"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
@@ -38,7 +39,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { AppContext } from "@/app/index"
 
 import SwapToAnyToken from "./SwapToAnyToken.json"
 
@@ -77,7 +77,7 @@ const Swap = () => {
     setInbounds,
     inbounds,
     fees,
-  } = useContext(AppContext)
+  } = useAppContext()
   const { chain } = useNetwork()
 
   const signer = useEthersSigner()
