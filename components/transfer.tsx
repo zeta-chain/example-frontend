@@ -721,10 +721,6 @@ const Transfer = () => {
   m.crossChainZeta = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
-    const client = new ZetaChainClient({
-      network: "testnet",
-      signer: signer as any,
-    })
     const tx = await client.sendZeta({
       chain: from,
       destination: to,
@@ -743,10 +739,6 @@ const Transfer = () => {
     const to = destinationTokenSelected.chain_name
     const btc = bitcoinAddress
     const token = sourceTokenSelected.symbol
-    const client = new ZetaChainClient({
-      network: "testnet",
-      signer: signer as any,
-    })
     const tx = await client.deposit({
       chain: from,
       amount: sourceAmount,
@@ -801,10 +793,6 @@ const Transfer = () => {
       console.error("ZRC-20 address not found")
       return
     }
-    const client = new ZetaChainClient({
-      network: "testnet",
-      signer: signer as any,
-    })
     const tx = await client.withdraw({
       amount: sourceAmount,
       zrc20,
@@ -824,10 +812,6 @@ const Transfer = () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
-    const client = new ZetaChainClient({
-      network: "testnet",
-      signer: signer as any,
-    })
     const tx = await client.deposit({
       chain: from,
       amount: sourceAmount,
@@ -1036,6 +1020,7 @@ const Transfer = () => {
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         {sendTypeDetails[sendType as any]?.title || "Swap"}
       </h1>
+      {JSON.stringify(client)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
