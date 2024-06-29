@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 
-import { useZetaChain } from "./ZetaChainContext"
+import { useZetaChainClient } from "../hooks/useZetaChainClient"
 import { NFTProvider } from "./nft/useNFT"
 
 interface RootLayoutProps {
@@ -27,7 +27,7 @@ interface RootLayoutProps {
 export const AppContext = createContext<any>(null)
 
 export default function Index({ children }: RootLayoutProps) {
-  const { client } = useZetaChain()
+  const { client } = useZetaChainClient()
 
   const [balances, setBalances] = useState<any>([])
   const [balancesLoading, setBalancesLoading] = useState(true)

@@ -8,7 +8,7 @@ import React, {
 } from "react"
 import { ZetaChainClient } from "@zetachain/toolkit/client"
 
-import { useEthersSigner } from "@/lib/ethers"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
 
 const ZetaChainContext = createContext<any>(undefined!)
 
@@ -51,7 +51,7 @@ export function ZetaChainProvider({ children }: ZetaChainProviderProps) {
   )
 }
 
-export function useZetaChain(): any {
+export function useZetaChainClient(): any {
   const context = useContext(ZetaChainContext)
   if (context === undefined) {
     throw new Error("useZetaChain must be used within a ZetaChainProvider")

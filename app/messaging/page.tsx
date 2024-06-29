@@ -20,8 +20,8 @@ import {
   useWaitForTransaction,
 } from "wagmi"
 
-import { useEthersSigner } from "@/lib/ethers"
 import { cn } from "@/lib/utils"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"

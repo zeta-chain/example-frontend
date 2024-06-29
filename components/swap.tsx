@@ -21,8 +21,9 @@ import {
 import { parseEther, parseUnits } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
-import { useEthersSigner } from "@/lib/ethers"
 import { cn } from "@/lib/utils"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
+import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -37,7 +38,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { useZetaChain } from "@/app/ZetaChainContext"
 import { AppContext } from "@/app/index"
 
 import SwapToAnyToken from "./SwapToAnyToken.json"
@@ -66,7 +66,7 @@ const formatAddress = (address: any) => {
 }
 
 const Swap = () => {
-  const { client } = useZetaChain()
+  const { client } = useZetaChainClient()
   const omnichainSwapContractAddress =
     "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()

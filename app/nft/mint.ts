@@ -5,7 +5,7 @@ import { prepareData } from "@zetachain/toolkit/client"
 import { parseEther } from "viem"
 import { useAccount } from "wagmi"
 
-import { useEthersSigner } from "@/lib/ethers"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { AppContext } from "@/app/index"
 
 import { useNFT } from "./useNFT"

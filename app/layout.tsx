@@ -12,7 +12,7 @@ import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import Index from "@/app/index"
 
-import { ZetaChainProvider } from "./ZetaChainContext"
+import { ZetaChainProvider } from "../hooks/useZetaChainClient"
 import "@rainbow-me/rainbowkit/styles.css"
 import {
   RainbowKitProvider,
