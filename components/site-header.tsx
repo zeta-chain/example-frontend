@@ -2,7 +2,6 @@ import { useContext } from "react"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { Bitcoin } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Tooltip,
