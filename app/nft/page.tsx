@@ -1,6 +1,7 @@
 "use client"
 
 import { useContext, useEffect } from "react"
+import { useAppContext } from "@/context/AppContext"
 import { AnimatePresence, motion } from "framer-motion"
 import { debounce } from "lodash"
 import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
@@ -21,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AppContext } from "@/app/index"
 
 import { useBurn } from "./burn"
 import { useFetchNFTs } from "./fetchNFTs"
@@ -44,7 +44,7 @@ const NFTPage = () => {
     setRecipient,
     foreignCoins,
   } = useNFT()
-  const { cctxs } = useContext(AppContext)
+  const { cctxs } = useAppContext()
   const { switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
   const { transfer } = useTransfer()

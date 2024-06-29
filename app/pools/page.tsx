@@ -1,16 +1,16 @@
 "use client"
 
 import { useContext, useEffect, useState } from "react"
+import { useAppContext } from "@/context/AppContext"
 import { formatUnits } from "viem"
 import { useAccount } from "wagmi"
 
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AppContext } from "@/app/index"
 
 const PoolsPage = () => {
   const { pools, balances, balancesLoading, poolsLoading, fetchPools } =
-    useContext(AppContext)
+    useAppContext()
   const [poolsSorted, setPoolsSorted] = useState<any[]>([])
   const { address, isConnected } = useAccount()
 

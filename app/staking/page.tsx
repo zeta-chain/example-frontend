@@ -2,6 +2,7 @@
 
 import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
+import { useAppContext } from "@/context/AppContext"
 import { generatePostBodyBroadcast } from "@evmos/provider"
 import {
   createTxMsgBeginRedelegate,
@@ -67,7 +68,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/components/ui/use-toast"
-import { AppContext } from "@/app/index"
 
 const StakingPage = () => {
   const {
@@ -84,7 +84,7 @@ const StakingPage = () => {
     fetchBalances,
     observers,
     fetchObservers,
-  } = useContext(AppContext)
+  } = useAppContext()
   const [selectedValidator, setSelectedValidator] = useState<any>(null)
   const [isSending, setIsSending] = useState(false)
   const [isZetaChain, setIsZetaChain] = useState(false)

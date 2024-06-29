@@ -59,7 +59,6 @@ export const useFetchNFTs = () => {
   const { address } = useAccount()
 
   const fetchNFTs = async () => {
-    console.log("Fetching NFTs...")
     setAssetsReloading(true)
     try {
       let ownedNFTs: any = []
@@ -96,7 +95,7 @@ export const useFetchNFTs = () => {
       assets.sort((a: any, b: any) => parseInt(b.id) - parseInt(a.id))
       setAssets(assets)
     } catch (e) {
-      console.log(e)
+      console.error(e)
     } finally {
       setAssetsReloading(false)
     }
