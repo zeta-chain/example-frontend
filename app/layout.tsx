@@ -9,7 +9,6 @@ import {
   xdefiWallet,
 } from "@rainbow-me/rainbowkit/wallets"
 
-import { cn } from "@/lib/utils"
 import Index from "@/app/index"
 
 import { ZetaChainProvider } from "../hooks/useZetaChainClient"

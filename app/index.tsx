@@ -82,7 +82,6 @@ export default function Index({ children }: RootLayoutProps) {
 
   const connectBitcoin = async () => {
     const w = window as any
-    console.log("connect bitcoin")
     if ("xfi" in w && w.xfi?.bitcoin) {
       w.xfi.bitcoin.changeNetwork("testnet")
       const btc = (await w.xfi.bitcoin.getAccounts())[0]
@@ -195,7 +194,7 @@ export default function Index({ children }: RootLayoutProps) {
         })
         setBalances(b)
       } catch (e) {
-        console.log(e)
+        console.error(e)
       } finally {
         setBalancesRefreshing(false)
         setBalancesLoading(false)
@@ -212,7 +211,7 @@ export default function Index({ children }: RootLayoutProps) {
         }
         setFees(await client.getFees(500000))
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }, 500),
     []
@@ -224,7 +223,7 @@ export default function Index({ children }: RootLayoutProps) {
       try {
         setPools(await client.getPools())
       } catch (e) {
-        console.log(e)
+        console.error(e)
       } finally {
         setPoolsLoading(false)
       }

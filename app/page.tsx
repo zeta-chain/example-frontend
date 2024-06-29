@@ -2,13 +2,7 @@
 
 import { useContext, useEffect, useState } from "react"
 import Link from "next/link"
-import {
-  ArrowBigUp,
-  ChevronDown,
-  ChevronUp,
-  MessageCircle,
-  RefreshCw,
-} from "lucide-react"
+import { ArrowBigUp, ChevronDown, ChevronUp, RefreshCw } from "lucide-react"
 import { formatUnits } from "viem"
 import { useAccount } from "wagmi"
 
