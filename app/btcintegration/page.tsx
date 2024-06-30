@@ -17,10 +17,23 @@ interface ConnectedAddressData {
   pubKey: string
 }
 
+export type Params = {
+  contract: string
+  message: string
+  amount: number
+  tss: string
+}
+
+declare global {
+  interface Window {
+    unisat: any
+  }
+}
+
 const BtcIntegration = () => {
   const [contractAddress, setContractAddress] = useState("")
   const [message, setMessage] = useState("")
-  const [amount, setAmount] = useState()
+  const [amount, setAmount] = useState<number | undefined>()
   const [selectedWallet, setSelectedWallet] = useState<Wallet>("XDefi")
 
   const sendTransaction = async () => {
@@ -50,7 +63,7 @@ const BtcIntegration = () => {
     }
   }
 
-  const callXDefi = async (params) => {
+  const callXDefi = async (params: Params) => {
     if (!window.xfi) return alert("XDEFI wallet not installed")
     const wallet = window.xfi
     window.xfi.bitcoin.changeNetwork("testnet")
@@ -71,7 +84,7 @@ const BtcIntegration = () => {
         },
       ],
     }
-    window.xfi.bitcoin.request(tx, (err, res) => {
+    window.xfi.bitcoin.request(tx, (err: Error, res: Response) => {
       if (err) {
         return alert(`Couldn't send transaction, ${JSON.stringify(err)}`)
       } else if (res) {
@@ -80,7 +93,7 @@ const BtcIntegration = () => {
     })
   }
 
-  const callUniSat = async (params) => {
+  const callUniSat = async (params: Params) => {
     if (!window.unisat) return alert("Unisat wallet not installed")
     try {
       await window.unisat.requestAccounts()
@@ -94,7 +107,7 @@ const BtcIntegration = () => {
     }
   }
 
-  const callXverse = async (params) => {
+  const callXverse = async (params: Params) => {
     const response = await Wallet.request("getAccounts", {
       purposes: [AddressPurpose.Payment],
       message: "Test app wants to know your addresses!",
@@ -128,7 +141,7 @@ const BtcIntegration = () => {
               type="number"
               value={amount}
               onChange={(e) => {
-                setAmount(e.target.value)
+                setAmount(Number(e.target.value))
               }}
               placeholder="0"
             />
@@ -159,7 +172,7 @@ const BtcIntegration = () => {
           <div>
             <select
               onChange={(e) => {
-                setSelectedWallet(e.target.value)
+                setSelectedWallet(e.target.value as Wallet)
               }}
               className="block my-2"
             >

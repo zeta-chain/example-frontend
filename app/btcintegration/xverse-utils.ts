@@ -2,6 +2,8 @@ import { base64, hex } from "@scure/base"
 import * as btc from "micro-btc-signer"
 import Wallet, { RpcErrorCode } from "sats-connect"
 
+import { Params } from "./page"
+
 const bitcoinTestnet = {
   bech32: "tb",
   pubKeyHash: 0x6f,
@@ -32,7 +34,7 @@ async function fetchUtxo(address: string): Promise<any[]> {
 async function createTransaction(
   publickkey: string,
   senderAddress: string,
-  params
+  params: Params
 ) {
   const publicKey = hex.decode(publickkey)
 
@@ -72,11 +74,11 @@ async function createTransaction(
 
   const opReturn = btc.Script.encode(["RETURN", Buffer.from(memo, "utf8")])
 
+  tx.addOutputAddress(recipientAddress, BigInt(params.amount), bitcoinTestnet)
   tx.addOutput({
     script: opReturn,
     amount: BigInt(0),
   })
-  tx.addOutputAddress(recipientAddress, BigInt(params.amount), bitcoinTestnet)
   tx.addOutputAddress(changeAddress, BigInt(800), bitcoinTestnet)
 
   const psbt = tx.toPSBT(0)
