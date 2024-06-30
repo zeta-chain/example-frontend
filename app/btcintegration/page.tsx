@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import createTransaction from "./Xverse-utils/create-psbt"
-import signPsbt from "./Xverse-utils/sign-psbt"
+import { createTransaction, signPsbt } from "./xverse-utils"
 
 type Wallet = "XDefi" | "UniSat" | "XVerse"
 
@@ -24,23 +23,17 @@ const BtcIntegration = () => {
   const [amount, setAmount] = useState()
   const [selectedWallet, setSelectedWallet] = useState<Wallet>("XDefi")
 
-  const [connectedAddressData, setConnectedAddressData] =
-    useState<ConnectedAddressData>({
-      address: "",
-      pubKey: "",
-    })
-
   const sendTransaction = async () => {
     const tss = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
     if (contractAddress.length !== 42)
       return alert("Not a valid contract address")
     if (isUndefined(amount) || isNaN(amount))
       return alert("Amount must be a number")
-    const btcAmount = amount * 1e8
+
     const params = {
       contract: contractAddress.slice(2),
       message: message.slice(2),
-      amount: btcAmount,
+      amount,
       tss,
     }
 
@@ -108,10 +101,6 @@ const BtcIntegration = () => {
     })
 
     if (response.status == "success") {
-      setConnectedAddressData({
-        address: response.result[0].address,
-        pubKey: response.result[0].publicKey,
-      })
       const result = await createTransaction(
         response.result[0].publicKey,
         response.result[0].address,
@@ -134,7 +123,7 @@ const BtcIntegration = () => {
         </div>
         <div className="pl-10 px-3 flex flex-col gap-6">
           <div>
-            <Label>Amount in tBTC</Label>
+            <Label>Amount in satoshis</Label>
             <Input
               type="number"
               value={amount}
