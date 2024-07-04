@@ -253,18 +253,16 @@ const Swap = () => {
   }, [destinationToken])
 
   useEffect(() => {
-    useEffect(() => {
-      if (!sourceTokenSelected || !destinationTokenSelected) return;
-      const fetchCrossChainFee = async () => {
-        setCrossChainFee(null)
-        const fee = await getCrossChainFee(
-          sourceTokenSelected,
-          destinationTokenSelected
-        )
-        setCrossChainFee(fee)
-      }
-      fetchCrossChainFee()
-    }, [sourceTokenSelected, destinationTokenSelected])
+    const fetchCrossChainFee = async () => {
+      setCrossChainFee(null)
+      const fee = await getCrossChainFee(
+        sourceTokenSelected,
+        destinationTokenSelected
+      )
+      setCrossChainFee(fee)
+    }
+    fetchCrossChainFee()
+  }, [sourceTokenSelected, destinationTokenSelected])
 
   const getCrossChainFee = async (s: any, d: any) => {
     if (!sendType) return
@@ -293,12 +291,12 @@ const Swap = () => {
       const st = s.coin_type === "ZRC20" ? s.contract : s.zrc20
       const dt = d.coin_type === "ZRC20" ? d.contract : d.zrc20
       if (st && dt) {
-        let fee;
+        let fee
         try {
           fee = await client.getWithdrawFeeInInputToken(st, dt)
         } catch (error) {
-          console.error("Error fetching withdraw fee:", error);
-          return null;
+          console.error("Error fetching withdraw fee:", error)
+          return null
         }
         const feeAmount = roundNumber(
           parseFloat(utils.formatUnits(fee.amount, fee.decimals))
@@ -434,12 +432,12 @@ const Swap = () => {
       }
       const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
       const dAddress = dIsZETA ? WZETA.contract : target
-      let q;
+      let q
       try {
         q = await client.getQuote(amount, sourceAddress, dAddress)
       } catch (error) {
-        console.error("Error fetching quote:", error);
-        return "0";
+        console.error("Error fetching quote:", error)
+        return "0"
       }
       return utils.formatUnits(q.amount, q.decimals)
     }
