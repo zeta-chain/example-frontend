@@ -56,9 +56,8 @@ const roundToSignificantDigits = (
 const roundNumber = (value: number): number => {
   if (value >= 1) {
     return parseFloat(value.toFixed(1))
-  } else {
-    return roundToSignificantDigits(value, 2)
   }
+  return roundToSignificantDigits(value, 2)
 }
 
 const formatAddress = (address: any) => {
