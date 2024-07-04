@@ -291,7 +291,13 @@ const Swap = () => {
       const st = s.coin_type === "ZRC20" ? s.contract : s.zrc20
       const dt = d.coin_type === "ZRC20" ? d.contract : d.zrc20
       if (st && dt) {
-        const fee = await client.getWithdrawFeeInInputToken(st, dt)
+        let fee;
+        try {
+          fee = await client.getWithdrawFeeInInputToken(st, dt)
+        } catch (error) {
+          console.error("Error fetching withdraw fee:", error);
+          return null;
+        }
         const feeAmount = roundNumber(
           parseFloat(utils.formatUnits(fee.amount, fee.decimals))
         )
