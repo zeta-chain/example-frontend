@@ -253,16 +253,18 @@ const Swap = () => {
   }, [destinationToken])
 
   useEffect(() => {
-    const fetchCrossChainFee = async () => {
-      setCrossChainFee(null)
-      const fee = await getCrossChainFee(
-        sourceTokenSelected,
-        destinationTokenSelected
-      )
-      setCrossChainFee(fee)
-    }
-    fetchCrossChainFee()
-  }, [sourceTokenSelected, destinationTokenSelected])
+    useEffect(() => {
+      if (!sourceTokenSelected || !destinationTokenSelected) return;
+      const fetchCrossChainFee = async () => {
+        setCrossChainFee(null)
+        const fee = await getCrossChainFee(
+          sourceTokenSelected,
+          destinationTokenSelected
+        )
+        setCrossChainFee(fee)
+      }
+      fetchCrossChainFee()
+    }, [sourceTokenSelected, destinationTokenSelected])
 
   const getCrossChainFee = async (s: any, d: any) => {
     if (!sendType) return
