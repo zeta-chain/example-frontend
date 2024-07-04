@@ -1,6 +1,7 @@
 "use client"
 
 import "@/styles/globals.css"
+import { Inter as FontSans } from "next/font/google"
 import {
   injectedWallet,
   metaMaskWallet,
@@ -8,23 +9,16 @@ import {
   xdefiWallet,
 } from "@rainbow-me/rainbowkit/wallets"
 
-import { fontSans } from "@/lib/fonts"
-import { cn } from "@/lib/utils"
+import { ZetaChainProvider } from "@/hooks/useZetaChainClient"
 import Index from "@/app/index"
 
-import { ZetaChainProvider } from "./ZetaChainContext"
 import "@rainbow-me/rainbowkit/styles.css"
 import {
   RainbowKitProvider,
   connectorsForWallets,
 } from "@rainbow-me/rainbowkit"
 import { WagmiConfig, configureChains, createConfig } from "wagmi"
-import {
-  bscTestnet,
-  polygonMumbai,
-  sepolia,
-  zetachainAthensTestnet,
-} from "wagmi/chains"
+import { bscTestnet, sepolia, zetachainAthensTestnet } from "wagmi/chains"
 import { publicProvider } from "wagmi/providers/public"
 
 interface RootLayoutProps {
@@ -34,7 +28,6 @@ interface RootLayoutProps {
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
     sepolia,
-    polygonMumbai,
     bscTestnet,
     {
       ...zetachainAthensTestnet,
@@ -63,26 +56,26 @@ const wagmiConfig = createConfig({
   webSocketPublicClient,
 })
 
+const fontSans = FontSans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
+
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <>
-      <html lang="en" suppressHydrationWarning>
-        <head />
-        <body
-          className={cn(
-            "min-h-screen bg-background font-sans antialiased",
-            fontSans.variable
-          )}
-        >
-          <WagmiConfig config={wagmiConfig}>
-            <RainbowKitProvider chains={chains}>
-              <ZetaChainProvider>
-                <Index>{children}</Index>
-              </ZetaChainProvider>
-            </RainbowKitProvider>
-          </WagmiConfig>
-        </body>
-      </html>
-    </>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body
+        className={`min-h-screen bg-background font-sans antialiased ${fontSans.variable}`}
+      >
+        <WagmiConfig config={wagmiConfig}>
+          <RainbowKitProvider chains={chains}>
+            <ZetaChainProvider>
+              <Index>{children}</Index>
+            </ZetaChainProvider>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </body>
+    </html>
   )
 }

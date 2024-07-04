@@ -2,6 +2,7 @@
 
 import { useCallback, useContext, useEffect, useState } from "react"
 import Link from "next/link"
+import { useAppContext } from "@/context/AppContext"
 import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
 import Quoter from "@uniswap/v3-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json"
 import { getExplorers } from "@zetachain/networks"
@@ -20,8 +21,7 @@ import {
   useWaitForTransaction,
 } from "wagmi"
 
-import { useEthersSigner } from "@/lib/ethers"
-import { cn } from "@/lib/utils"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -36,7 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AppContext } from "@/app/index"
 
 const contracts: any = {
   goerli_testnet: "0x122F9Cca5121F23b74333D5FBd0c5D9B413bc002",
@@ -73,7 +72,7 @@ const MessagingPage = () => {
       (networks as any)[destinationNetwork]?.chain_id ?? null
     )
   }, [destinationNetwork])
-  const { inbounds, setInbounds, fees } = useContext(AppContext)
+  const { inbounds, setInbounds, fees } = useAppContext()
 
   const {
     config,
@@ -347,7 +346,7 @@ const MessagingPage = () => {
                 disabled
                 checked={!!destinationNetwork}
               />
-              <span className={cn(!!destinationNetwork && "line-through")}>
+              <span className={`${!!destinationNetwork && "line-through"}`}>
                 First, select the destination network
               </span>
             </li>
@@ -361,13 +360,13 @@ const MessagingPage = () => {
             )}
             <li className="flex">
               <Checkbox className="mr-2 mt-1" disabled checked={!!message} />
-              <span className={cn(!!message && "line-through")}>
+              <span className={`${!!message && "line-through"}`}>
                 Next, write a message in the input field
               </span>
             </li>
             <li className="flex">
               <Checkbox className="mr-2 mt-1" disabled checked={completed} />
-              <span className={cn(completed && "line-through")}>
+              <span className={`${completed && "line-through"}`}>
                 Finally, click Send message and confirm in your wallet
               </span>
             </li>

@@ -1,16 +1,15 @@
 "use client"
 
-import { useCallback, useContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
+import { useAppContext } from "@/context/AppContext"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
-import UniswapV2Factory from "@uniswap/v2-periphery/build/IUniswapV2Router02.json"
-import { getEndpoints } from "@zetachain/networks/dist/src/getEndpoints"
 import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
-import ZRC20 from "@zetachain/protocol-contracts/abi/zevm/ZRC20.sol/ZRC20.json"
-import { prepareData } from "@zetachain/toolkit/client"
+import { ZetaChainClient, prepareData } from "@zetachain/toolkit/client"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
+import debounce from "lodash/debounce"
 import {
   AlertCircle,
   Check,
@@ -23,8 +22,9 @@ import {
 import { parseEther, parseUnits } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
-import { useEthersSigner } from "@/lib/ethers"
 import { cn } from "@/lib/utils"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
+import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -39,16 +39,44 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { useZetaChain } from "@/app/ZetaChainContext"
-import { AppContext } from "@/app/index"
 
-const Transfer = () => {
-  const { client } = useZetaChain()
+import SwapToAnyToken from "./SwapToAnyToken.json"
+
+const roundToSignificantDigits = (
+  value: number,
+  significantDigits: number
+): number => {
+  if (value === 0) return 0
+  const digits =
+    -Math.floor(Math.log10(Math.abs(value))) + (significantDigits - 1)
+  const factor = 10 ** digits
+  return Math.round(value * factor) / factor
+}
+
+const roundNumber = (value: number): number => {
+  if (value >= 1) {
+    return parseFloat(value.toFixed(1))
+  }
+  return roundToSignificantDigits(value, 2)
+}
+
+const formatAddress = (address: any) => {
+  return `${address.slice(0, 4)}...${address.slice(-4)}`
+}
+
+const Swap = () => {
+  const { client } = useZetaChainClient()
   const omnichainSwapContractAddress =
-    "0x102Fa443F05200bB74aBA1c1F15f442DbEf32fFb"
+    "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const { balances, bitcoinAddress, setInbounds, inbounds, fees } =
-    useContext(AppContext)
+  const {
+    balances,
+    balancesLoading,
+    bitcoinAddress,
+    setInbounds,
+    inbounds,
+    fees,
+  } = useAppContext()
   const { chain } = useNetwork()
 
   const signer = useEthersSigner()
@@ -67,7 +95,6 @@ const Transfer = () => {
     useState(false)
   const [destinationBalances, setDestinationBalances] = useState<any>()
   const [isRightChain, setIsRightChain] = useState(true)
-  const [sendType, setSendType] = useState<any>()
   const [crossChainFee, setCrossChainFee] = useState<any>()
   const [isSending, setIsSending] = useState(false)
   const [addressSelected, setAddressSelected] = useState<any>(null)
@@ -81,6 +108,92 @@ const Transfer = () => {
   const [isAmountLTBalance, setIsAmountLTBalance] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
+
+  const computeSendType = (s: any, d: any) => {
+    if (!s || !d) return null
+
+    const fromZETA = /\bzeta\b/i.test(s?.symbol)
+    const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
+    const fromZetaChain = s.chain_name === "zeta_testnet"
+    const fromBTC = s.symbol === "tBTC"
+    const fromBitcoin = s.chain_name === "btc_testnet"
+    const fromWZETA = s.symbol === "WZETA"
+    const fromGas = s.coin_type === "Gas"
+    const fromERC20 = s.coin_type === "ERC20"
+    const toZETAorWZETA = /\bw?zeta\b/i.test(d?.symbol)
+    const toWZETA = d.symbol === "WZETA"
+    const toZETA = d.symbol === "ZETA"
+    const toZetaChain = d.chain_name === "zeta_testnet"
+    const toGas = d.coin_type === "Gas"
+    const toERC20 = d.coin_type === "ERC20"
+    const toZRC20 = d.coin_type === "ZRC20"
+    const fromZRC20 = s.coin_type === "ZRC20"
+    const toBitcoin = d.chain_name === "btc_testnet"
+    const sameToken = s.ticker === d.ticker
+    const sameChain = s.chain_name === d.chain_name
+    const fromToBitcoin = fromBitcoin && toBitcoin
+    const fromToZetaChain = fromZetaChain || toZetaChain
+    const fromToZETAorWZETA = fromZETAorWZETA || toZETAorWZETA
+
+    const conditions = {
+      crossChainZeta: () => fromZETAorWZETA && toZETAorWZETA && !sameChain,
+      wrapZeta: () => fromZETA && toWZETA,
+      unwrapZeta: () => fromWZETA && toZETA,
+      depositNative: () =>
+        sameToken &&
+        !fromZetaChain &&
+        toZetaChain &&
+        fromGas &&
+        toZRC20 &&
+        !fromBTC,
+      depositERC20: () =>
+        sameToken &&
+        !fromZetaChain &&
+        toZetaChain &&
+        fromERC20 &&
+        toZRC20 &&
+        !fromBTC &&
+        s.zrc20 === d.contract,
+      withdrawZRC20: () =>
+        sameToken && fromZetaChain && !toZetaChain && !fromBTC,
+      transferNativeEVM: () =>
+        sameToken && sameChain && fromGas && toGas && !fromToBitcoin,
+      transferERC20EVM: () =>
+        sameToken &&
+        sameChain &&
+        ((fromERC20 && toERC20) || (fromZRC20 && toZRC20)) &&
+        !fromToBitcoin,
+      crossChainSwap: () =>
+        !fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC,
+      // crossChainSwapBTC: () =>
+      //   fromBTC && !toBitcoin && !fromToZetaChain && !toZETAorWZETA,
+      // crossChainSwapBTCTransfer: () =>
+      //   fromBTC && !fromZetaChain && toZetaChain && toZRC20,
+      crossChainSwapTransfer: () =>
+        !fromZetaChain &&
+        toZetaChain &&
+        (toZRC20 || toZETA) &&
+        !fromZETAorWZETA,
+      // transferBTC: () => fromToBitcoin,
+      // depositBTC: () => fromBTC && !fromZetaChain && toZetaChain,
+      // withdrawBTC: () => fromBTC && fromZetaChain && !toZetaChain,
+      fromZetaChainSwapAndWithdraw: () =>
+        fromZetaChain && !toZetaChain && !toZETAorWZETA && (toERC20 || toGas),
+      fromZetaChainSwap: () =>
+        fromZetaChain &&
+        toZetaChain &&
+        !(fromWZETA || toWZETA) &&
+        (toZRC20 || toZETA),
+    }
+
+    const result = Object.entries(conditions).find(([_, check]) => check())
+    return result ? result[0] : null
+  }
+
+  const sendType = computeSendType(
+    sourceTokenSelected,
+    destinationTokenSelected
+  )
 
   const [errors, setErrors] = useState<any>({
     sendTypeUnsupported: {
@@ -113,6 +226,11 @@ const Transfer = () => {
       enabled: false,
       priority: 0,
     },
+    insufficientLiquidity: {
+      message: "Insufficient liquidity",
+      enabled: false,
+      priority: 0,
+    },
   })
 
   const priorityErrors = Object.entries(errors)
@@ -121,10 +239,6 @@ const Transfer = () => {
     .map(([key, value]) => value)
 
   const { address } = useAccount()
-
-  const formatAddress = (address: any) => {
-    return `${address.slice(0, 4)}...${address.slice(-4)}`
-  }
 
   // Set source token details
   useEffect(() => {
@@ -138,135 +252,196 @@ const Transfer = () => {
     setDestinationTokenSelected(token ? token : false)
   }, [destinationToken])
 
-  // Set cross-chain fee and whether address can be changed
   useEffect(() => {
-    if (fees) {
-      if (sendType === "crossChainZeta") {
-        const dest = destinationTokenSelected?.chain_name
-        const isZeta = dest === "zeta_testnet"
-        const amount = isZeta
-          ? 0
-          : parseFloat(fees?.["feesCCM"][dest]?.totalFee)
-        const formatted = amount === 0 ? "0 ZETA" : `~${amount.toFixed(2)} ZETA`
-        setCrossChainFee({
-          amount,
-          symbol: "ZETA",
-          formatted,
-        })
-      } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-        const fee =
-          fees?.["feesZEVM"][destinationTokenSelected?.chain_name]?.totalFee
-        const amount = parseFloat(fee)
-        const symbol = balances.find((c: any) => {
-          if (
-            c?.chain_id === destinationTokenSelected?.chain_id &&
-            c?.coin_type === "Gas"
-          ) {
-            return c
-          }
-        })?.symbol
-        setCrossChainFee({
-          amount,
-          symbol,
-          formatted: `~${amount.toFixed(2)} ${symbol}`,
-        })
-      } else {
-        setCrossChainFee(null)
+    const fetchCrossChainFee = async () => {
+      setCrossChainFee(null)
+      const fee = await getCrossChainFee(
+        sourceTokenSelected,
+        destinationTokenSelected
+      )
+      setCrossChainFee(fee)
+    }
+    fetchCrossChainFee()
+  }, [sourceTokenSelected, destinationTokenSelected])
+
+  const getCrossChainFee = async (s: any, d: any) => {
+    if (!sendType) return
+    if (["crossChainZeta"].includes(sendType)) {
+      if (!fees) return
+      const dest = d?.chain_name
+      const toZetaChain = dest === "zeta_testnet"
+      const fee = fees["messaging"].find((f: any) => f.chainID === d.chain_id)
+      const amount = toZetaChain ? 0 : parseFloat(fee.totalFee)
+      const formatted =
+        amount === 0 ? "Fee: 0 ZETA" : `Fee: ~${roundNumber(amount)} ZETA`
+      return {
+        amount,
+        decimals: 18,
+        symbol: "ZETA",
+        formatted,
       }
     }
+    if (
+      [
+        "withdrawZRC20",
+        "crossChainSwap",
+        "fromZetaChainSwapAndWithdraw",
+      ].includes(sendType)
+    ) {
+      const st = s.coin_type === "ZRC20" ? s.contract : s.zrc20
+      const dt = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+      if (st && dt) {
+        let fee
+        try {
+          fee = await client.getWithdrawFeeInInputToken(st, dt)
+        } catch (error) {
+          console.error("Error fetching withdraw fee:", error)
+          return null
+        }
+        const feeAmount = roundNumber(
+          parseFloat(utils.formatUnits(fee.amount, fee.decimals))
+        )
+        return {
+          amount: utils.formatUnits(fee.amount, fee.decimals),
+          symbol: s.symbol,
+          decimals: fee.decimals,
+          formatted: `Fee: ${feeAmount} ${s.symbol}`,
+        }
+      }
+    }
+  }
 
+  // Set whether address can be changed
+  useEffect(() => {
     setCanChangeAddress(
       [
         "transferNativeEVM",
         "transferERC20EVM",
         "crossChainSwap",
         "transferBTC",
-      ].includes(sendType)
+      ].includes(sendType as any)
     )
   }, [sourceAmount, sendType, destinationTokenSelected])
 
-  // Set destination amount for a cross-chain swap
-  const getQuoteCrossChainSwap = useCallback(async () => {
-    if (
-      sourceAmount &&
-      parseFloat(sourceAmount) > 0 &&
-      (destinationTokenSelected?.zrc20 ||
-        (destinationTokenSelected?.coin_type === "ZRC20" &&
-          destinationTokenSelected?.contract)) &&
-      sourceTokenSelected?.zrc20
-    ) {
-      parseFloat(sourceAmount) > 0 && setDestinationAmountIsLoading(true)
-      const rpc = getEndpoints("evm", "zeta_testnet")[0]?.url
-      const provider = new ethers.providers.StaticJsonRpcProvider(rpc)
-      const routerAddress = getAddress("uniswapV2Router02", "zeta_testnet")
-      const router = new ethers.Contract(
-        routerAddress as any,
-        UniswapV2Factory.abi,
-        provider
-      )
-
-      const amountIn = ethers.utils.parseEther(sourceAmount)
-      const zetaToken = "0x5F0b1a82749cb4E2278EC87F8BF6B618dC71a8bf"
-      const srcToken = sourceTokenSelected.zrc20
-      const dstToken =
-        destinationTokenSelected.coin_type === "ZRC20"
-          ? destinationTokenSelected.contract
-          : destinationTokenSelected.zrc20
-      let zetaOut
-      try {
-        zetaOut = await router.getAmountsOut(
-          parseUnits(sourceAmount, sourceTokenSelected.decimals),
-          [srcToken, zetaToken]
-        )
-      } catch (e) {
-        console.error(e)
-      }
-      let dstOut
-      try {
-        dstOut = await router.getAmountsOut(zetaOut[1], [zetaToken, dstToken])
-        setDestinationAmountIsLoading(false)
-        setDestinationAmount(
-          parseFloat(
-            ethers.utils.formatUnits(
-              dstOut[1],
-              destinationTokenSelected.decimals
-            )
-          ).toFixed(2)
-        )
-      } catch (e) {
-        console.error(e)
-      }
-    }
-  }, [sourceAmount, sourceTokenSelected, destinationTokenSelected, sendType])
-
   // Set destination amount
   useEffect(() => {
-    const st = calculateSendType()
     setDestinationAmount("")
+    updateError("insufficientLiquidity", { enabled: false })
+    const fetchQuoteCrossChain = async (
+      s: any,
+      d: any,
+      sourceAmount: any,
+      withdraw: boolean
+    ) => {
+      setDestinationAmount("")
+      setDestinationAmountIsLoading(true)
+      try {
+        const quote = await getQuoteCrossChain(s, d, sourceAmount, withdraw)
+        if (quote) {
+          setDestinationAmount(roundNumber(parseFloat(quote)).toString())
+          setDestinationAmountIsLoading(false)
+        }
+      } catch (e) {
+        console.error(e)
+        updateError("insufficientLiquidity", { enabled: true })
+        setDestinationAmountIsLoading(false)
+      }
+    }
+    const debouncedFetchQuoteCrossChain = debounce(fetchQuoteCrossChain, 500)
+    if (!sendType) {
+      setDestinationAmountIsLoading(false)
+      return
+    }
     if (
       [
         "crossChainSwap",
         "crossChainSwapBTC",
-        "crossChainSwapBTCTransfer",
-        "crossChainSwapTransfer",
-      ].includes(st)
+        "fromZetaChainSwapAndWithdraw",
+      ].includes(sendType)
     ) {
-      getQuoteCrossChainSwap()
-      return
-    } else if (["crossChainZeta"].includes(st)) {
+      debouncedFetchQuoteCrossChain(
+        sourceTokenSelected,
+        destinationTokenSelected,
+        sourceAmount,
+        true
+      )
+    } else if (
+      ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(sendType)
+    ) {
+      debouncedFetchQuoteCrossChain(
+        sourceTokenSelected,
+        destinationTokenSelected,
+        sourceAmount,
+        false
+      )
+    } else if (["crossChainZeta"].includes(sendType)) {
       const delta = parseFloat(sourceAmount) - crossChainFee?.amount
       if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
       }
+    } else if (["fromZetaChainSwap"].includes(sendType)) {
+      debouncedFetchQuoteCrossChain(
+        sourceTokenSelected,
+        destinationTokenSelected,
+        sourceAmount,
+        false
+      )
+    } else {
+      setDestinationAmount(sourceAmount)
     }
-    setDestinationAmountIsLoading(false)
+    return () => {
+      debouncedFetchQuoteCrossChain.cancel()
+    }
   }, [
-    sourceAmount,
     sourceTokenSelected,
     destinationTokenSelected,
+    sourceAmount,
     crossChainFee,
-    sendType,
   ])
+
+  const getQuoteCrossChain = async (
+    s: any,
+    d: any,
+    sourceAmount: any,
+    withdraw: boolean
+  ) => {
+    const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
+    const isAmountValid = sourceAmount && parseFloat(sourceAmount)
+    const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
+    const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
+    const sIsZETA = s.coin_type === "Gas" && d.chain_id === 7001
+    let sourceAddress
+    if (s.coin_type === "ZRC20") {
+      sourceAddress = s.contract
+    } else if (sIsZETA) {
+      sourceAddress = WZETA.contract
+    } else {
+      sourceAddress = s.zrc20
+    }
+    if (!isAmountValid) return "0"
+    if (isAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
+      let amount
+      if (withdraw && crossChainFee) {
+        const AmountMinusFee = utils
+          .parseUnits(sourceAmount, sourceTokenSelected.decimals)
+          .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
+
+        amount = utils.formatUnits(AmountMinusFee, sourceTokenSelected.decimals)
+      } else {
+        amount = sourceAmount
+      }
+      const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+      const dAddress = dIsZETA ? WZETA.contract : target
+      let q
+      try {
+        q = await client.getQuote(amount, sourceAddress, dAddress)
+      } catch (error) {
+        console.error("Error fetching quote:", error)
+        return "0"
+      }
+      return utils.formatUnits(q.amount, q.decimals)
+    }
+  }
 
   const updateError = (errorKey: any, update: any) => {
     setErrors((prevErrors: any) => ({
@@ -309,13 +484,14 @@ const Transfer = () => {
   useEffect(() => {
     const am = parseFloat(sourceAmount || "0")
     const ltBalance = am >= 0 && am <= parseFloat(sourceTokenSelected?.balance)
-    if (["crossChainZeta"].includes(sendType)) {
+    if (["crossChainZeta"].includes(sendType as any)) {
       const gtFee = am > parseFloat(crossChainFee?.amount)
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
-    } else if (["crossChainSwap", "crossChainSwapBTC"].includes(sendType)) {
-      const gtFee =
-        parseFloat(destinationAmount) > parseFloat(crossChainFee?.amount)
+    } else if (
+      ["crossChainSwap", "crossChainSwapBTC"].includes(sendType as any)
+    ) {
+      const gtFee = parseFloat(sourceAmount) > parseFloat(crossChainFee?.amount)
       setIsAmountGTFee(gtFee)
       setIsAmountLTBalance(ltBalance)
     } else {
@@ -376,11 +552,14 @@ const Transfer = () => {
     !isAmountGTFee ||
     !isAmountLTBalance ||
     isSending ||
-    !isAddressSelectedValid
+    !isAddressSelectedValid ||
+    destinationAmountIsLoading ||
+    !destinationAmount ||
+    balancesLoading
 
   useEffect(() => {
-    if (destinationAmountIsLoading) {
-      setSendButtonText("Calculating...")
+    if (isSending) {
+      setSendButtonText("Sending...")
     } else if (sendDisabled && priorityErrors.length > 0) {
       setSendButtonText((priorityErrors as any)[0].message)
     } else {
@@ -423,84 +602,24 @@ const Transfer = () => {
     }
   }, [chain, sourceTokenSelected])
 
-  const calculateSendType = () => {
-    const s = sourceTokenSelected
-    const d = destinationTokenSelected
-    const t = (x: any) => {
-      setSendType(x)
-      return x
-    }
-    if (s && d) {
-      const fromZETA = /\bzeta\b/i.test(s?.symbol)
-      const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
-      const fromZetaChain = s.chain_name === "zeta_testnet"
-      const fromBTC = s.symbol === "tBTC"
-      const fromBitcoin = s.chain_name === "btc_testnet"
-      const fromWZETA = s.symbol === "WZETA"
-      const fromGas = s.coin_type === "Gas"
-      const fromERC20 = s.coin_type === "ERC20"
-      const toZETAorWZETA = /\bw?zeta\b/i.test(d?.symbol)
-      const toWZETA = d.symbol === "WZETA"
-      const toZETA = d.symbol === "ZETA"
-      const toZetaChain = d.chain_name === "zeta_testnet"
-      const toGas = d.coin_type === "Gas"
-      const toERC20 = d.coin_type === "ERC20"
-      const toZRC20 = d.coin_type === "ZRC20"
-      const toBitcoin = d.chain_name === "btc_testnet"
-      const sameToken = s.ticker === d.ticker
-      const sameChain = s.chain_name === d.chain_name
-      const fromToBitcoin = fromBitcoin && toBitcoin
-      const fromToZetaChain = fromZetaChain || toZetaChain
-      const fromToZETAorWZETA = fromZETAorWZETA || toZETAorWZETA
-
-      if (fromZETAorWZETA && toZETAorWZETA && !sameChain)
-        return t("crossChainZeta")
-      if (fromZETA && toWZETA) return t("wrapZeta")
-      if (fromWZETA && toZETA) return t("unwrapZeta")
-      if (
-        sameToken &&
-        !fromZetaChain &&
-        toZetaChain &&
-        fromGas &&
-        toZRC20 &&
-        !fromBTC
-      )
-        return t("depositNative")
-      if (
-        sameToken &&
-        !fromZetaChain &&
-        toZetaChain &&
-        fromERC20 &&
-        toZRC20 &&
-        !fromBTC &&
-        s.zrc20 === d.contract
-      )
-        return t("depositERC20")
-      if (sameToken && fromZetaChain && !toZetaChain && !fromBTC)
-        return t("withdrawZRC20")
-      if (sameToken && sameChain && fromGas && toGas && !fromToBitcoin)
-        return t("transferNativeEVM")
-      if (sameToken && sameChain && fromERC20 && toERC20 && !fromToBitcoin)
-        return t("transferERC20EVM")
-      if (!fromToZetaChain && !fromToZETAorWZETA && !sameChain && !fromBTC)
-        return t("crossChainSwap")
-      if (fromBTC && !toBitcoin && !fromToZetaChain && !toZETAorWZETA)
-        return t("crossChainSwapBTC")
-      if (fromBTC && !fromZetaChain && toZetaChain && toZRC20)
-        return t("crossChainSwapBTCTransfer")
-      if (!fromZetaChain && toZetaChain && toZRC20 && !fromToZETAorWZETA)
-        return t("crossChainSwapTransfer")
-      if (fromToBitcoin) return t("transferBTC")
-      if (fromBTC && !fromZetaChain && toZetaChain) return t("depositBTC")
-      if (fromBTC && fromZetaChain && !toZetaChain) return t("withdrawBTC")
-    }
-    t(null)
+  const sendTypeDetails: any = {
+    crossChainZeta: { title: "Transfer" },
+    wrapZeta: { title: "Wrap" },
+    unwrapZeta: { title: "Unwrap" },
+    depositNative: { title: "Deposit" },
+    depositERC20: { title: "Deposit" },
+    withdrawZRC20: { title: "Withdraw" },
+    transferNativeEVM: { title: "Send" },
+    transferERC20EVM: { title: "Send" },
+    crossChainSwap: { title: "Swap" },
+    crossChainSwapBTC: { title: "Swap" },
+    crossChainSwapBTCTransfer: { title: "Deposit and Swap" },
+    crossChainSwapTransfer: { title: "Deposit and Swap" },
+    transferBTC: { title: "Send" },
+    depositBTC: { title: "Deposit" },
+    withdrawBTC: { title: "Withdraw" },
+    fromZetaChainSwapAndWithdraw: { title: "Swap and Withdraw" },
   }
-
-  // Set send type
-  useEffect(() => {
-    calculateSendType()
-  }, [sourceTokenSelected, destinationTokenSelected])
 
   // Set source and destination balances
   useEffect(() => {
@@ -543,7 +662,7 @@ const Transfer = () => {
 
   let m = {} as any
 
-  m.crossChainSwapBTCHandle = (action: string) => {
+  m.crossChainSwapBTCHandle = ({ withdraw }: { withdraw: boolean }) => {
     if (!address) {
       console.error("EVM address undefined.")
       return
@@ -557,7 +676,9 @@ const Transfer = () => {
     const contract = omnichainSwapContractAddress.replace(/^0x/, "")
     const zrc20 = destinationTokenSelected.zrc20.replace(/^0x/, "")
     const dest = address.replace(/^0x/, "")
-    const memo = `hex::${contract}${action}${zrc20}${dest}`
+    // TODO: test with Bitcoin to see if this actually works
+    const withdrawFlag = withdraw ? "00" : "01"
+    const memo = `hex::${contract}${zrc20}${dest}${withdrawFlag}`
     window.xfi.bitcoin.request(
       bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
@@ -608,13 +729,12 @@ const Transfer = () => {
   m.crossChainZeta = async () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
-    const tx = await client.sendZETA(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string
-    )
+    const tx = await client.sendZeta({
+      chain: from,
+      destination: to,
+      recipient: address as string,
+      amount: sourceAmount,
+    })
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
@@ -627,14 +747,11 @@ const Transfer = () => {
     const to = destinationTokenSelected.chain_name
     const btc = bitcoinAddress
     const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      btc,
-      token
-    )
+    const tx = await client.deposit({
+      chain: from,
+      amount: sourceAmount,
+      recipient: addressSelected,
+    })
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
@@ -679,18 +796,16 @@ const Transfer = () => {
 
   m.withdrawZRC20 = async () => {
     const destination = destinationTokenSelected.chain_name
-    const ZRC20Address = getAddress("zrc20", destination)
-    const contract = new ethers.Contract(ZRC20Address as any, ZRC20.abi, signer)
-    const value = ethers.utils.parseUnits(
-      sourceAmount,
-      destinationTokenSelected.decimals
-    )
-    await contract.approve(ZRC20Address, value)
-    const to =
-      destination === "btc_testnet"
-        ? ethers.utils.toUtf8Bytes(bitcoinAddress)
-        : addressSelected
-    const tx = await contract.withdraw(to, value)
+    const zrc20 = getAddress("zrc20", destination)
+    if (!zrc20) {
+      console.error("ZRC-20 address not found")
+      return
+    }
+    const tx = await client.withdraw({
+      amount: sourceAmount,
+      zrc20,
+      recipient: addressSelected,
+    })
     const token = sourceTokenSelected.symbol
     const from = sourceTokenSelected.chain_name
     const dest = destinationTokenSelected.chain_name
@@ -705,19 +820,85 @@ const Transfer = () => {
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
-    const tx = await client.sendZRC20(
-      signer,
-      sourceAmount,
-      from,
-      to,
-      address as string,
-      token
-    )
+    const tx = await client.deposit({
+      chain: from,
+      amount: sourceAmount,
+      recipient: addressSelected,
+    })
     const inbound = {
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
     }
     setInbounds([...inbounds, inbound])
+  }
+
+  m.fromZetaChainSwapAndWithdraw = async () => {
+    const swapContract = new ethers.Contract(
+      omnichainSwapContractAddress,
+      SwapToAnyToken.abi,
+      signer
+    )
+    const amount = ethers.utils.parseUnits(
+      sourceAmount,
+      sourceTokenSelected.decimals
+    )
+    const sourceToken = sourceTokenSelected.contract
+    const destinationToken = destinationTokenSelected.zrc20
+    const erc20Contract = new ethers.Contract(
+      sourceToken,
+      ERC20_ABI.abi,
+      signer
+    )
+    const approve = await erc20Contract.approve(
+      omnichainSwapContractAddress,
+      amount
+    )
+    const recipient = ethers.utils.arrayify(addressSelected)
+    await approve.wait()
+    const tx = await swapContract.swap(
+      sourceToken,
+      amount,
+      destinationToken,
+      recipient,
+      true
+    )
+    const inbound = {
+      inboundHash: tx.hash,
+      desc: `Sent ${sourceAmount} ${sourceToken.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
+    }
+    setInbounds([...inbounds, inbound])
+  }
+
+  m.fromZetaChainSwap = async () => {
+    const swapContract = new ethers.Contract(
+      omnichainSwapContractAddress,
+      SwapToAnyToken.abi,
+      signer
+    )
+    const amount = ethers.utils.parseUnits(
+      sourceAmount,
+      sourceTokenSelected.decimals
+    )
+    const sourceToken = sourceTokenSelected.contract
+    const destinationToken = destinationTokenSelected.contract
+    const erc20Contract = new ethers.Contract(
+      sourceToken,
+      ERC20_ABI.abi,
+      signer
+    )
+    const approve = await erc20Contract.approve(
+      omnichainSwapContractAddress,
+      amount
+    )
+    const recipient = ethers.utils.arrayify(addressSelected)
+    await approve.wait()
+    const tx = await swapContract.swap(
+      sourceToken,
+      amount,
+      destinationToken,
+      recipient,
+      false
+    )
   }
 
   m.depositERC20 = async () => {
@@ -770,7 +951,7 @@ const Transfer = () => {
     )
   }
 
-  m.crossChainSwapHandle = async (action: string) => {
+  m.crossChainSwapHandle = async ({ withdraw }: { withdraw: boolean }) => {
     const d = destinationTokenSelected
     const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
     let recipient
@@ -787,8 +968,8 @@ const Transfer = () => {
 
     const data = prepareData(
       omnichainSwapContractAddress,
-      ["uint8", "address", "bytes"],
-      [action, zrc20, recipient]
+      ["address", "bytes", "bool"],
+      [zrc20, recipient, withdraw]
     )
 
     const to = getAddress("tss", sourceTokenSelected.chain_name)
@@ -809,10 +990,11 @@ const Transfer = () => {
     }
   }
 
-  m.crossChainSwap = () => m.crossChainSwapHandle("1")
-  m.crossChainSwapTransfer = () => m.crossChainSwapHandle("2")
-  m.crossChainSwapBTC = () => m.crossChainSwapBTCHandle("01")
-  m.crossChainSwapBTCTransfer = () => m.crossChainSwapBTCHandle("02")
+  m.crossChainSwap = () => m.crossChainSwapHandle({ withdtaw: true })
+  m.crossChainSwapTransfer = () => m.crossChainSwapHandle({ withdraw: false })
+  m.crossChainSwapBTC = () => m.crossChainSwapBTCHandle({ withdraw: true })
+  m.crossChainSwapBTCTransfer = () =>
+    m.crossChainSwapBTCHandle({ withdraw: false })
 
   const handleSend = async () => {
     setIsSending(true)
@@ -842,7 +1024,7 @@ const Transfer = () => {
   return (
     <div className="shadow-none md:shadow-xl p-0 md:px-5 md:py-7 rounded-2xl md:shadow-gray-100 mb-10">
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
-        Swap
+        {sendTypeDetails[sendType as any]?.title || "Swap"}
       </h1>
       <form
         onSubmit={(e) => {
@@ -855,7 +1037,7 @@ const Transfer = () => {
             onChange={(e) => setSourceAmount(e.target.value)}
             placeholder="0"
             value={sourceAmount}
-            disabled={isSending}
+            disabled={isSending || balancesLoading}
             type="number"
             step="any"
           />
@@ -864,8 +1046,9 @@ const Transfer = () => {
               <Button
                 variant="outline"
                 role="combobox"
+                disabled={balancesLoading}
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
+                className="justify-between col-span-2 text-left h-full overflow-x-hidden border-none"
               >
                 <div className="flex flex-col w-full items-start">
                   <div className="text-xs w-full flex justify-between">
@@ -882,7 +1065,7 @@ const Transfer = () => {
                   <div className="text-xs text-slate-400">
                     {sourceTokenSelected
                       ? sourceTokenSelected.chain_name
-                      : "Select token"}
+                      : "Send token"}
                   </div>
                 </div>
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
@@ -891,7 +1074,7 @@ const Transfer = () => {
             <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
-                <CommandEmpty>No balances found.</CommandEmpty>
+                <CommandEmpty>No available tokens found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
                   {sourceBalances?.map((balances: any) => (
                     <CommandItem
@@ -904,12 +1087,11 @@ const Transfer = () => {
                       }}
                     >
                       <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
+                        className={`mr-2 h-4 w-4 ${
                           sourceToken === balances.id
                             ? "opacity-100"
                             : "opacity-0"
-                        )}
+                        }`}
                       />
                       <div className="w-full">
                         <div className="flex justify-between">
@@ -950,8 +1132,9 @@ const Transfer = () => {
               <Button
                 variant="outline"
                 role="combobox"
+                disabled={balancesLoading}
                 aria-expanded={sourceTokenOpen}
-                className="justify-between col-span-2 h-full overflow-x-hidden border-none"
+                className="justify-between text-left col-span-2 h-full overflow-x-hidden border-none"
               >
                 <div className="flex flex-col w-full items-start">
                   <div className="text-xs">
@@ -962,7 +1145,7 @@ const Transfer = () => {
                   <div className="text-xs text-slate-400">
                     {destinationTokenSelected
                       ? destinationTokenSelected.chain_name
-                      : "Select token"}
+                      : "Receive token"}
                   </div>
                 </div>
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-75" />
@@ -971,25 +1154,28 @@ const Transfer = () => {
             <PopoverContent className="w-[300px] p-0 border-none shadow-2xl">
               <Command>
                 <CommandInput placeholder="Search tokens..." />
-                <CommandEmpty>No balances found.</CommandEmpty>
+                <CommandEmpty>No available tokens found.</CommandEmpty>
                 <CommandGroup className="max-h-[400px] overflow-y-scroll">
                   {destinationBalances?.map((balances: any) => (
                     <CommandItem
                       key={balances.id}
-                      className="hover:cursor-pointer"
+                      className={`hover:cursor-pointer ${
+                        !computeSendType(sourceTokenSelected, balances) &&
+                        "opacity-25"
+                      }`}
                       value={balances.id}
+                      disabled={!computeSendType(sourceTokenSelected, balances)}
                       onSelect={(c) => {
                         setDestinationToken(c === destinationToken ? null : c)
                         setDestinationTokenOpen(false)
                       }}
                     >
                       <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
+                        className={`mr-2 h-4 w-4 ${
                           destinationToken === balances.id
                             ? "opacity-100"
                             : "opacity-0"
-                        )}
+                        }`}
                       />
                       <div className="w-full">
                         <div className="flex justify-between">
@@ -1017,17 +1203,17 @@ const Transfer = () => {
                 <Button
                   disabled={!canChangeAddress}
                   variant="outline"
-                  className="rounded-full w-[110px] text-xs h-6 px-3"
+                  className="rounded-full text-xs h-6 px-2"
                 >
                   {isAddressSelectedValid ? (
                     <UserCircle2 className="h-3 w-3 mr-1" />
                   ) : (
                     <AlertCircle className="h-3 w-3 mr-1" />
                   )}
-                  {formatAddress(addressSelected)}
+                  <div>{formatAddress(addressSelected)}</div>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="rounded-xl flex p-2 space-x-2 w-[390px]">
+              <PopoverContent className="rounded-xl flex p-2 border-none shadow-xl space-x-2 w-[390px]">
                 <Input
                   className="grow border-none text-xs px-2"
                   placeholder="Recipient address"
@@ -1053,16 +1239,14 @@ const Transfer = () => {
                 <Button
                   // disabled={true}
                   variant="outline"
-                  className="rounded-full text-xs h-6 px-3"
+                  className="rounded-full text-xs h-6 px-3 whitespace-nowrap overflow-hidden"
                 >
                   {crossChainFee.formatted}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="rounded-xl w-auto text-xs">
+              <PopoverContent className="rounded-xl w-auto text-xs border-none shadow-2xl">
                 <div className="font-medium text-center">Cross-Chain Fee</div>
-                <div className="text-slate-400">
-                  {crossChainFee?.amount.toFixed(15)}
-                </div>
+                <div className="text-slate-400">{crossChainFee?.amount}</div>
               </PopoverContent>
             </Popover>
           )}
@@ -1106,4 +1290,4 @@ const Transfer = () => {
   )
 }
 
-export default Transfer
+export default Swap
