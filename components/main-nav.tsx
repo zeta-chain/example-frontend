@@ -1,9 +1,8 @@
 "use client"
 
-import { useContext } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAppContext } from "@/context/AppContext"
+import { useCCTXsContext } from "@/context/CCTXsContext"
 import { Home, Settings } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -19,14 +18,13 @@ import {
   SheetContent,
   SheetDescription,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import Transactions from "@/components/transactions"
 
 export function MainNav() {
   const pathname = usePathname()
-  const { cctxs } = useAppContext()
+  const { cctxs } = useCCTXsContext()
 
   const inProgress =
     cctxs.filter(

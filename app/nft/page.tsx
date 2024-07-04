@@ -1,7 +1,7 @@
 "use client"
 
-import { useContext, useEffect } from "react"
-import { useAppContext } from "@/context/AppContext"
+import { useEffect } from "react"
+import { useCCTXsContext } from "@/context/CCTXsContext"
 import { AnimatePresence, motion } from "framer-motion"
 import { debounce } from "lodash"
 import { Flame, Loader, RefreshCw, Send, Sparkles } from "lucide-react"
@@ -44,7 +44,7 @@ const NFTPage = () => {
     setRecipient,
     foreignCoins,
   } = useNFT()
-  const { cctxs } = useAppContext()
+  const { cctxs } = useCCTXsContext()
   const { switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
   const { transfer } = useTransfer()

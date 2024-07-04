@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAppContext } from "@/context/AppContext"
+import { useBalanceContext } from "@/context/BalanceContext"
+import { usePricesContext } from "@/context/PricesContext"
+import { useStakingContext } from "@/context/StakingContext"
 import { RefreshCw } from "lucide-react"
 import { useAccount } from "wagmi"
 
@@ -35,14 +37,11 @@ const ConnectWallet = () => {
 }
 
 export default function IndexPage() {
-  const {
-    balances,
-    balancesLoading,
-    balancesRefreshing,
-    fetchBalances,
-    prices,
-    stakingDelegations,
-  } = useAppContext()
+  const { stakingDelegations } = useStakingContext()
+  const { prices } = usePricesContext()
+
+  const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
+    useBalanceContext()
   const [sortedBalances, setSortedBalances] = useState([])
   const [showAll, setShowAll] = useState(false)
 

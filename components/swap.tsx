@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAppContext } from "@/context/AppContext"
+import { useBalanceContext } from "@/context/BalanceContext"
+import { useCCTXsContext } from "@/context/CCTXsContext"
+import { useFeesContext } from "@/context/FeesContext"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
@@ -46,14 +48,9 @@ const Swap = () => {
   const omnichainSwapContractAddress =
     "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const {
-    balances,
-    balancesLoading,
-    bitcoinAddress,
-    setInbounds,
-    inbounds,
-    fees,
-  } = useAppContext()
+  const { setInbounds, inbounds } = useCCTXsContext()
+  const { fees } = useFeesContext()
+  const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
   const { chain } = useNetwork()
 
   const signer = useEthersSigner()
