@@ -1,6 +1,6 @@
 "use client"
 
-import { useContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useAppContext } from "@/context/AppContext"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { getAddress } from "@zetachain/protocol-contracts"
