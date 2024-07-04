@@ -426,7 +426,13 @@ const Swap = () => {
       }
       const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
       const dAddress = dIsZETA ? WZETA.contract : target
-      const q = await client.getQuote(amount, sourceAddress, dAddress)
+      let q;
+      try {
+        q = await client.getQuote(amount, sourceAddress, dAddress)
+      } catch (error) {
+        console.error("Error fetching quote:", error);
+        return "0";
+      }
       return utils.formatUnits(q.amount, q.decimals)
     }
   }
