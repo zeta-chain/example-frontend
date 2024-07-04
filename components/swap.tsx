@@ -49,7 +49,7 @@ const roundToSignificantDigits = (
   if (value === 0) return 0
   const digits =
     -Math.floor(Math.log10(Math.abs(value))) + (significantDigits - 1)
-  const factor = Math.pow(10, digits)
+  const factor = 10 ** digits
   return Math.round(value * factor) / factor
 }
 
