@@ -17,7 +17,7 @@ const useDestinationAmount = (
   const [destinationAmount, setDestinationAmount] = useState("")
   const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
     useState(false)
-  const { balances, bitcoinAddress } = useBalanceContext()
+  const { balances } = useBalanceContext()
 
   useEffect(() => {
     setDestinationAmount("")

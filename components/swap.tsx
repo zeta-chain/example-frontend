@@ -5,10 +5,9 @@ import { useBalanceContext } from "@/context/BalanceContext"
 import { useCCTXsContext } from "@/context/CCTXsContext"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
-import debounce from "lodash/debounce"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
-import { formatAddress, roundNumber } from "@/lib/utils"
+import { formatAddress } from "@/lib/utils"
 import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
 import useDestinationAmount from "@/hooks/swap/useDestinationAmount"
 import useSendTransaction from "@/hooks/swap/useSendTransaction"
@@ -104,50 +103,6 @@ const Swap = () => {
       ].includes(sendType as any)
     )
   }, [sourceAmount, sendType, destinationTokenSelected])
-
-  const getQuoteCrossChain = async (
-    s: any,
-    d: any,
-    sourceAmount: any,
-    withdraw: boolean
-  ) => {
-    const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
-    const isAmountValid = sourceAmount && parseFloat(sourceAmount)
-    const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
-    const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
-    const sIsZETA = s.coin_type === "Gas" && d.chain_id === 7001
-    let sourceAddress
-    if (s.coin_type === "ZRC20") {
-      sourceAddress = s.contract
-    } else if (sIsZETA) {
-      sourceAddress = WZETA.contract
-    } else {
-      sourceAddress = s.zrc20
-    }
-    if (!isAmountValid) return "0"
-    if (isAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
-      let amount
-      if (withdraw && crossChainFee) {
-        const AmountMinusFee = utils
-          .parseUnits(sourceAmount, sourceTokenSelected.decimals)
-          .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
-
-        amount = utils.formatUnits(AmountMinusFee, sourceTokenSelected.decimals)
-      } else {
-        amount = sourceAmount
-      }
-      const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-      const dAddress = dIsZETA ? WZETA.contract : target
-      let q
-      try {
-        q = await client.getQuote(amount, sourceAddress, dAddress)
-      } catch (error) {
-        console.error("Error fetching quote:", error)
-        return "0"
-      }
-      return utils.formatUnits(q.amount, q.decimals)
-    }
-  }
 
   useEffect(() => {
     if (sourceTokenSelected && destinationTokenSelected) {

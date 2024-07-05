@@ -13,29 +13,39 @@ const useCrossChainFee = (
   const { fees } = useFeesContext()
   const { client } = useZetaChainClient()
   const [crossChainFee, setCrossChainFee] = useState<any>(null)
+  const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
     const fetchCrossChainFee = async () => {
+      setLoading(true)
       setCrossChainFee(null)
-      const fee = await getCrossChainFee(
-        sourceTokenSelected,
-        destinationTokenSelected
-      )
-      setCrossChainFee(fee)
+      try {
+        const fee = await getCrossChainFee(
+          sourceTokenSelected,
+          destinationTokenSelected
+        )
+        setCrossChainFee(fee)
+      } catch (error) {
+        console.error("Error fetching cross-chain fee:", error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     if (sourceTokenSelected && destinationTokenSelected) {
       fetchCrossChainFee()
     }
-  }, [sourceTokenSelected, destinationTokenSelected])
+  }, [sourceTokenSelected, destinationTokenSelected, sendType])
 
   const getCrossChainFee = async (s: any, d: any) => {
-    if (!sendType) return
+    if (!sendType) return null
+
     if (["crossChainZeta"].includes(sendType)) {
-      if (!fees) return
+      if (!fees) return null
       const dest = d?.chain_name
       const toZetaChain = dest === "zeta_testnet"
       const fee = fees["messaging"].find((f: any) => f.chainID === d.chain_id)
+      if (!fee) return null
       const amount = toZetaChain ? 0 : parseFloat(fee.totalFee)
       const formatted =
         amount === 0 ? "Fee: 0 ZETA" : `Fee: ~${roundNumber(amount)} ZETA`
@@ -46,6 +56,7 @@ const useCrossChainFee = (
         formatted,
       }
     }
+
     if (
       [
         "withdrawZRC20",
@@ -56,27 +67,27 @@ const useCrossChainFee = (
       const st = s.coin_type === "ZRC20" ? s.contract : s.zrc20
       const dt = d.coin_type === "ZRC20" ? d.contract : d.zrc20
       if (st && dt) {
-        let fee
         try {
-          fee = await client.getWithdrawFeeInInputToken(st, dt)
+          const fee = await client.getWithdrawFeeInInputToken(st, dt)
+          const feeAmount = roundNumber(
+            parseFloat(utils.formatUnits(fee.amount, fee.decimals))
+          )
+          return {
+            amount: utils.formatUnits(fee.amount, fee.decimals),
+            symbol: s.symbol,
+            decimals: fee.decimals,
+            formatted: `Fee: ${feeAmount} ${s.symbol}`,
+          }
         } catch (error) {
           console.error("Error fetching withdraw fee:", error)
           return null
         }
-        const feeAmount = roundNumber(
-          parseFloat(utils.formatUnits(fee.amount, fee.decimals))
-        )
-        return {
-          amount: utils.formatUnits(fee.amount, fee.decimals),
-          symbol: s.symbol,
-          decimals: fee.decimals,
-          formatted: `Fee: ${feeAmount} ${s.symbol}`,
-        }
       }
     }
+    return null
   }
 
-  return { crossChainFee }
+  return { crossChainFee, loading }
 }
 
 export default useCrossChainFee
