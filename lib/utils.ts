@@ -1,6 +1,28 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export function cn(...inputs: ClassValue[]) {
+export const cn = (...inputs: ClassValue[]) => {
   return twMerge(clsx(inputs))
+}
+
+export const roundToSignificantDigits = (
+  value: number,
+  significantDigits: number
+): number => {
+  if (value === 0) return 0
+  const digits =
+    -Math.floor(Math.log10(Math.abs(value))) + (significantDigits - 1)
+  const factor = 10 ** digits
+  return Math.round(value * factor) / factor
+}
+
+export const roundNumber = (value: number): number => {
+  if (value >= 1) {
+    return parseFloat(value.toFixed(1))
+  }
+  return roundToSignificantDigits(value, 2)
+}
+
+export const formatAddress = (address: any) => {
+  return `${address.slice(0, 4)}...${address.slice(-4)}`
 }

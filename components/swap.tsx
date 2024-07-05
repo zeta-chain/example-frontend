@@ -15,6 +15,8 @@ import debounce from "lodash/debounce"
 import { parseEther, parseUnits } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
+import { formatAddress, roundNumber } from "@/lib/utils"
+import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
 import useSendType, { computeSendType } from "@/hooks/swap/useSendType"
 import useSwapErrors from "@/hooks/swap/useSwapErrors"
 import { useEthersSigner } from "@/hooks/useEthersSigner"
@@ -22,28 +24,6 @@ import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import SwapLayout from "@/components/SwapLayout"
 
 import SwapToAnyToken from "./SwapToAnyToken.json"
-
-const roundToSignificantDigits = (
-  value: number,
-  significantDigits: number
-): number => {
-  if (value === 0) return 0
-  const digits =
-    -Math.floor(Math.log10(Math.abs(value))) + (significantDigits - 1)
-  const factor = 10 ** digits
-  return Math.round(value * factor) / factor
-}
-
-const roundNumber = (value: number): number => {
-  if (value >= 1) {
-    return parseFloat(value.toFixed(1))
-  }
-  return roundToSignificantDigits(value, 2)
-}
-
-const formatAddress = (address: any) => {
-  return `${address.slice(0, 4)}...${address.slice(-4)}`
-}
 
 const Swap = () => {
   const { client } = useZetaChainClient()
@@ -71,7 +51,6 @@ const Swap = () => {
     useState(false)
   const [destinationBalances, setDestinationBalances] = useState<any>()
   const [isRightChain, setIsRightChain] = useState(true)
-  const [crossChainFee, setCrossChainFee] = useState<any>()
   const [isSending, setIsSending] = useState(false)
   const [addressSelected, setAddressSelected] = useState<any>(null)
   const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
@@ -86,6 +65,12 @@ const Swap = () => {
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
 
   const sendType = useSendType(sourceTokenSelected, destinationTokenSelected)
+
+  const { crossChainFee } = useCrossChainFee(
+    sourceTokenSelected,
+    destinationTokenSelected,
+    sendType
+  )
 
   const { updateError, priorityErrors } = useSwapErrors(
     sourceTokenSelected,
@@ -110,65 +95,6 @@ const Swap = () => {
     const token = balances.find((b: any) => b.id === destinationToken)
     setDestinationTokenSelected(token ? token : false)
   }, [destinationToken])
-
-  useEffect(() => {
-    const fetchCrossChainFee = async () => {
-      setCrossChainFee(null)
-      const fee = await getCrossChainFee(
-        sourceTokenSelected,
-        destinationTokenSelected
-      )
-      setCrossChainFee(fee)
-    }
-    fetchCrossChainFee()
-  }, [sourceTokenSelected, destinationTokenSelected])
-
-  const getCrossChainFee = async (s: any, d: any) => {
-    if (!sendType) return
-    if (["crossChainZeta"].includes(sendType)) {
-      if (!fees) return
-      const dest = d?.chain_name
-      const toZetaChain = dest === "zeta_testnet"
-      const fee = fees["messaging"].find((f: any) => f.chainID === d.chain_id)
-      const amount = toZetaChain ? 0 : parseFloat(fee.totalFee)
-      const formatted =
-        amount === 0 ? "Fee: 0 ZETA" : `Fee: ~${roundNumber(amount)} ZETA`
-      return {
-        amount,
-        decimals: 18,
-        symbol: "ZETA",
-        formatted,
-      }
-    }
-    if (
-      [
-        "withdrawZRC20",
-        "crossChainSwap",
-        "fromZetaChainSwapAndWithdraw",
-      ].includes(sendType)
-    ) {
-      const st = s.coin_type === "ZRC20" ? s.contract : s.zrc20
-      const dt = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-      if (st && dt) {
-        let fee
-        try {
-          fee = await client.getWithdrawFeeInInputToken(st, dt)
-        } catch (error) {
-          console.error("Error fetching withdraw fee:", error)
-          return null
-        }
-        const feeAmount = roundNumber(
-          parseFloat(utils.formatUnits(fee.amount, fee.decimals))
-        )
-        return {
-          amount: utils.formatUnits(fee.amount, fee.decimals),
-          symbol: s.symbol,
-          decimals: fee.decimals,
-          formatted: `Fee: ${feeAmount} ${s.symbol}`,
-        }
-      }
-    }
-  }
 
   // Set whether address can be changed
   useEffect(() => {
