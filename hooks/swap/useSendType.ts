@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 
+import type { Token } from "./types"
+
 export const sendTypeDetails = {
   crossChainZeta: { title: "Transfer" },
   wrapZeta: { title: "Wrap" },
@@ -19,18 +21,21 @@ export const sendTypeDetails = {
   fromZetaChainSwapAndWithdraw: { title: "Swap and Withdraw" },
 }
 
-export const computeSendType = (s: any, d: any) => {
+export const computeSendType = (
+  s: Token | null,
+  d: Token | null
+): string | null => {
   if (!s || !d) return null
 
-  const fromZETA = /\bzeta\b/i.test(s?.symbol)
-  const fromZETAorWZETA = /\bw?zeta\b/i.test(s?.symbol)
+  const fromZETA = /\bzeta\b/i.test(s.symbol)
+  const fromZETAorWZETA = /\bw?zeta\b/i.test(s.symbol)
   const fromZetaChain = s.chain_name === "zeta_testnet"
   const fromBTC = s.symbol === "tBTC"
   const fromBitcoin = s.chain_name === "btc_testnet"
   const fromWZETA = s.symbol === "WZETA"
   const fromGas = s.coin_type === "Gas"
   const fromERC20 = s.coin_type === "ERC20"
-  const toZETAorWZETA = /\bw?zeta\b/i.test(d?.symbol)
+  const toZETAorWZETA = /\bw?zeta\b/i.test(d.symbol)
   const toWZETA = d.symbol === "WZETA"
   const toZETA = d.symbol === "ZETA"
   const toZetaChain = d.chain_name === "zeta_testnet"
@@ -90,10 +95,10 @@ export const computeSendType = (s: any, d: any) => {
 }
 
 const useSendType = (
-  sourceTokenSelected: any,
-  destinationTokenSelected: any
+  sourceTokenSelected: Token | null,
+  destinationTokenSelected: Token | null
 ) => {
-  const [sendType, setSendType] = useState<any>(null)
+  const [sendType, setSendType] = useState<string | null>(null)
 
   useEffect(() => {
     setSendType(computeSendType(sourceTokenSelected, destinationTokenSelected))

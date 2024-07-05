@@ -34,3 +34,12 @@ export interface Inbound {
   inboundHash: string
   desc: string
 }
+
+export interface Token {
+  symbol: string
+  chain_name: string
+  coin_type: string
+  ticker: string
+  zrc20?: string
+  contract?: string
+}
