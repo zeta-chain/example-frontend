@@ -15,6 +15,7 @@ import debounce from "lodash/debounce"
 import { parseEther, parseUnits } from "viem"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
+import useSwapErrors from "@/hooks/swap/useSwapErrors"
 import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import SwapLayout from "@/components/SwapLayout"
@@ -169,48 +170,15 @@ const Swap = () => {
     destinationTokenSelected
   )
 
-  const [errors, setErrors] = useState<any>({
-    sendTypeUnsupported: {
-      message: "Transfer type not supported",
-      enabled: false,
-      priority: 5,
-    },
-    sourceTokenNotSelected: {
-      message: "Select source token",
-      enabled: true,
-      priority: 4,
-    },
-    destinationTokenNotSelected: {
-      message: "Select destination token",
-      enabled: true,
-      priority: 3,
-    },
-    enterAmount: {
-      message: "Enter an amount",
-      enabled: false,
-      priority: 2,
-    },
-    amountLTFee: {
-      message: "Amount must be higher than fee",
-      enabled: false,
-      priority: 1,
-    },
-    amountGTBalance: {
-      message: "Insufficient balance",
-      enabled: false,
-      priority: 0,
-    },
-    insufficientLiquidity: {
-      message: "Insufficient liquidity",
-      enabled: false,
-      priority: 0,
-    },
-  })
-
-  const priorityErrors = Object.entries(errors)
-    .filter(([key, value]: [string, any]) => value.enabled)
-    .sort((a: any, b: any) => b[1].priority - a[1].priority)
-    .map(([key, value]) => value)
+  const { errors, updateError, priorityErrors } = useSwapErrors(
+    sourceTokenSelected,
+    destinationTokenSelected,
+    sendType,
+    sourceAmount,
+    isAmountGTFee,
+    isAmountLTBalance,
+    destinationAmountIsLoading
+  )
 
   const { address } = useAccount()
 
@@ -415,16 +383,6 @@ const Swap = () => {
       }
       return utils.formatUnits(q.amount, q.decimals)
     }
-  }
-
-  const updateError = (errorKey: any, update: any) => {
-    setErrors((prevErrors: any) => ({
-      ...prevErrors,
-      [errorKey]: {
-        ...prevErrors[errorKey],
-        ...update,
-      },
-    }))
   }
 
   useEffect(() => {
