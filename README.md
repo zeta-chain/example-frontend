@@ -16,7 +16,6 @@ the [ZetaChain Toolkit](https://github.com/zeta-chain/toolkit/).
 - Omnichain swaps
 - Token deposit and withdrawal
 - Cross-chain transaction tracking
-- Cross-chain messaging example
 - Bitcoin support
 
 ## Prerequisites
@@ -25,8 +24,8 @@ the [ZetaChain Toolkit](https://github.com/zeta-chain/toolkit/).
 - Yarn
 
 The ZetaChain Toolkit is initialized with a custom RPC endpoint for ZetaChain to
-ensure that requests are not rate-limited. By default we're using an RPC endpoint
-provided by [AllThatNode](https://www.allthatnode.com/zetachain.dsrv).
+ensure that requests are not rate-limited. By default we're using an RPC
+endpoint provided by [AllThatNode](https://www.allthatnode.com/zetachain.dsrv).
 
 Before starting the development server:
 

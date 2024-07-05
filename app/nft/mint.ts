@@ -1,5 +1,5 @@
-import { useContext } from "react"
-import { useAppContext } from "@/context/AppContext"
+import { useBalanceContext } from "@/context/BalanceContext"
+import { useCCTXsContext } from "@/context/CCTXsContext"
 import { networks } from "@zetachain/networks"
 import { getAddress } from "@zetachain/protocol-contracts"
 import { prepareData } from "@zetachain/toolkit/client"
@@ -13,8 +13,9 @@ import { useNFT } from "./useNFT"
 export const useMint = () => {
   const { amount, setAmount, setMintingInProgress, omnichainContract } =
     useNFT()
-  const { bitcoinAddress, setInbounds, inbounds, connectBitcoin } =
-    useAppContext()
+  const { setInbounds, inbounds } = useCCTXsContext()
+  const { bitcoinAddress } = useBalanceContext()
+  const { connectBitcoin } = useBalanceContext()
   const { address } = useAccount()
   const signer = useEthersSigner()
 

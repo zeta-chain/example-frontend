@@ -1,7 +1,6 @@
 "use client"
 
-import { useContext } from "react"
-import { useAppContext } from "@/context/AppContext"
+import { useCCTXsContext } from "@/context/CCTXsContext"
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -9,7 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 
 const TransactionsPage = () => {
-  const { cctxs } = useAppContext()
+  const { cctxs } = useCCTXsContext()
 
   const inProgress = (status: string): boolean => {
     return !(status === "mined-success" || status === "mined-fail")

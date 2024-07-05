@@ -1,15 +1,17 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAppContext } from "@/context/AppContext"
+import { useBalanceContext } from "@/context/BalanceContext"
+import { usePricesContext } from "@/context/PricesContext"
+import { useStakingContext } from "@/context/StakingContext"
 import { RefreshCw } from "lucide-react"
 import { useAccount } from "wagmi"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import BalancesTable from "@/components/BalancesTable"
-import Swap from "@/components/swap"
+import Balances from "@/components/Balances"
+import Swap from "@/components/Swap"
 
 const LoadingSkeleton = () => {
   return (
@@ -35,14 +37,11 @@ const ConnectWallet = () => {
 }
 
 export default function IndexPage() {
-  const {
-    balances,
-    balancesLoading,
-    balancesRefreshing,
-    fetchBalances,
-    prices,
-    stakingDelegations,
-  } = useAppContext()
+  const { stakingDelegations } = useStakingContext()
+  const { prices } = usePricesContext()
+
+  const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
+    useBalanceContext()
   const [sortedBalances, setSortedBalances] = useState([])
   const [showAll, setShowAll] = useState(false)
 
@@ -122,7 +121,7 @@ export default function IndexPage() {
           {balancesLoading ? (
             <LoadingSkeleton />
           ) : isConnected ? (
-            <BalancesTable
+            <Balances
               balances={balancesPrices}
               showAll={showAll}
               toggleShowAll={toggleShowAll}
