@@ -27,8 +27,8 @@ import {
 interface SwapLayoutProps {
   sendTypeDetails: any
   sendType: string | null
-  sourceAmount: string
-  setSourceAmount: (value: string) => void
+  sourceAmount: any
+  setSourceAmount: (value: any) => any
   sourceTokenOpen: boolean
   setSourceTokenOpen: (open: boolean) => void
   sourceTokenSelected: any

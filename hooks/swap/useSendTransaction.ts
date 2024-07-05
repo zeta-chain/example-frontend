@@ -20,7 +20,6 @@ const useSendTransaction = (
   sourceAmount: any,
   addressSelected: any,
   setSourceAmount: any,
-  crossChainFee: any,
   omnichainSwapContractAddress: any,
   inbounds: any,
   setInbounds: any,

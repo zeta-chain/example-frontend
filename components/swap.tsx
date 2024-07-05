@@ -20,16 +20,18 @@ import useTokenSelection from "@/hooks/swap/useTokenSelection"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import SwapLayout from "@/components/SwapLayout"
 
+const omnichainSwapContractAddress =
+  "0xb459F14260D1dc6484CE56EB0826be317171e91F"
+
 const Swap = () => {
   const { client } = useZetaChainClient()
-  const omnichainSwapContractAddress =
-    "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { setInbounds, inbounds } = useCCTXsContext()
-  const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
+  const { balancesLoading, bitcoinAddress } = useBalanceContext()
   const { chain } = useNetwork()
+  const { address } = useAccount()
 
-  const [sourceAmount, setSourceAmount] = useState<any>(false)
+  const [sourceAmount, setSourceAmount] = useState<number | boolean>(false)
   const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [isRightChain, setIsRightChain] = useState(true)
@@ -79,8 +81,6 @@ const Swap = () => {
     destinationAmountIsLoading
   )
 
-  const { address } = useAccount()
-
   const {
     addressSelected,
     isAddressSelectedValid,
@@ -100,7 +100,6 @@ const Swap = () => {
     sourceAmount,
     addressSelected,
     setSourceAmount,
-    crossChainFee,
     omnichainSwapContractAddress,
     inbounds,
     setInbounds,
@@ -122,13 +121,12 @@ const Swap = () => {
     if (isSending) {
       setSendButtonText("Sending...")
     } else if (sendDisabled && priorityErrors.length > 0) {
-      setSendButtonText((priorityErrors as any)[0].message)
+      setSendButtonText(priorityErrors[0].message)
     } else {
       setSendButtonText("Send Tokens")
     }
-  }, [destinationAmountIsLoading, sendDisabled, priorityErrors])
+  }, [isSending, sendDisabled, priorityErrors, destinationAmountIsLoading])
 
-  // Set whether the chain currently selected is the right one
   useEffect(() => {
     if (sourceTokenSelected?.chain_name === "btc_testnet") {
       setIsRightChain(true)
