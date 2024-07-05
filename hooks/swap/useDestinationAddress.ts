@@ -4,14 +4,12 @@ import { ethers, utils } from "ethers"
 
 import type { DestinationTokenSelected } from "./types"
 
-// Adjust the import path as necessary
-
 const useDestinationAddress = (
   address: `0x${string}` | undefined,
   destinationTokenSelected: DestinationTokenSelected | null,
   bitcoinAddress: string | null
 ) => {
-  const [addressSelected, setAddressSelected] = useState<string | null>(null)
+  const [addressSelected, setAddressSelected] = useState<string>("")
   const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
   const [customAddress, setCustomAddress] = useState<string>("")
   const [customAddressSelected, setCustomAddressSelected] = useState<
@@ -23,9 +21,9 @@ const useDestinationAddress = (
   useEffect(() => {
     if (!isAddressSelectedValid && destinationTokenSelected) {
       if (destinationTokenSelected.chain_name === "btc_testnet") {
-        setAddressSelected(bitcoinAddress)
+        setAddressSelected(bitcoinAddress || "")
       } else {
-        setAddressSelected(address ?? null)
+        setAddressSelected(address || "")
       }
     }
   }, [
@@ -36,7 +34,7 @@ const useDestinationAddress = (
   ])
 
   useEffect(() => {
-    setAddressSelected(customAddressSelected ?? address ?? null)
+    setAddressSelected(customAddressSelected || address || "")
   }, [customAddressSelected, address])
 
   useEffect(() => {

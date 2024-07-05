@@ -6,6 +6,8 @@ export interface TokenSelected {
   chain_id: number
   symbol: string
   decimals: number
+  chain_name: string
+  ticker: string
 }
 
 export interface DestinationTokenSelected {
@@ -26,4 +28,9 @@ export interface CrossChainFee {
 export interface Balance {
   id: string
   contract: string
+}
+
+export interface Inbound {
+  inboundHash: string
+  desc: string
 }

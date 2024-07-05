@@ -1,29 +1,28 @@
 import { useState } from "react"
 import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
-import { getAddress } from "@zetachain/protocol-contracts"
+import { ParamChainName, getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
-import { prepareData } from "@zetachain/toolkit/client"
-import { bech32 } from "bech32"
-import { ethers, utils } from "ethers"
+import { ethers } from "ethers"
 import { parseEther, parseUnits } from "viem"
 import { useAccount } from "wagmi"
 
 import { useEthersSigner } from "@/hooks/useEthersSigner"
 
 import SwapToAnyToken from "./SwapToAnyToken.json"
+import type { DestinationTokenSelected, Inbound, TokenSelected } from "./types"
 
 const useSendTransaction = (
-  sendType: any,
-  sourceTokenSelected: any,
-  destinationTokenSelected: any,
-  sourceAmount: any,
-  addressSelected: any,
-  setSourceAmount: any,
-  omnichainSwapContractAddress: any,
-  inbounds: any,
-  setInbounds: any,
-  bitcoinAddress: any,
+  sendType: string,
+  sourceTokenSelected: TokenSelected,
+  destinationTokenSelected: DestinationTokenSelected,
+  sourceAmount: string,
+  addressSelected: string,
+  setSourceAmount: (amount: string) => void,
+  omnichainSwapContractAddress: string,
+  inbounds: Inbound[],
+  setInbounds: (inbounds: Inbound[]) => void,
+  bitcoinAddress: string,
   client: any
 ) => {
   const { address } = useAccount()
@@ -48,7 +47,7 @@ const useSendTransaction = (
     }
   }
 
-  const m = {} as any
+  const m: Record<string, () => Promise<void>> = {}
 
   const bitcoinXDEFITransfer = (
     from: string,
@@ -73,7 +72,11 @@ const useSendTransaction = (
     }
   }
 
-  m.crossChainSwapBTCHandle = ({ withdraw }: { withdraw: boolean }) => {
+  const crossChainSwapBTCHandle = async ({
+    withdraw,
+  }: {
+    withdraw: boolean
+  }) => {
     if (!address) {
       console.error("EVM address undefined.")
       return
@@ -85,9 +88,8 @@ const useSendTransaction = (
     const a = parseFloat(sourceAmount) * 1e8
     const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
     const contract = omnichainSwapContractAddress.replace(/^0x/, "")
-    const zrc20 = destinationTokenSelected.zrc20.replace(/^0x/, "")
+    const zrc20 = destinationTokenSelected.zrc20?.replace(/^0x/, "")
     const dest = address.replace(/^0x/, "")
-    // TODO: test with Bitcoin to see if this actually works
     const withdrawFlag = withdraw ? "00" : "01"
     const memo = `hex::${contract}${zrc20}${dest}${withdrawFlag}`
     window.xfi.bitcoin.request(
@@ -104,7 +106,11 @@ const useSendTransaction = (
     )
   }
 
-  m.depositBTC = () => {
+  m.crossChainSwapBTC = async () => crossChainSwapBTCHandle({ withdraw: true })
+  m.crossChainSwapBTCTransfer = async () =>
+    crossChainSwapBTCHandle({ withdraw: false })
+
+  m.depositBTC = async () => {
     if (!address) {
       console.error("EVM address undefined.")
       return
@@ -171,26 +177,30 @@ const useSendTransaction = (
   }
 
   m.wrapZeta = async () => {
+    const zetaTokenAddress = getAddress("zetaToken", "zeta_testnet")
+    if (!zetaTokenAddress) {
+      throw new Error("ZetaToken address not found.")
+    }
     signer?.sendTransaction({
-      to: getAddress("zetaToken", "zeta_testnet"),
+      to: zetaTokenAddress,
       value: parseEther(sourceAmount),
     })
   }
 
   m.unwrapZeta = async () => {
+    const zetaTokenAddress = getAddress("zetaToken", "zeta_testnet")
+    if (!zetaTokenAddress) {
+      throw new Error("ZetaToken address not found.")
+    }
     if (signer) {
-      const contract = new ethers.Contract(
-        getAddress("zetaToken", "zeta_testnet") as any,
-        WETH9.abi,
-        signer
-      )
+      const contract = new ethers.Contract(zetaTokenAddress, WETH9.abi, signer)
       contract.withdraw(parseEther(sourceAmount))
     }
   }
 
   m.transferERC20EVM = async () => {
     const contract = new ethers.Contract(
-      sourceTokenSelected.contract,
+      sourceTokenSelected.contract as string,
       ERC20_ABI.abi,
       signer
     )
@@ -198,8 +208,8 @@ const useSendTransaction = (
       addressSelected,
       parseUnits(sourceAmount, sourceTokenSelected.decimals)
     )
-    approve.wait()
-    const tx = await contract.transfer(
+    await approve.wait()
+    await contract.transfer(
       addressSelected,
       parseUnits(sourceAmount, sourceTokenSelected.decimals)
     )
@@ -207,7 +217,7 @@ const useSendTransaction = (
 
   m.withdrawZRC20 = async () => {
     const destination = destinationTokenSelected.chain_name
-    const zrc20 = getAddress("zrc20", destination)
+    const zrc20 = getAddress("zrc20", destination as ParamChainName)
     if (!zrc20) {
       console.error("ZRC-20 address not found")
       return
@@ -256,7 +266,7 @@ const useSendTransaction = (
     const sourceToken = sourceTokenSelected.contract
     const destinationToken = destinationTokenSelected.zrc20
     const erc20Contract = new ethers.Contract(
-      sourceToken,
+      sourceToken as string,
       ERC20_ABI.abi,
       signer
     )
@@ -275,7 +285,7 @@ const useSendTransaction = (
     )
     const inbound = {
       inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${sourceToken.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
+      desc: `Sent ${sourceAmount} ${sourceTokenSelected.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
     }
     setInbounds([...inbounds, inbound])
   }
@@ -293,7 +303,7 @@ const useSendTransaction = (
     const sourceToken = sourceTokenSelected.contract
     const destinationToken = destinationTokenSelected.contract
     const erc20Contract = new ethers.Contract(
-      sourceToken,
+      sourceToken as string,
       ERC20_ABI.abi,
       signer
     )
@@ -303,7 +313,7 @@ const useSendTransaction = (
     )
     const recipient = ethers.utils.arrayify(addressSelected)
     await approve.wait()
-    const tx = await swapContract.swap(
+    await swapContract.swap(
       sourceToken,
       amount,
       destinationToken,
@@ -315,10 +325,10 @@ const useSendTransaction = (
   m.depositERC20 = async () => {
     const custodyAddress = getAddress(
       "erc20Custody",
-      sourceTokenSelected.chain_name
+      sourceTokenSelected.chain_name as ParamChainName
     )
     const custodyContract = new ethers.Contract(
-      custodyAddress as any,
+      custodyAddress as string,
       ERC20Custody.abi,
       signer
     )
@@ -328,7 +338,11 @@ const useSendTransaction = (
       sourceTokenSelected.decimals
     )
     try {
-      const contract = new ethers.Contract(assetAddress, ERC20_ABI.abi, signer)
+      const contract = new ethers.Contract(
+        assetAddress as string,
+        ERC20_ABI.abi,
+        signer
+      )
       await (await contract.approve(custodyAddress, amount)).wait()
       const tx = await custodyContract.deposit(
         addressSelected,
@@ -350,7 +364,7 @@ const useSendTransaction = (
     }
   }
 
-  m.transferBTC = () => {
+  m.transferBTC = async () => {
     if (!bitcoinAddress) {
       console.error("Bitcoin address undefined.")
       return
@@ -362,50 +376,41 @@ const useSendTransaction = (
     )
   }
 
-  m.crossChainSwapHandle = async ({ withdraw }: { withdraw: boolean }) => {
-    const d = destinationTokenSelected
-    const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-    let recipient
-    try {
-      if (bech32.decode(addressSelected)) {
-        recipient = utils.solidityPack(
-          ["bytes"],
-          [utils.toUtf8Bytes(addressSelected)]
-        )
-      }
-    } catch (e) {
-      recipient = addressSelected
+  const crossChainSwapHandle = async (withdraw: boolean) => {
+    if (!address) {
+      console.error("EVM address undefined.")
+      return
     }
-
-    const data = prepareData(
-      omnichainSwapContractAddress,
-      ["address", "bytes", "bool"],
-      [zrc20, recipient, withdraw]
+    if (!bitcoinAddress) {
+      console.error("Bitcoin address undefined.")
+      return
+    }
+    const a = parseFloat(sourceAmount) * 1e8
+    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
+    const contract = omnichainSwapContractAddress.replace(/^0x/, "")
+    const zrc20 = destinationTokenSelected.zrc20?.replace(/^0x/, "")
+    const dest = address.replace(/^0x/, "")
+    const withdrawFlag = withdraw ? "00" : "01"
+    const memo = `hex::${contract}${zrc20}${dest}${withdrawFlag}`
+    window.xfi.bitcoin.request(
+      bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
+      (error: any, hash: any) => {
+        if (!error) {
+          const inbound = {
+            inboundHash: hash,
+            desc: `Sent ${sourceAmount} tBTC`,
+          }
+          setInbounds([...inbounds, inbound])
+        }
+      }
     )
-
-    const to = getAddress("tss", sourceTokenSelected.chain_name)
-    const value = parseEther(sourceAmount)
-
-    const tx = await signer?.sendTransaction({ data, to, value })
-
-    const tiker = sourceTokenSelected.ticker
-    const from = sourceTokenSelected.chain_name
-    const dest = destinationTokenSelected.chain_name
-
-    if (tx) {
-      const inbound = {
-        inboundHash: tx.hash,
-        desc: `Sent ${sourceAmount} ${tiker} from ${from} to ${dest}`,
-      }
-      setInbounds([...inbounds, inbound])
-    }
   }
 
-  m.crossChainSwap = () => m.crossChainSwapHandle({ withdtaw: true })
-  m.crossChainSwapTransfer = () => m.crossChainSwapHandle({ withdraw: false })
-  m.crossChainSwapBTC = () => m.crossChainSwapBTCHandle({ withdraw: true })
-  m.crossChainSwapBTCTransfer = () =>
-    m.crossChainSwapBTCHandle({ withdraw: false })
+  m.crossChainSwapBTC = async () => crossChainSwapHandle(true)
+  m.crossChainSwapBTCTransfer = async () => crossChainSwapHandle(false)
+
+  m.crossChainSwap = async () => crossChainSwapHandle(true)
+  m.crossChainSwapTransfer = async () => crossChainSwapHandle(false)
 
   return {
     handleSend,
