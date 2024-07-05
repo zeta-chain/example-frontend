@@ -31,7 +31,7 @@ Before starting the development server:
 
 - Sign up for a free tier account at [AllThatNode](https://www.allthatnode.com/)
   and copy the API key from the dashboard into a `.env.local` file as a
-  `NEXT_PUBLIC_ATN_API_KEY` variable.
+  `NEXT_PUBLIC_ATN_KEY` variable.
 - Or replace the RPC in `ZetaChainContext.tsx` with the endpoint of your choice.
 
 ## Getting Started
