@@ -1,5 +1,4 @@
 import { useContext } from "react"
-import { AppProvider } from "@/context/AppContext"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { Bitcoin } from "lucide-react"
 

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useBalanceContext } from "@/context/BalanceContext"
 import { useCCTXsContext } from "@/context/CCTXsContext"
-import { useFeesContext } from "@/context/FeesContext"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 import debounce from "lodash/debounce"
@@ -11,26 +10,27 @@ import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress, roundNumber } from "@/lib/utils"
 import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
+import useDestinationAmount from "@/hooks/swap/useDestinationAmount"
+import useSendTransaction from "@/hooks/swap/useSendTransaction"
 import useSendType, { computeSendType } from "@/hooks/swap/useSendType"
 import useSwapErrors from "@/hooks/swap/useSwapErrors"
 import useTokenSelection from "@/hooks/swap/useTokenSelection"
-import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import SwapLayout from "@/components/SwapLayout"
 
 const Swap = () => {
   const { client } = useZetaChainClient()
+  const omnichainSwapContractAddress =
+    "0xb459F14260D1dc6484CE56EB0826be317171e91F"
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
+  const { setInbounds, inbounds } = useCCTXsContext()
   const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
   const { chain } = useNetwork()
+
   const [sourceAmount, setSourceAmount] = useState<any>(false)
   const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
-  const [destinationAmount, setDestinationAmount] = useState("")
-  const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
-    useState(false)
   const [isRightChain, setIsRightChain] = useState(true)
-  const [isSending, setIsSending] = useState(false)
   const [addressSelected, setAddressSelected] = useState<any>(null)
   const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
   const [canChangeAddress, setCanChangeAddress] = useState(false)
@@ -58,6 +58,15 @@ const Swap = () => {
     sendType
   )
 
+  const { destinationAmount, destinationAmountIsLoading } =
+    useDestinationAmount(
+      sourceTokenSelected,
+      destinationTokenSelected,
+      sourceAmount,
+      crossChainFee,
+      sendType
+    )
+
   const { updateError, priorityErrors } = useSwapErrors(
     sourceTokenSelected,
     destinationTokenSelected,
@@ -66,6 +75,20 @@ const Swap = () => {
     isAmountGTFee,
     isAmountLTBalance,
     destinationAmountIsLoading
+  )
+
+  const { handleSend, isSending } = useSendTransaction(
+    sourceTokenSelected,
+    destinationTokenSelected,
+    sourceAmount,
+    addressSelected,
+    setSourceAmount,
+    crossChainFee,
+    omnichainSwapContractAddress,
+    inbounds,
+    setInbounds,
+    bitcoinAddress,
+    client
   )
 
   const { address } = useAccount()
@@ -81,82 +104,6 @@ const Swap = () => {
       ].includes(sendType as any)
     )
   }, [sourceAmount, sendType, destinationTokenSelected])
-
-  // Set destination amount
-  useEffect(() => {
-    setDestinationAmount("")
-    updateError("insufficientLiquidity", { enabled: false })
-    const fetchQuoteCrossChain = async (
-      s: any,
-      d: any,
-      sourceAmount: any,
-      withdraw: boolean
-    ) => {
-      setDestinationAmount("")
-      setDestinationAmountIsLoading(true)
-      try {
-        const quote = await getQuoteCrossChain(s, d, sourceAmount, withdraw)
-        if (quote) {
-          setDestinationAmount(roundNumber(parseFloat(quote)).toString())
-          setDestinationAmountIsLoading(false)
-        }
-      } catch (e) {
-        console.error(e)
-        updateError("insufficientLiquidity", { enabled: true })
-        setDestinationAmountIsLoading(false)
-      }
-    }
-    const debouncedFetchQuoteCrossChain = debounce(fetchQuoteCrossChain, 500)
-    if (!sendType) {
-      setDestinationAmountIsLoading(false)
-      return
-    }
-    if (
-      [
-        "crossChainSwap",
-        "crossChainSwapBTC",
-        "fromZetaChainSwapAndWithdraw",
-      ].includes(sendType)
-    ) {
-      debouncedFetchQuoteCrossChain(
-        sourceTokenSelected,
-        destinationTokenSelected,
-        sourceAmount,
-        true
-      )
-    } else if (
-      ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(sendType)
-    ) {
-      debouncedFetchQuoteCrossChain(
-        sourceTokenSelected,
-        destinationTokenSelected,
-        sourceAmount,
-        false
-      )
-    } else if (["crossChainZeta"].includes(sendType)) {
-      const delta = parseFloat(sourceAmount) - crossChainFee?.amount
-      if (sourceAmount && delta > 0) {
-        setDestinationAmount(delta.toFixed(2).toString())
-      }
-    } else if (["fromZetaChainSwap"].includes(sendType)) {
-      debouncedFetchQuoteCrossChain(
-        sourceTokenSelected,
-        destinationTokenSelected,
-        sourceAmount,
-        false
-      )
-    } else {
-      setDestinationAmount(sourceAmount)
-    }
-    return () => {
-      debouncedFetchQuoteCrossChain.cancel()
-    }
-  }, [
-    sourceTokenSelected,
-    destinationTokenSelected,
-    sourceAmount,
-    crossChainFee,
-  ])
 
   const getQuoteCrossChain = async (
     s: any,
@@ -368,24 +315,6 @@ const Swap = () => {
     depositBTC: { title: "Deposit" },
     withdrawBTC: { title: "Withdraw" },
     fromZetaChainSwapAndWithdraw: { title: "Swap and Withdraw" },
-  }
-
-  const handleSend = async () => {
-    setIsSending(true)
-
-    if (!address) {
-      setIsSending(false)
-      throw new Error("Address undefined.")
-    }
-
-    try {
-      await m[sendType as keyof typeof m]()
-      setSourceAmount("")
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setIsSending(false)
-    }
   }
 
   const handleSwitchNetwork = async () => {

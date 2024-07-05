@@ -57,7 +57,7 @@ interface SwapLayoutProps {
   isFeeOpen: boolean
   setIsFeeOpen: (open: boolean) => void
   isRightChain: boolean
-  handleSend: () => void
+  handleSend: (sendType: any) => void
   sendDisabled: boolean
   isSending: boolean
   sendButtonText: string
