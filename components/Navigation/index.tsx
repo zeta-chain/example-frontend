@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import Transactions from "@/components/transactions"
+import Transactions from "@/components/Transactions"
 
 export function MainNav() {
   const pathname = usePathname()

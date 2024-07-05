@@ -10,8 +10,8 @@ import { useAccount } from "wagmi"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import BalancesTable from "@/components/BalancesTable"
-import Swap from "@/components/swap"
+import Balances from "@/components/Balances"
+import Swap from "@/components/Swap"
 
 const LoadingSkeleton = () => {
   return (
@@ -121,7 +121,7 @@ export default function IndexPage() {
           {balancesLoading ? (
             <LoadingSkeleton />
           ) : isConnected ? (
-            <BalancesTable
+            <Balances
               balances={balancesPrices}
               showAll={showAll}
               toggleShowAll={toggleShowAll}

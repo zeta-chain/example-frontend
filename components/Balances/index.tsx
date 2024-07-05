@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-const BalancesTable = ({
+const Balances = ({
   balances,
   showAll,
   toggleShowAll,
@@ -89,4 +89,4 @@ const BalancesTable = ({
   )
 }
 
-export default BalancesTable
+export default Balances

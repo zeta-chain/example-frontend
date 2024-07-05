@@ -12,8 +12,7 @@ import Cookies from "js-cookie"
 
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/components/ui/use-toast"
-import { SiteHeader } from "@/components/site-header"
-import { ThemeProvider } from "@/components/theme-provider"
+import { SiteHeader } from "@/components/Header"
 
 import { NFTProvider } from "./nft/useNFT"
 
@@ -42,21 +41,15 @@ export default function Index({ children }: RootLayoutProps) {
           <StakingProvider>
             <PricesProvider>
               <CCTXsProvider>
-                <ThemeProvider
-                  attribute="class"
-                  defaultTheme="light"
-                  enableSystem
-                >
-                  <NFTProvider>
-                    <div className="relative flex min-h-screen flex-col">
-                      <SiteHeader />
-                      <section className="container px-4 mt-4">
-                        {children}
-                      </section>
-                    </div>
-                    <Toaster />
-                  </NFTProvider>
-                </ThemeProvider>
+                <NFTProvider>
+                  <div className="relative flex min-h-screen flex-col">
+                    <SiteHeader />
+                    <section className="container px-4 mt-4">
+                      {children}
+                    </section>
+                  </div>
+                  <Toaster />
+                </NFTProvider>
               </CCTXsProvider>
             </PricesProvider>
           </StakingProvider>

@@ -18,7 +18,8 @@ import useSendType, {
 import useSwapErrors from "@/hooks/swap/useSwapErrors"
 import useTokenSelection from "@/hooks/swap/useTokenSelection"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
-import SwapLayout from "@/components/SwapLayout"
+
+import SwapLayout from "./Layout"
 
 const omnichainSwapContractAddress =
   "0xb459F14260D1dc6484CE56EB0826be317171e91F"

@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { MainNav } from "@/components/main-nav"
+import { MainNav } from "@/components/Navigation"
 
 export function SiteHeader() {
   // const { bitcoinAddress, connectBitcoin } = useContext(AppContext)
