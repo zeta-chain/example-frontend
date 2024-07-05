@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react"
 import { useBalanceContext } from "@/context/BalanceContext"
 import { useCCTXsContext } from "@/context/CCTXsContext"
-import { bech32 } from "bech32"
-import { ethers, utils } from "ethers"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress } from "@/lib/utils"
@@ -13,7 +11,10 @@ import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
 import useDestinationAddress from "@/hooks/swap/useDestinationAddress"
 import useDestinationAmount from "@/hooks/swap/useDestinationAmount"
 import useSendTransaction from "@/hooks/swap/useSendTransaction"
-import useSendType, { computeSendType } from "@/hooks/swap/useSendType"
+import useSendType, {
+  computeSendType,
+  sendTypeDetails,
+} from "@/hooks/swap/useSendType"
 import useSwapErrors from "@/hooks/swap/useSwapErrors"
 import useTokenSelection from "@/hooks/swap/useTokenSelection"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
@@ -34,6 +35,7 @@ const Swap = () => {
   const [isRightChain, setIsRightChain] = useState(true)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
+
   const {
     setSourceToken,
     sourceTokenSelected,
@@ -42,6 +44,7 @@ const Swap = () => {
     destinationTokenSelected,
     destinationBalances,
   } = useTokenSelection()
+
   const sendType = useSendType(sourceTokenSelected, destinationTokenSelected)
 
   const { crossChainFee } = useCrossChainFee(
@@ -49,6 +52,7 @@ const Swap = () => {
     destinationTokenSelected,
     sendType
   )
+
   const { isAmountGTFee, isAmountLTBalance } = useAmountValidation(
     sourceTokenSelected,
     sourceAmount,
@@ -65,7 +69,7 @@ const Swap = () => {
       sendType
     )
 
-  const { updateError, priorityErrors } = useSwapErrors(
+  const { priorityErrors } = useSwapErrors(
     sourceTokenSelected,
     destinationTokenSelected,
     sendType,
@@ -104,33 +108,6 @@ const Swap = () => {
     client
   )
 
-  useEffect(() => {
-    if (sourceTokenSelected && destinationTokenSelected) {
-      updateError("sendTypeUnsupported", { enabled: !sendType })
-    }
-    updateError("sourceTokenNotSelected", { enabled: !sourceTokenSelected })
-    updateError("destinationTokenNotSelected", {
-      enabled: !destinationTokenSelected,
-    })
-    if (sourceAmount === false) {
-      // if the amount hasn't been set yet (i.e. the user hasn't typed anything)
-      updateError("enterAmount", { enabled: true })
-    } else {
-      updateError("enterAmount", { enabled: false })
-      if (!destinationAmountIsLoading) {
-        updateError("amountLTFee", { enabled: !isAmountGTFee })
-        updateError("amountGTBalance", { enabled: !isAmountLTBalance })
-      }
-    }
-  }, [
-    sendType,
-    sourceTokenSelected,
-    destinationTokenSelected,
-    isAmountGTFee,
-    isAmountLTBalance,
-    sourceAmount,
-  ])
-
   const sendDisabled =
     !sendType ||
     !isAmountGTFee ||
@@ -161,25 +138,6 @@ const Swap = () => {
       )
     }
   }, [chain, sourceTokenSelected])
-
-  const sendTypeDetails: any = {
-    crossChainZeta: { title: "Transfer" },
-    wrapZeta: { title: "Wrap" },
-    unwrapZeta: { title: "Unwrap" },
-    depositNative: { title: "Deposit" },
-    depositERC20: { title: "Deposit" },
-    withdrawZRC20: { title: "Withdraw" },
-    transferNativeEVM: { title: "Send" },
-    transferERC20EVM: { title: "Send" },
-    crossChainSwap: { title: "Swap" },
-    crossChainSwapBTC: { title: "Swap" },
-    crossChainSwapBTCTransfer: { title: "Deposit and Swap" },
-    crossChainSwapTransfer: { title: "Deposit and Swap" },
-    transferBTC: { title: "Send" },
-    depositBTC: { title: "Deposit" },
-    withdrawBTC: { title: "Withdraw" },
-    fromZetaChainSwapAndWithdraw: { title: "Swap and Withdraw" },
-  }
 
   const handleSwitchNetwork = async () => {
     const chain_id = sourceTokenSelected?.chain_id

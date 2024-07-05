@@ -1,5 +1,24 @@
 import { useEffect, useState } from "react"
 
+export const sendTypeDetails = {
+  crossChainZeta: { title: "Transfer" },
+  wrapZeta: { title: "Wrap" },
+  unwrapZeta: { title: "Unwrap" },
+  depositNative: { title: "Deposit" },
+  depositERC20: { title: "Deposit" },
+  withdrawZRC20: { title: "Withdraw" },
+  transferNativeEVM: { title: "Send" },
+  transferERC20EVM: { title: "Send" },
+  crossChainSwap: { title: "Swap" },
+  crossChainSwapBTC: { title: "Swap" },
+  crossChainSwapBTCTransfer: { title: "Deposit and Swap" },
+  crossChainSwapTransfer: { title: "Deposit and Swap" },
+  transferBTC: { title: "Send" },
+  depositBTC: { title: "Deposit" },
+  withdrawBTC: { title: "Withdraw" },
+  fromZetaChainSwapAndWithdraw: { title: "Swap and Withdraw" },
+}
+
 export const computeSendType = (s: any, d: any) => {
   if (!s || !d) return null
 
