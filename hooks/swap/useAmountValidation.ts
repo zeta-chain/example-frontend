@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 
-import { CrossChainFee, TokenSelected } from "./types"
+import type { CrossChainFee, TokenSelected } from "./types"
 
 const useAmountValidation = (
   sourceTokenSelected: TokenSelected | null,
-  sourceAmount: string | null,
+  sourceAmount: string,
   crossChainFee: CrossChainFee | null,
   sendType: string
 ) => {

@@ -2,17 +2,21 @@ import { useEffect, useState } from "react"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 
+import type { DestinationTokenSelected } from "./types"
+
+// Adjust the import path as necessary
+
 const useDestinationAddress = (
-  address: any,
-  destinationTokenSelected: any,
+  address: `0x${string}` | undefined,
+  destinationTokenSelected: DestinationTokenSelected | null,
   bitcoinAddress: string | null
 ) => {
   const [addressSelected, setAddressSelected] = useState<string | null>(null)
   const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
-  const [customAddress, setCustomAddress] = useState("")
+  const [customAddress, setCustomAddress] = useState<string>("")
   const [customAddressSelected, setCustomAddressSelected] = useState<
     string | null
-  >("")
+  >(null)
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
 
@@ -21,7 +25,7 @@ const useDestinationAddress = (
       if (destinationTokenSelected.chain_name === "btc_testnet") {
         setAddressSelected(bitcoinAddress)
       } else {
-        setAddressSelected(address)
+        setAddressSelected(address ?? null)
       }
     }
   }, [
@@ -32,7 +36,7 @@ const useDestinationAddress = (
   ])
 
   useEffect(() => {
-    setAddressSelected(customAddressSelected || address)
+    setAddressSelected(customAddressSelected ?? address ?? null)
   }, [customAddressSelected, address])
 
   useEffect(() => {
@@ -51,7 +55,7 @@ const useDestinationAddress = (
     const isValidEVMAddress = ethers.utils.isAddress(customAddress)
     if (!destinationTokenSelected) {
       setIsCustomAddressValid(true)
-    } else if (destinationTokenSelected?.chain_name === "btc_testnet") {
+    } else if (destinationTokenSelected.chain_name === "btc_testnet") {
       setIsCustomAddressValid(isValidBech32)
     } else {
       setIsCustomAddressValid(isValidEVMAddress)
@@ -82,7 +86,7 @@ const useDestinationAddress = (
     const isValidEVMAddress = ethers.utils.isAddress(addressSelected || "")
     if (!destinationTokenSelected) {
       setIsAddressSelectedValid(true)
-    } else if (destinationTokenSelected?.chain_name === "btc_testnet") {
+    } else if (destinationTokenSelected.chain_name === "btc_testnet") {
       setIsAddressSelectedValid(isValidBech32)
     } else {
       setIsAddressSelectedValid(isValidEVMAddress)

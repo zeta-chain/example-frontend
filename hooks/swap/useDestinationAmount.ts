@@ -6,25 +6,32 @@ import debounce from "lodash/debounce"
 import { roundNumber } from "@/lib/utils"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 
+import type {
+  Balance,
+  CrossChainFee,
+  DestinationTokenSelected,
+  TokenSelected,
+} from "./types"
+
 const useDestinationAmount = (
-  sourceTokenSelected: any,
-  destinationTokenSelected: any,
-  sourceAmount: any,
-  crossChainFee: any,
-  sendType: any
+  sourceTokenSelected: TokenSelected | null,
+  destinationTokenSelected: DestinationTokenSelected | null,
+  sourceAmount: string,
+  crossChainFee: CrossChainFee | null,
+  sendType: string
 ) => {
   const { client } = useZetaChainClient()
-  const [destinationAmount, setDestinationAmount] = useState("")
+  const [destinationAmount, setDestinationAmount] = useState<string>("")
   const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
-    useState(false)
+    useState<boolean>(false)
   const { balances } = useBalanceContext()
 
   useEffect(() => {
     setDestinationAmount("")
     const fetchQuoteCrossChain = async (
-      s: any,
-      d: any,
-      sourceAmount: any,
+      s: TokenSelected,
+      d: DestinationTokenSelected,
+      sourceAmount: string,
       withdraw: boolean
     ) => {
       setDestinationAmount("")
@@ -53,8 +60,8 @@ const useDestinationAmount = (
       ].includes(sendType)
     ) {
       debouncedFetchQuoteCrossChain(
-        sourceTokenSelected,
-        destinationTokenSelected,
+        sourceTokenSelected!,
+        destinationTokenSelected!,
         sourceAmount,
         true
       )
@@ -62,20 +69,21 @@ const useDestinationAmount = (
       ["crossChainSwapBTCTransfer", "crossChainSwapTransfer"].includes(sendType)
     ) {
       debouncedFetchQuoteCrossChain(
-        sourceTokenSelected,
-        destinationTokenSelected,
+        sourceTokenSelected!,
+        destinationTokenSelected!,
         sourceAmount,
         false
       )
     } else if (["crossChainZeta"].includes(sendType)) {
-      const delta = parseFloat(sourceAmount) - crossChainFee?.amount
+      const delta =
+        parseFloat(sourceAmount) - parseFloat(crossChainFee?.amount || "0")
       if (sourceAmount && delta > 0) {
         setDestinationAmount(delta.toFixed(2).toString())
       }
     } else if (["fromZetaChainSwap"].includes(sendType)) {
       debouncedFetchQuoteCrossChain(
-        sourceTokenSelected,
-        destinationTokenSelected,
+        sourceTokenSelected!,
+        destinationTokenSelected!,
         sourceAmount,
         false
       )
@@ -90,44 +98,48 @@ const useDestinationAmount = (
     destinationTokenSelected,
     sourceAmount,
     crossChainFee,
+    sendType,
   ])
 
   const getQuoteCrossChain = async (
-    s: any,
-    d: any,
-    sourceAmount: any,
+    s: TokenSelected,
+    d: DestinationTokenSelected,
+    sourceAmount: string,
     withdraw: boolean
   ) => {
     const dIsZRC20 = d?.zrc20 || (d?.coin_type === "ZRC20" && d?.contract)
-    const isAmountValid = sourceAmount && parseFloat(sourceAmount)
-    const WZETA = balances.find((b: any) => b.id === "7001__wzeta")
-    const dIsZETA = d.coin_type === "Gas" && d.chain_id === 7001
-    const sIsZETA = s.coin_type === "Gas" && d.chain_id === 7001
+    const isAmountValid = sourceAmount && parseFloat(sourceAmount) > 0
+    const WZETA = balances.find((b: Balance) => b.id === "7001__wzeta")
+    const dIsZETA = d.coin_type === "Gas" && Number(d.chain_id) === 7001 // Convert chain_id to number
+    const sIsZETA = s.coin_type === "Gas" && s.chain_id === 7001
     let sourceAddress
     if (s.coin_type === "ZRC20") {
       sourceAddress = s.contract
     } else if (sIsZETA) {
-      sourceAddress = WZETA.contract
+      sourceAddress = WZETA?.contract
     } else {
       sourceAddress = s.zrc20
     }
     if (!isAmountValid) return "0"
-    if (isAmountValid > 0 && (dIsZRC20 || dIsZETA) && sourceAddress) {
+    if (isAmountValid && (dIsZRC20 || dIsZETA) && sourceAddress) {
       let amount
       if (withdraw && crossChainFee) {
         const AmountMinusFee = utils
-          .parseUnits(sourceAmount, sourceTokenSelected.decimals)
+          .parseUnits(sourceAmount, sourceTokenSelected!.decimals)
           .sub(utils.parseUnits(crossChainFee.amount, crossChainFee.decimals))
 
-        amount = utils.formatUnits(AmountMinusFee, sourceTokenSelected.decimals)
+        amount = utils.formatUnits(
+          AmountMinusFee,
+          sourceTokenSelected!.decimals
+        )
       } else {
         amount = sourceAmount
       }
       const target = d.coin_type === "ZRC20" ? d.contract : d.zrc20
-      const dAddress = dIsZETA ? WZETA.contract : target
+      const dAddress = dIsZETA ? WZETA?.contract : target
       let q
       try {
-        q = await client.getQuote(amount, sourceAddress, dAddress)
+        q = await client.getQuote(amount, sourceAddress, dAddress!)
       } catch (error) {
         console.error("Error fetching quote:", error)
         return "0"

@@ -32,7 +32,7 @@ const Swap = () => {
   const { chain } = useNetwork()
   const { address } = useAccount()
 
-  const [sourceAmount, setSourceAmount] = useState<string | null>(null)
+  const [sourceAmount, setSourceAmount] = useState<string>("")
   const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [isRightChain, setIsRightChain] = useState(true)

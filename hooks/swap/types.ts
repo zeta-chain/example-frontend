@@ -3,7 +3,9 @@ export interface TokenSelected {
   coin_type: string
   contract: string
   zrc20: string
+  chain_id: number
   symbol: string
+  decimals: number
 }
 
 export interface DestinationTokenSelected {
@@ -15,8 +17,13 @@ export interface DestinationTokenSelected {
 }
 
 export interface CrossChainFee {
-  amount: string | number
+  amount: string
   decimals: number
   symbol: string
   formatted: string
+}
+
+export interface Balance {
+  id: string
+  contract: string
 }

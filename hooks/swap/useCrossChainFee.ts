@@ -5,7 +5,11 @@ import { utils } from "ethers"
 import { roundNumber } from "@/lib/utils"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 
-import { CrossChainFee, DestinationTokenSelected, TokenSelected } from "./types"
+import type {
+  CrossChainFee,
+  DestinationTokenSelected,
+  TokenSelected,
+} from "./types"
 
 const useCrossChainFee = (
   sourceTokenSelected: TokenSelected | null,
@@ -42,7 +46,7 @@ const useCrossChainFee = (
   const getCrossChainFee = async (
     s: TokenSelected | null,
     d: DestinationTokenSelected | null
-  ) => {
+  ): Promise<CrossChainFee | null> => {
     if (!sendType || !s || !d) return null
 
     if (["crossChainZeta"].includes(sendType)) {
@@ -53,9 +57,11 @@ const useCrossChainFee = (
         (f: { chainID: string }) => f.chainID === d.chain_id
       )
       if (!fee) return null
-      const amount = toZetaChain ? 0 : parseFloat(fee.totalFee)
+      const amount = toZetaChain ? "0" : fee.totalFee
       const formatted =
-        amount === 0 ? "Fee: 0 ZETA" : `Fee: ~${roundNumber(amount)} ZETA`
+        parseFloat(amount) === 0
+          ? "Fee: 0 ZETA"
+          : `Fee: ~${roundNumber(parseFloat(amount))} ZETA`
       return {
         amount,
         decimals: 18,
