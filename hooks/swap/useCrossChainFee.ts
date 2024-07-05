@@ -5,14 +5,16 @@ import { utils } from "ethers"
 import { roundNumber } from "@/lib/utils"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 
+import { CrossChainFee, DestinationTokenSelected, TokenSelected } from "./types"
+
 const useCrossChainFee = (
-  sourceTokenSelected: any,
-  destinationTokenSelected: any,
-  sendType: any
+  sourceTokenSelected: TokenSelected | null,
+  destinationTokenSelected: DestinationTokenSelected | null,
+  sendType: string
 ) => {
   const { fees } = useFeesContext()
   const { client } = useZetaChainClient()
-  const [crossChainFee, setCrossChainFee] = useState<any>(null)
+  const [crossChainFee, setCrossChainFee] = useState<CrossChainFee | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
@@ -37,14 +39,19 @@ const useCrossChainFee = (
     }
   }, [sourceTokenSelected, destinationTokenSelected, sendType])
 
-  const getCrossChainFee = async (s: any, d: any) => {
-    if (!sendType) return null
+  const getCrossChainFee = async (
+    s: TokenSelected | null,
+    d: DestinationTokenSelected | null
+  ) => {
+    if (!sendType || !s || !d) return null
 
     if (["crossChainZeta"].includes(sendType)) {
       if (!fees) return null
-      const dest = d?.chain_name
+      const dest = d.chain_name
       const toZetaChain = dest === "zeta_testnet"
-      const fee = fees["messaging"].find((f: any) => f.chainID === d.chain_id)
+      const fee = fees["messaging"].find(
+        (f: { chainID: string }) => f.chainID === d.chain_id
+      )
       if (!fee) return null
       const amount = toZetaChain ? 0 : parseFloat(fee.totalFee)
       const formatted =

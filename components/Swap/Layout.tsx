@@ -53,7 +53,12 @@ interface SwapLayoutProps {
   setCustomAddress: (address: string) => void
   isCustomAddressValid: boolean
   saveCustomAddress: () => void
-  crossChainFee: { formatted: string; amount: string }
+  crossChainFee: {
+    amount: string | number
+    decimals: number
+    symbol: string
+    formatted: string
+  } | null
   isFeeOpen: boolean
   setIsFeeOpen: (open: boolean) => void
   isRightChain: boolean
