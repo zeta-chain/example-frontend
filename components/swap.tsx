@@ -10,6 +10,7 @@ import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 import { formatAddress } from "@/lib/utils"
 import useAmountValidation from "@/hooks/swap/useAmountValidation"
 import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
+import useDestinationAddress from "@/hooks/swap/useDestinationAddress"
 import useDestinationAmount from "@/hooks/swap/useDestinationAmount"
 import useSendTransaction from "@/hooks/swap/useSendTransaction"
 import useSendType, { computeSendType } from "@/hooks/swap/useSendType"
@@ -31,13 +32,6 @@ const Swap = () => {
   const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
   const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [isRightChain, setIsRightChain] = useState(true)
-  const [addressSelected, setAddressSelected] = useState<any>(null)
-  const [isAddressSelectedValid, setIsAddressSelectedValid] = useState(false)
-  const [canChangeAddress, setCanChangeAddress] = useState(false)
-  const [customAddress, setCustomAddress] = useState("")
-  const [customAddressSelected, setCustomAddressSelected] = useState("")
-  const [customAddressOpen, setCustomAddressOpen] = useState(false)
-  const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
   const {
@@ -81,7 +75,22 @@ const Swap = () => {
     destinationAmountIsLoading
   )
 
+  const { address } = useAccount()
+
+  const {
+    addressSelected,
+    isAddressSelectedValid,
+    customAddressOpen,
+    setCustomAddressOpen,
+    canChangeAddress,
+    customAddress,
+    setCustomAddress,
+    isCustomAddressValid,
+    saveCustomAddress,
+  } = useDestinationAddress(address, destinationTokenSelected, bitcoinAddress)
+
   const { handleSend, isSending } = useSendTransaction(
+    sendType,
     sourceTokenSelected,
     destinationTokenSelected,
     sourceAmount,
@@ -94,20 +103,6 @@ const Swap = () => {
     bitcoinAddress,
     client
   )
-
-  const { address } = useAccount()
-
-  // Set whether address can be changed
-  useEffect(() => {
-    setCanChangeAddress(
-      [
-        "transferNativeEVM",
-        "transferERC20EVM",
-        "crossChainSwap",
-        "transferBTC",
-      ].includes(sendType as any)
-    )
-  }, [sourceAmount, sendType, destinationTokenSelected])
 
   useEffect(() => {
     if (sourceTokenSelected && destinationTokenSelected) {
@@ -136,53 +131,6 @@ const Swap = () => {
     sourceAmount,
   ])
 
-  // Set destination address
-  useEffect(() => {
-    if (!isAddressSelectedValid && destinationTokenSelected) {
-      if (destinationTokenSelected.chain_name === "btc_testnet") {
-        setAddressSelected(bitcoinAddress)
-      } else {
-        setAddressSelected(address)
-      }
-    }
-  }, [destinationTokenSelected, isAddressSelectedValid])
-
-  useEffect(() => {
-    setAddressSelected(customAddressSelected || address)
-  }, [customAddressSelected, address])
-
-  const saveCustomAddress = () => {
-    if (isCustomAddressValid) {
-      setCustomAddressSelected(customAddress)
-      setCustomAddress(customAddress)
-      setCustomAddressOpen(false)
-    }
-  }
-
-  // Set whether the custom destination address is valid
-  useEffect(() => {
-    let isValidBech32 = false
-    try {
-      if (bech32.decode(customAddress)) {
-        const bech32address = utils.solidityPack(
-          ["bytes"],
-          [utils.toUtf8Bytes(customAddress)]
-        )
-        if (bech32address) {
-          isValidBech32 = true
-        }
-      }
-    } catch (e) {}
-    const isValidEVMAddress = ethers.utils.isAddress(customAddress)
-    if (!destinationTokenSelected) {
-      setIsCustomAddressValid(true)
-    } else if (destinationTokenSelected?.chain_name === "btc_testnet") {
-      setIsCustomAddressValid(isValidBech32)
-    } else {
-      setIsCustomAddressValid(isValidEVMAddress)
-    }
-  }, [customAddress, destinationTokenSelected])
-
   const sendDisabled =
     !sendType ||
     !isAmountGTFee ||
@@ -202,30 +150,6 @@ const Swap = () => {
       setSendButtonText("Send Tokens")
     }
   }, [destinationAmountIsLoading, sendDisabled, priorityErrors])
-
-  // Set whether the selected destination address is valid
-  useEffect(() => {
-    let isValidBech32 = false
-    try {
-      if (bech32.decode(addressSelected)) {
-        const bech32address = utils.solidityPack(
-          ["bytes"],
-          [utils.toUtf8Bytes(addressSelected)]
-        )
-        if (bech32address) {
-          isValidBech32 = true
-        }
-      }
-    } catch (e) {}
-    const isValidEVMAddress = ethers.utils.isAddress(addressSelected)
-    if (!destinationTokenSelected) {
-      setIsAddressSelectedValid(true)
-    } else if (destinationTokenSelected?.chain_name === "btc_testnet") {
-      setIsAddressSelectedValid(isValidBech32)
-    } else {
-      setIsAddressSelectedValid(isValidEVMAddress)
-    }
-  }, [addressSelected, destinationTokenSelected])
 
   // Set whether the chain currently selected is the right one
   useEffect(() => {

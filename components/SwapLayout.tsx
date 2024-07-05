@@ -43,7 +43,7 @@ interface SwapLayoutProps {
   destinationBalances: any[]
   setDestinationToken: (token: any) => void
   computeSendType: (sourceToken: any, destinationToken: any) => string | null
-  addressSelected: string
+  addressSelected: any
   customAddressOpen: boolean
   setCustomAddressOpen: (open: boolean) => void
   canChangeAddress: boolean

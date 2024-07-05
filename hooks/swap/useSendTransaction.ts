@@ -14,6 +14,7 @@ import { useEthersSigner } from "@/hooks/useEthersSigner"
 import SwapToAnyToken from "./SwapToAnyToken.json"
 
 const useSendTransaction = (
+  sendType: any,
   sourceTokenSelected: any,
   destinationTokenSelected: any,
   sourceAmount: any,
@@ -30,7 +31,7 @@ const useSendTransaction = (
   const signer = useEthersSigner()
   const [isSending, setIsSending] = useState(false)
 
-  const handleSend = async (sendType: any) => {
+  const handleSend = async () => {
     setIsSending(true)
 
     if (!address) {
