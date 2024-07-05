@@ -10,12 +10,12 @@ import { useAccount } from "wagmi"
 import { useEthersSigner } from "@/hooks/useEthersSigner"
 
 import SwapToAnyToken from "./SwapToAnyToken.json"
-import type { DestinationTokenSelected, Inbound, TokenSelected } from "./types"
+import type { Inbound, Token } from "./types"
 
 const useSendTransaction = (
-  sendType: string,
-  sourceTokenSelected: TokenSelected,
-  destinationTokenSelected: DestinationTokenSelected,
+  sendType: string | null,
+  sourceTokenSelected: Token | null,
+  destinationTokenSelected: Token | null,
   sourceAmount: string,
   addressSelected: string,
   setSourceAmount: (amount: string) => void,
@@ -30,12 +30,17 @@ const useSendTransaction = (
   const [isSending, setIsSending] = useState(false)
 
   const handleSend = async () => {
-    setIsSending(true)
-
+    if (!sendType) {
+      throw new Error("Send type is not defined.")
+    }
     if (!address) {
-      setIsSending(false)
       throw new Error("Address undefined.")
     }
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      throw new Error("Token not selected.")
+    }
+
+    setIsSending(true)
 
     try {
       await m[sendType]()
@@ -83,6 +88,10 @@ const useSendTransaction = (
     }
     if (!bitcoinAddress) {
       console.error("Bitcoin address undefined.")
+      return
+    }
+    if (!destinationTokenSelected) {
+      console.error("Destination token not selected.")
       return
     }
     const a = parseFloat(sourceAmount) * 1e8
@@ -144,6 +153,9 @@ const useSendTransaction = (
   }
 
   m.crossChainZeta = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const tx = await client.sendZeta({
@@ -160,6 +172,9 @@ const useSendTransaction = (
   }
 
   m.withdrawBTC = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const btc = bitcoinAddress
@@ -199,6 +214,9 @@ const useSendTransaction = (
   }
 
   m.transferERC20EVM = async () => {
+    if (!sourceTokenSelected) {
+      return
+    }
     const contract = new ethers.Contract(
       sourceTokenSelected.contract as string,
       ERC20_ABI.abi,
@@ -216,6 +234,9 @@ const useSendTransaction = (
   }
 
   m.withdrawZRC20 = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const destination = destinationTokenSelected.chain_name
     const zrc20 = getAddress("zrc20", destination as ParamChainName)
     if (!zrc20) {
@@ -238,6 +259,9 @@ const useSendTransaction = (
   }
 
   m.depositNative = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const from = sourceTokenSelected.chain_name
     const to = destinationTokenSelected.chain_name
     const token = sourceTokenSelected.symbol
@@ -254,6 +278,9 @@ const useSendTransaction = (
   }
 
   m.fromZetaChainSwapAndWithdraw = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const swapContract = new ethers.Contract(
       omnichainSwapContractAddress,
       SwapToAnyToken.abi,
@@ -291,6 +318,9 @@ const useSendTransaction = (
   }
 
   m.fromZetaChainSwap = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const swapContract = new ethers.Contract(
       omnichainSwapContractAddress,
       SwapToAnyToken.abi,
@@ -323,6 +353,9 @@ const useSendTransaction = (
   }
 
   m.depositERC20 = async () => {
+    if (!sourceTokenSelected || !destinationTokenSelected) {
+      return
+    }
     const custodyAddress = getAddress(
       "erc20Custody",
       sourceTokenSelected.chain_name as ParamChainName
@@ -383,6 +416,10 @@ const useSendTransaction = (
     }
     if (!bitcoinAddress) {
       console.error("Bitcoin address undefined.")
+      return
+    }
+    if (!destinationTokenSelected) {
+      console.error("Destination token not selected.")
       return
     }
     const a = parseFloat(sourceAmount) * 1e8

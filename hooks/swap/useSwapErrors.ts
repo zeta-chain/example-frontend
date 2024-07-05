@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react"
 
+import type { Error, Errors, Token } from "./types"
+
 const useSwapErrors = (
-  sourceTokenSelected: any,
-  destinationTokenSelected: any,
-  sendType: any,
-  sourceAmount: any,
-  isAmountGTFee: any,
-  isAmountLTBalance: any,
-  destinationAmountIsLoading: any
+  sourceTokenSelected: Token | null,
+  destinationTokenSelected: Token | null,
+  sendType: string | null,
+  sourceAmount: string,
+  isAmountGTFee: boolean,
+  isAmountLTBalance: boolean,
+  destinationAmountIsLoading: boolean
 ) => {
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<Errors>({
     sendTypeUnsupported: {
       message: "Transfer type not supported",
       enabled: false,
@@ -47,8 +49,8 @@ const useSwapErrors = (
     },
   })
 
-  const updateError = (errorKey: any, update: any) => {
-    setErrors((prevErrors: any) => ({
+  const updateError = (errorKey: keyof Errors, update: Partial<Error>) => {
+    setErrors((prevErrors) => ({
       ...prevErrors,
       [errorKey]: {
         ...prevErrors[errorKey],
@@ -65,7 +67,7 @@ const useSwapErrors = (
     updateError("destinationTokenNotSelected", {
       enabled: !destinationTokenSelected,
     })
-    if (sourceAmount === false) {
+    if (sourceAmount === null) {
       // if the amount hasn't been set yet (i.e. the user hasn't typed anything)
       updateError("enterAmount", { enabled: true })
     } else {
@@ -82,12 +84,12 @@ const useSwapErrors = (
     isAmountGTFee,
     isAmountLTBalance,
     sourceAmount,
+    destinationAmountIsLoading,
   ])
 
-  const priorityErrors = Object.entries(errors)
-    .filter(([key, value]) => value.enabled)
-    .sort((a, b) => b[1].priority - a[1].priority)
-    .map(([key, value]) => value)
+  const priorityErrors = Object.values(errors)
+    .filter((error) => error.enabled)
+    .sort((a, b) => b.priority - a.priority)
 
   return { updateError, priorityErrors }
 }

@@ -1,4 +1,23 @@
-export interface TokenSelected {
+export interface CrossChainFee {
+  amount: string
+  decimals: number
+  symbol: string
+  formatted: string
+}
+
+export interface Balance {
+  id: string
+  contract: string
+  balance: number
+  chain_name: string
+}
+
+export interface Inbound {
+  inboundHash: string
+  desc: string
+}
+
+export interface Token {
   balance: string
   coin_type: string
   contract: string
@@ -10,36 +29,12 @@ export interface TokenSelected {
   ticker: string
 }
 
-export interface DestinationTokenSelected {
-  chain_name: string
-  chain_id: string
-  coin_type: string
-  contract: string
-  zrc20: string
+export interface Error {
+  message: string
+  enabled: boolean
+  priority: number
 }
 
-export interface CrossChainFee {
-  amount: string
-  decimals: number
-  symbol: string
-  formatted: string
-}
-
-export interface Balance {
-  id: string
-  contract: string
-}
-
-export interface Inbound {
-  inboundHash: string
-  desc: string
-}
-
-export interface Token {
-  symbol: string
-  chain_name: string
-  coin_type: string
-  ticker: string
-  zrc20?: string
-  contract?: string
+export interface Errors {
+  [key: string]: Error
 }

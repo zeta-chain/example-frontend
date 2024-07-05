@@ -6,19 +6,14 @@ import debounce from "lodash/debounce"
 import { roundNumber } from "@/lib/utils"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 
-import type {
-  Balance,
-  CrossChainFee,
-  DestinationTokenSelected,
-  TokenSelected,
-} from "./types"
+import type { Balance, CrossChainFee, Token } from "./types"
 
 const useDestinationAmount = (
-  sourceTokenSelected: TokenSelected | null,
-  destinationTokenSelected: DestinationTokenSelected | null,
+  sourceTokenSelected: Token | null,
+  destinationTokenSelected: Token | null,
   sourceAmount: string,
   crossChainFee: CrossChainFee | null,
-  sendType: string
+  sendType: string | null
 ) => {
   const { client } = useZetaChainClient()
   const [destinationAmount, setDestinationAmount] = useState<string>("")
@@ -29,8 +24,8 @@ const useDestinationAmount = (
   useEffect(() => {
     setDestinationAmount("")
     const fetchQuoteCrossChain = async (
-      s: TokenSelected,
-      d: DestinationTokenSelected,
+      s: Token,
+      d: Token,
       sourceAmount: string,
       withdraw: boolean
     ) => {
@@ -102,8 +97,8 @@ const useDestinationAmount = (
   ])
 
   const getQuoteCrossChain = async (
-    s: TokenSelected,
-    d: DestinationTokenSelected,
+    s: Token,
+    d: Token,
     sourceAmount: string,
     withdraw: boolean
   ) => {

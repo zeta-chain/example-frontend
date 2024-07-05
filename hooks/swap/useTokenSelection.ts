@@ -1,40 +1,48 @@
 import { useEffect, useState } from "react"
 import { useBalanceContext } from "@/context/BalanceContext"
 
+import type { Balance, Token } from "./types"
+
 const useTokenSelection = () => {
   const { balances, bitcoinAddress } = useBalanceContext()
-  const [sourceToken, setSourceToken] = useState<any>()
-  const [sourceTokenSelected, setSourceTokenSelected] = useState<any>()
-  const [sourceBalances, setSourceBalances] = useState<any>()
-  const [destinationToken, setDestinationToken] = useState<any>()
+  const [sourceToken, setSourceToken] = useState<string | undefined>()
+  const [sourceTokenSelected, setSourceTokenSelected] = useState<Token | null>(
+    null
+  )
+  const [sourceBalances, setSourceBalances] = useState<Balance[]>([])
+  const [destinationToken, setDestinationToken] = useState<string | undefined>()
   const [destinationTokenSelected, setDestinationTokenSelected] =
-    useState<any>()
-  const [destinationBalances, setDestinationBalances] = useState<any>()
+    useState<Token | null>(null)
+  const [destinationBalances, setDestinationBalances] = useState<Balance[]>([])
 
   useEffect(() => {
-    const token = balances?.find((b: any) => b.id === sourceToken)
+    const token = balances?.find((b: Balance) => b.id === sourceToken)
     setSourceTokenSelected(token ? token : false)
-  }, [sourceToken])
+  }, [sourceToken, balances])
 
   useEffect(() => {
-    const token = balances.find((b: any) => b.id === destinationToken)
+    const token = balances.find((b: Balance) => b.id === destinationToken)
     setDestinationTokenSelected(token ? token : false)
-  }, [destinationToken])
+  }, [destinationToken, balances])
 
   useEffect(() => {
     setSourceBalances(
       balances
-        .filter((b: any) => b.balance > 0)
-        .sort((a: any, b: any) => (a.chain_name < b.chain_name ? -1 : 1))
+        .filter((b: Balance) => b.balance > 0)
+        .sort((a: Balance, b: Balance) =>
+          a.chain_name < b.chain_name ? -1 : 1
+        )
     )
     setDestinationBalances(
       balances
-        .filter((b: any) =>
+        .filter((b: Balance) =>
           b.chain_name === "btc_testnet" ? bitcoinAddress : true
         )
-        .sort((a: any, b: any) => (a.chain_name < b.chain_name ? -1 : 1))
+        .sort((a: Balance, b: Balance) =>
+          a.chain_name < b.chain_name ? -1 : 1
+        )
     )
-  }, [balances])
+  }, [balances, bitcoinAddress])
 
   return {
     sourceToken,

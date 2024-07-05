@@ -2,11 +2,11 @@ import { useEffect, useState } from "react"
 import { bech32 } from "bech32"
 import { ethers, utils } from "ethers"
 
-import type { DestinationTokenSelected } from "./types"
+import type { Token } from "./types"
 
 const useDestinationAddress = (
   address: `0x${string}` | undefined,
-  destinationTokenSelected: DestinationTokenSelected | null,
+  destinationTokenSelected: Token | null,
   bitcoinAddress: string | null
 ) => {
   const [addressSelected, setAddressSelected] = useState<string>("")
