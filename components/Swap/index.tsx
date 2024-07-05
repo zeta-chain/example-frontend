@@ -6,20 +6,20 @@ import { useCCTXsContext } from "@/context/CCTXsContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress } from "@/lib/utils"
-import useAmountValidation from "@/hooks/swap/useAmountValidation"
-import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
-import useDestinationAddress from "@/hooks/swap/useDestinationAddress"
-import useDestinationAmount from "@/hooks/swap/useDestinationAmount"
-import useSendTransaction from "@/hooks/swap/useSendTransaction"
+import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import useSendType, {
   computeSendType,
   sendTypeDetails,
-} from "@/hooks/swap/useSendType"
-import useSwapErrors from "@/hooks/swap/useSwapErrors"
-import useTokenSelection from "@/hooks/swap/useTokenSelection"
-import { useZetaChainClient } from "@/hooks/useZetaChainClient"
+} from "@/components/Swap/hooks/useSendType"
+import useTokenSelection from "@/components/Swap/hooks/useTokenSelection"
 
 import SwapLayout from "./Layout"
+import useAmountValidation from "./hooks/useAmountValidation"
+import useCrossChainFee from "./hooks/useCrossChainFee"
+import useDestinationAddress from "./hooks/useDestinationAddress"
+import useDestinationAmount from "./hooks/useDestinationAmount"
+import useSendTransaction from "./hooks/useSendTransaction"
+import useSwapErrors from "./hooks/useSwapErrors"
 
 const omnichainSwapContractAddress =
   "0xb459F14260D1dc6484CE56EB0826be317171e91F"
