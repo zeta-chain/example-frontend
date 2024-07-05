@@ -8,6 +8,7 @@ import { ethers, utils } from "ethers"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress } from "@/lib/utils"
+import useAmountValidation from "@/hooks/swap/useAmountValidation"
 import useCrossChainFee from "@/hooks/swap/useCrossChainFee"
 import useDestinationAmount from "@/hooks/swap/useDestinationAmount"
 import useSendTransaction from "@/hooks/swap/useSendTransaction"
@@ -37,8 +38,6 @@ const Swap = () => {
   const [customAddressSelected, setCustomAddressSelected] = useState("")
   const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
-  const [isAmountGTFee, setIsAmountGTFee] = useState(false)
-  const [isAmountLTBalance, setIsAmountLTBalance] = useState(false)
   const [isFeeOpen, setIsFeeOpen] = useState(false)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
   const {
@@ -54,6 +53,12 @@ const Swap = () => {
   const { crossChainFee } = useCrossChainFee(
     sourceTokenSelected,
     destinationTokenSelected,
+    sendType
+  )
+  const { isAmountGTFee, isAmountLTBalance } = useAmountValidation(
+    sourceTokenSelected,
+    sourceAmount,
+    crossChainFee,
     sendType
   )
 
@@ -130,26 +135,6 @@ const Swap = () => {
     isAmountLTBalance,
     sourceAmount,
   ])
-
-  // Set whether amount is valid
-  useEffect(() => {
-    const am = parseFloat(sourceAmount || "0")
-    const ltBalance = am >= 0 && am <= parseFloat(sourceTokenSelected?.balance)
-    if (["crossChainZeta"].includes(sendType as any)) {
-      const gtFee = am > parseFloat(crossChainFee?.amount)
-      setIsAmountGTFee(gtFee)
-      setIsAmountLTBalance(ltBalance)
-    } else if (
-      ["crossChainSwap", "crossChainSwapBTC"].includes(sendType as any)
-    ) {
-      const gtFee = parseFloat(sourceAmount) > parseFloat(crossChainFee?.amount)
-      setIsAmountGTFee(gtFee)
-      setIsAmountLTBalance(ltBalance)
-    } else {
-      setIsAmountGTFee(true)
-      setIsAmountLTBalance(ltBalance)
-    }
-  }, [sourceAmount, crossChainFee, sendType, destinationAmount])
 
   // Set destination address
   useEffect(() => {
