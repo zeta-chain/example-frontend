@@ -89,7 +89,7 @@ const useSwapErrors = (
     .sort((a, b) => b[1].priority - a[1].priority)
     .map(([key, value]) => value)
 
-  return { errors, updateError, priorityErrors }
+  return { updateError, priorityErrors }
 }
 
 export default useSwapErrors
