@@ -3664,10 +3664,10 @@
     typescript "5.0.4"
     zod "3.19.1"
 
-"@zetachain/networks@7.0.0":
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/@zetachain/networks/-/networks-7.0.0.tgz#a5f8a188d633e2064ee7c77499351381ba891441"
-  integrity sha512-/amSq+KNJe+EGj0ioZS+DZJtsnbPSDotp9LsrAbaEVMAxKvBK/XkvggH73sJyRWWeMpfhHrNPlrKTLrN+mRkIg==
+"@zetachain/networks@^8.0.0":
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/@zetachain/networks/-/networks-8.0.0.tgz#3e838bb6b14e4a8d381f95b4cbc2f1172e851e4e"
+  integrity sha512-I0HhH5qOGW0Jkjq5o5Mi6qGls6ycHnhWjc+r+Ud8u8YW+HU4lEUn4gvulxj+ccHKj3nV/0gEsmNrWRY9ct49nQ==
   dependencies:
     dotenv "^16.1.4"
 
@@ -3676,10 +3676,10 @@
   resolved "https://registry.yarnpkg.com/@zetachain/protocol-contracts/-/protocol-contracts-7.0.0.tgz#20eb6c62d805d7470408ccdff0e3614684bca174"
   integrity sha512-8JTNFZxVZYmDtAXJIEr+tkakuML12X42Fya4bJ1NkfWiVMkcSej92BSTl/35qYtHdjY7vXy9uMrfXEqfw5rsPw==
 
-"@zetachain/toolkit@11.0.0-rc1":
-  version "11.0.0-rc1"
-  resolved "https://registry.yarnpkg.com/@zetachain/toolkit/-/toolkit-11.0.0-rc1.tgz#06f1e0daf8d4ed79ca080bf07c1e1b48d987b04b"
-  integrity sha512-RW7PnabX4R3Qsx7i8M+CcyybgNXC94TfokjHZhLc1bzk/vZOPnQdHiOZvUs6wMLZ/simzTl1WDCnAdxTaKuLlw==
+"@zetachain/toolkit@11.0.0-rc2":
+  version "11.0.0-rc2"
+  resolved "https://registry.yarnpkg.com/@zetachain/toolkit/-/toolkit-11.0.0-rc2.tgz#5be95e232a76042b805d9bffb63a5d3ca941ff37"
+  integrity sha512-HwgwJOJfGYcImJz228qc9L5P41sAnTOgp+cNyasJ/4RVQLrk+cCtvhV/ROfvKu1dmC98Npt6dfqaFXOfa/xJcw==
   dependencies:
     "@inquirer/prompts" "^2.1.1"
     "@inquirer/select" "1.1.3"
@@ -3687,7 +3687,7 @@
     "@openzeppelin/contracts" "^4.9.6"
     "@uniswap/v2-periphery" "^1.1.0-beta.0"
     "@zetachain/faucet-cli" "^4.0.1"
-    "@zetachain/networks" "7.0.0"
+    "@zetachain/networks" "^8.0.0"
     "@zetachain/protocol-contracts" "7.0.0"
     axios "^1.4.0"
     bech32 "^2.0.0"

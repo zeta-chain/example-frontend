@@ -29,23 +29,17 @@ interface SwapLayoutProps {
   sendType: string | null
   sourceAmount: any
   setSourceAmount: (value: any) => any
-  sourceTokenOpen: boolean
-  setSourceTokenOpen: (open: boolean) => void
   sourceTokenSelected: any
   balancesLoading: boolean
   sourceBalances: any[]
   setSourceToken: (token: any) => void
   destinationAmount: string
   destinationAmountIsLoading: boolean
-  destinationTokenOpen: boolean
-  setDestinationTokenOpen: (open: boolean) => void
   destinationTokenSelected: any
   destinationBalances: any[]
   setDestinationToken: (token: any) => void
   computeSendType: (sourceToken: any, destinationToken: any) => string | null
   addressSelected: any
-  customAddressOpen: boolean
-  setCustomAddressOpen: (open: boolean) => void
   canChangeAddress: boolean
   isAddressSelectedValid: boolean
   formatAddress: (address: string) => string
@@ -59,8 +53,6 @@ interface SwapLayoutProps {
     symbol: string
     formatted: string
   } | null
-  isFeeOpen: boolean
-  setIsFeeOpen: (open: boolean) => void
   isRightChain: boolean
   handleSend: (sendType: any) => void
   sendDisabled: boolean
@@ -76,23 +68,17 @@ const SwapLayout: React.FC<SwapLayoutProps> = ({
   sendType,
   sourceAmount,
   setSourceAmount,
-  sourceTokenOpen,
-  setSourceTokenOpen,
   sourceTokenSelected,
   balancesLoading,
   sourceBalances,
   setSourceToken,
   destinationAmount,
   destinationAmountIsLoading,
-  destinationTokenOpen,
-  setDestinationTokenOpen,
   destinationTokenSelected,
   destinationBalances,
   setDestinationToken,
   computeSendType,
   addressSelected,
-  customAddressOpen,
-  setCustomAddressOpen,
   canChangeAddress,
   isAddressSelectedValid,
   formatAddress,
@@ -101,8 +87,6 @@ const SwapLayout: React.FC<SwapLayoutProps> = ({
   isCustomAddressValid,
   saveCustomAddress,
   crossChainFee,
-  isFeeOpen,
-  setIsFeeOpen,
   isRightChain,
   handleSend,
   sendDisabled,
@@ -112,11 +96,22 @@ const SwapLayout: React.FC<SwapLayoutProps> = ({
   isLoading,
   pendingChainId,
 }) => {
+  const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
+  const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
+  const [isFeeOpen, setIsFeeOpen] = useState(false)
+  const [customAddressOpen, setCustomAddressOpen] = useState(false)
+
+  const confirmCustomAddress = () => {
+    saveCustomAddress()
+    setCustomAddressOpen(false)
+  }
+
   return (
     <div className="shadow-none md:shadow-xl p-0 md:px-5 md:py-7 rounded-2xl md:shadow-gray-100 mb-10">
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         {sendTypeDetails[sendType as any]?.title || "Swap"}
       </h1>
+      {JSON.stringify(sendType)}
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -318,7 +313,7 @@ const SwapLayout: React.FC<SwapLayoutProps> = ({
                     disabled={!isCustomAddressValid}
                     size="icon"
                     variant="outline"
-                    onClick={saveCustomAddress}
+                    onClick={confirmCustomAddress}
                   >
                     <Check className="h-4 w-4" strokeWidth={3} />
                   </Button>

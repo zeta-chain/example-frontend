@@ -410,37 +410,28 @@ const useSendTransaction = (
   }
 
   const crossChainSwapHandle = async (withdraw: boolean) => {
-    if (!address) {
-      console.error("EVM address undefined.")
+    if (!sourceTokenSelected || !destinationTokenSelected) {
       return
     }
-    if (!bitcoinAddress) {
-      console.error("Bitcoin address undefined.")
-      return
-    }
-    if (!destinationTokenSelected) {
-      console.error("Destination token not selected.")
-      return
-    }
-    const a = parseFloat(sourceAmount) * 1e8
-    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
-    const contract = omnichainSwapContractAddress.replace(/^0x/, "")
-    const zrc20 = destinationTokenSelected.zrc20?.replace(/^0x/, "")
-    const dest = address.replace(/^0x/, "")
-    const withdrawFlag = withdraw ? "00" : "01"
-    const memo = `hex::${contract}${zrc20}${dest}${withdrawFlag}`
-    window.xfi.bitcoin.request(
-      bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
-      (error: any, hash: any) => {
-        if (!error) {
-          const inbound = {
-            inboundHash: hash,
-            desc: `Sent ${sourceAmount} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
-        }
+
+    const tiker = sourceTokenSelected.ticker
+    const from = sourceTokenSelected.chain_name
+    const dest = destinationTokenSelected.chain_name
+
+    const tx = await client.deposit({
+      chain: from,
+      amount: sourceAmount,
+      recipient: addressSelected,
+    })
+
+    if (tx) {
+      const inbound = {
+        inboundHash: tx.hash,
+        desc: `Sent ${sourceAmount} ${tiker} from ${from} to ${dest}`,
       }
-    )
+      console.log(inbound)
+      setInbounds([...inbounds, inbound])
+    }
   }
 
   m.crossChainSwapBTC = async () => crossChainSwapHandle(true)

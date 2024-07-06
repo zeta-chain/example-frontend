@@ -33,10 +33,7 @@ const Swap = () => {
   const { address } = useAccount()
 
   const [sourceAmount, setSourceAmount] = useState<string>("")
-  const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
-  const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [isRightChain, setIsRightChain] = useState(true)
-  const [isFeeOpen, setIsFeeOpen] = useState(false)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
 
   const {
@@ -85,8 +82,6 @@ const Swap = () => {
   const {
     addressSelected,
     isAddressSelectedValid,
-    customAddressOpen,
-    setCustomAddressOpen,
     canChangeAddress,
     customAddress,
     setCustomAddress,
@@ -151,23 +146,17 @@ const Swap = () => {
       sendType={sendType}
       sourceAmount={sourceAmount}
       setSourceAmount={setSourceAmount}
-      sourceTokenOpen={sourceTokenOpen}
-      setSourceTokenOpen={setSourceTokenOpen}
       sourceTokenSelected={sourceTokenSelected}
       balancesLoading={balancesLoading}
       sourceBalances={sourceBalances}
       setSourceToken={setSourceToken}
       destinationAmount={destinationAmount}
       destinationAmountIsLoading={destinationAmountIsLoading}
-      destinationTokenOpen={destinationTokenOpen}
-      setDestinationTokenOpen={setDestinationTokenOpen}
       destinationTokenSelected={destinationTokenSelected}
       destinationBalances={destinationBalances}
       setDestinationToken={setDestinationToken}
       computeSendType={computeSendType}
       addressSelected={addressSelected}
-      customAddressOpen={customAddressOpen}
-      setCustomAddressOpen={setCustomAddressOpen}
       canChangeAddress={canChangeAddress}
       isAddressSelectedValid={isAddressSelectedValid}
       formatAddress={formatAddress}
@@ -176,8 +165,6 @@ const Swap = () => {
       isCustomAddressValid={isCustomAddressValid}
       saveCustomAddress={saveCustomAddress}
       crossChainFee={crossChainFee}
-      isFeeOpen={isFeeOpen}
-      setIsFeeOpen={setIsFeeOpen}
       isRightChain={isRightChain}
       handleSend={handleSend}
       sendDisabled={sendDisabled}

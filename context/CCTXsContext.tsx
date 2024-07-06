@@ -77,7 +77,7 @@ export const CCTXsProvider = ({ children }: { children: React.ReactNode }) => {
             })
           })
 
-        client.trackCCTX(i.inboundHash, false, emitter)
+        client.trackCCTX({ hash: i.inboundHash, json: false, emitter })
         setCCTXs([...cctxs, { inboundHash: i.inboundHash, desc: i.desc }])
       }
     }
