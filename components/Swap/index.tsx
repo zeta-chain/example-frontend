@@ -7,6 +7,7 @@ import { useFeesContext } from "@/context/FeesContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress } from "@/lib/utils"
+import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import useSendType, {
   computeSendType,
@@ -27,6 +28,7 @@ interface SwapProps {
 }
 
 const Swap: React.FC<SwapProps> = ({ contract }) => {
+  const signer = useEthersSigner()
   const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { setInbounds, inbounds } = useCCTXsContext()
@@ -54,7 +56,8 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
     sourceTokenSelected,
     destinationTokenSelected,
     sendType,
-    fees
+    fees,
+    client
   )
 
   const { isAmountGTFee, isAmountLTBalance } = useAmountValidation(
@@ -71,7 +74,8 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
       sourceAmount,
       crossChainFee,
       sendType,
-      balances
+      balances,
+      client
     )
 
   const { priorityErrors } = useSwapErrors(
@@ -105,7 +109,8 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
     inbounds,
     setInbounds,
     bitcoinAddress,
-    client
+    client,
+    signer
   )
 
   const sendDisabled =

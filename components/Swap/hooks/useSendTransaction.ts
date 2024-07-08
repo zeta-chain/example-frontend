@@ -8,8 +8,6 @@ import { ethers } from "ethers"
 import { parseEther, parseUnits } from "viem"
 import { useAccount } from "wagmi"
 
-import { useEthersSigner } from "@/hooks/useEthersSigner"
-
 import SwapToAnyToken from "./SwapToAnyToken.json"
 import type { Inbound, Token } from "./types"
 
@@ -24,10 +22,10 @@ const useSendTransaction = (
   inbounds: Inbound[],
   setInbounds: (inbounds: Inbound[]) => void,
   bitcoinAddress: string,
-  client: any
+  client: any,
+  signer: any
 ) => {
   const { address } = useAccount()
-  const signer = useEthersSigner()
   const [isSending, setIsSending] = useState(false)
 
   const handleSend = async () => {

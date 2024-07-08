@@ -3,7 +3,6 @@ import { utils } from "ethers"
 import debounce from "lodash/debounce"
 
 import { roundNumber } from "@/lib/utils"
-import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 
 import type { Balance, CrossChainFee, Token } from "./types"
 
@@ -13,9 +12,9 @@ const useDestinationAmount = (
   sourceAmount: string,
   crossChainFee: CrossChainFee | null,
   sendType: string | null,
-  balances: any
+  balances: any,
+  client: any
 ) => {
-  const { client } = useZetaChainClient()
   const [destinationAmount, setDestinationAmount] = useState<string>("")
   const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
     useState<boolean>(false)

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { utils } from "ethers"
 
 import { roundNumber } from "@/lib/utils"
-import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 
 import type { CrossChainFee, Token } from "./types"
 
@@ -10,9 +9,9 @@ const useCrossChainFee = (
   sourceTokenSelected: Token | null,
   destinationTokenSelected: Token | null,
   sendType: string | null,
-  fees: any
+  fees: any,
+  client: any
 ) => {
-  const { client } = useZetaChainClient()
   const [crossChainFee, setCrossChainFee] = useState<CrossChainFee | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
