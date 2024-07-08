@@ -36,6 +36,8 @@ const ConnectWallet = () => {
   )
 }
 
+const universalSwapContract = "0xb459F14260D1dc6484CE56EB0826be317171e91F"
+
 export default function IndexPage() {
   const { stakingDelegations } = useStakingContext()
   const { prices } = usePricesContext()
@@ -132,7 +134,7 @@ export default function IndexPage() {
           )}
         </div>
         <div className="mr-4">
-          <Swap />
+          <Swap contract={universalSwapContract} />
         </div>
       </div>
     </div>

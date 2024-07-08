@@ -21,10 +21,11 @@ import useDestinationAmount from "./hooks/useDestinationAmount"
 import useSendTransaction from "./hooks/useSendTransaction"
 import useSwapErrors from "./hooks/useSwapErrors"
 
-const omnichainSwapContractAddress =
-  "0xb459F14260D1dc6484CE56EB0826be317171e91F"
+interface SwapProps {
+  contract: string
+}
 
-const Swap = () => {
+const Swap: React.FC<SwapProps> = ({ contract }) => {
   const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { setInbounds, inbounds } = useCCTXsContext()
@@ -96,7 +97,7 @@ const Swap = () => {
     sourceAmount,
     addressSelected,
     setSourceAmount,
-    omnichainSwapContractAddress,
+    contract,
     inbounds,
     setInbounds,
     bitcoinAddress,

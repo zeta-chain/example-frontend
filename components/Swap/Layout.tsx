@@ -111,7 +111,6 @@ const SwapLayout: React.FC<SwapLayoutProps> = ({
       <h1 className="text-2xl font-bold leading-tight tracking-tight mt-6 mb-4 ml-2">
         {sendTypeDetails[sendType as any]?.title || "Swap"}
       </h1>
-      {JSON.stringify(sendType)}
       <form
         onSubmit={(e) => {
           e.preventDefault()

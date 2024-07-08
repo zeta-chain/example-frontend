@@ -3,6 +3,7 @@ import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { ParamChainName, getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
+import { bech32 } from "bech32"
 import { ethers } from "ethers"
 import { parseEther, parseUnits } from "viem"
 import { useAccount } from "wagmi"
@@ -418,18 +419,37 @@ const useSendTransaction = (
     const from = sourceTokenSelected.chain_name
     const dest = destinationTokenSelected.chain_name
 
-    const tx = await client.deposit({
+    let recipient
+    try {
+      if (bech32.decode(addressSelected)) {
+        recipient = ethers.utils.solidityPack(
+          ["bytes"],
+          [ethers.utils.toUtf8Bytes(addressSelected)]
+        )
+      }
+    } catch (e) {
+      recipient = addressSelected
+    }
+    const d = destinationTokenSelected
+    const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+    const params = {
       chain: from,
       amount: sourceAmount,
-      recipient: addressSelected,
-    })
+      recipient: omnichainSwapContractAddress,
+      message: [
+        ["address", "bytes", "bool"],
+        [zrc20, recipient, withdraw],
+      ],
+      erc20: sourceTokenSelected.contract,
+    }
+    console.log(params)
+    const tx = await client.deposit(params)
 
     if (tx) {
       const inbound = {
         inboundHash: tx.hash,
         desc: `Sent ${sourceAmount} ${tiker} from ${from} to ${dest}`,
       }
-      console.log(inbound)
       setInbounds([...inbounds, inbound])
     }
   }
