@@ -6,7 +6,6 @@ import { useFeesContext } from "@/context/FeesContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress } from "@/lib/utils"
-import { useEthersSigner } from "@/hooks/useEthersSigner"
 import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import useSendType, {
   computeSendType,
@@ -24,11 +23,10 @@ import useSwapErrors from "./hooks/useSwapErrors"
 
 interface SwapProps {
   contract: string
-  track: any
+  track?: any
 }
 
 const Swap: React.FC<SwapProps> = ({ contract, track }) => {
-  const signer = useEthersSigner()
   const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
@@ -105,10 +103,9 @@ const Swap: React.FC<SwapProps> = ({ contract, track }) => {
     addressSelected,
     setSourceAmount,
     contract,
-    track,
     bitcoinAddress,
     client,
-    signer
+    track
   )
 
   const sendDisabled =
