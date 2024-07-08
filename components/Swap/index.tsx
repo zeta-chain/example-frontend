@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useBalanceContext } from "@/context/BalanceContext"
 import { useCCTXsContext } from "@/context/CCTXsContext"
+import { useFeesContext } from "@/context/FeesContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
 import { formatAddress } from "@/lib/utils"
@@ -29,7 +30,8 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
   const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { setInbounds, inbounds } = useCCTXsContext()
-  const { balancesLoading, bitcoinAddress } = useBalanceContext()
+  const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
+  const { fees } = useFeesContext()
   const { chain } = useNetwork()
   const { address } = useAccount()
 
@@ -44,14 +46,15 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
     setDestinationToken,
     destinationTokenSelected,
     destinationBalances,
-  } = useTokenSelection()
+  } = useTokenSelection(balances, bitcoinAddress)
 
   const sendType = useSendType(sourceTokenSelected, destinationTokenSelected)
 
   const { crossChainFee } = useCrossChainFee(
     sourceTokenSelected,
     destinationTokenSelected,
-    sendType
+    sendType,
+    fees
   )
 
   const { isAmountGTFee, isAmountLTBalance } = useAmountValidation(
@@ -67,7 +70,8 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
       destinationTokenSelected,
       sourceAmount,
       crossChainFee,
-      sendType
+      sendType,
+      balances
     )
 
   const { priorityErrors } = useSwapErrors(

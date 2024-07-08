@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { useFeesContext } from "@/context/FeesContext"
 import { utils } from "ethers"
 
 import { roundNumber } from "@/lib/utils"
@@ -10,9 +9,9 @@ import type { CrossChainFee, Token } from "./types"
 const useCrossChainFee = (
   sourceTokenSelected: Token | null,
   destinationTokenSelected: Token | null,
-  sendType: string | null
+  sendType: string | null,
+  fees: any
 ) => {
-  const { fees } = useFeesContext()
   const { client } = useZetaChainClient()
   const [crossChainFee, setCrossChainFee] = useState<CrossChainFee | null>(null)
   const [loading, setLoading] = useState<boolean>(false)

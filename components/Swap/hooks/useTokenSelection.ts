@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react"
-import { useBalanceContext } from "@/context/BalanceContext"
 
 import type { Balance, Token } from "./types"
 
-const useTokenSelection = () => {
-  const { balances, bitcoinAddress } = useBalanceContext()
+const useTokenSelection = (balances: any, bitcoinAddress: string) => {
   const [sourceToken, setSourceToken] = useState<string | undefined>()
   const [sourceTokenSelected, setSourceTokenSelected] = useState<Token | null>(
     null

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { useBalanceContext } from "@/context/BalanceContext"
 import { utils } from "ethers"
 import debounce from "lodash/debounce"
 
@@ -13,13 +12,13 @@ const useDestinationAmount = (
   destinationTokenSelected: Token | null,
   sourceAmount: string,
   crossChainFee: CrossChainFee | null,
-  sendType: string | null
+  sendType: string | null,
+  balances: any
 ) => {
   const { client } = useZetaChainClient()
   const [destinationAmount, setDestinationAmount] = useState<string>("")
   const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
     useState<boolean>(false)
-  const { balances } = useBalanceContext()
 
   useEffect(() => {
     setDestinationAmount("")
