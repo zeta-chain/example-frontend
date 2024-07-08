@@ -19,8 +19,7 @@ const useSendTransaction = (
   addressSelected: string,
   setSourceAmount: (amount: string) => void,
   omnichainSwapContractAddress: string,
-  inbounds: Inbound[],
-  setInbounds: (inbounds: Inbound[]) => void,
+  track: any,
   bitcoinAddress: string,
   client: any,
   signer: any
@@ -104,11 +103,10 @@ const useSendTransaction = (
       bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
         if (!error) {
-          const inbound = {
+          track({
             inboundHash: hash,
             desc: `Sent ${sourceAmount} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
+          })
         }
       }
     )
@@ -134,11 +132,10 @@ const useSendTransaction = (
       bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
         if (!error) {
-          const inbound = {
+          track({
             inboundHash: hash,
             desc: `Sent ${a} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
+          })
         }
       }
     )
@@ -163,11 +160,10 @@ const useSendTransaction = (
       recipient: address as string,
       amount: sourceAmount,
     })
-    const inbound = {
+    track({
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
-    }
-    setInbounds([...inbounds, inbound])
+    })
   }
 
   m.withdrawBTC = async () => {
@@ -183,11 +179,10 @@ const useSendTransaction = (
       amount: sourceAmount,
       recipient: addressSelected,
     })
-    const inbound = {
+    track({
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
-    }
-    setInbounds([...inbounds, inbound])
+    })
   }
 
   m.wrapZeta = async () => {
@@ -250,11 +245,10 @@ const useSendTransaction = (
     const token = sourceTokenSelected.symbol
     const from = sourceTokenSelected.chain_name
     const dest = destinationTokenSelected.chain_name
-    const inbound = {
+    track({
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
-    }
-    setInbounds([...inbounds, inbound])
+    })
   }
 
   m.depositNative = async () => {
@@ -269,11 +263,10 @@ const useSendTransaction = (
       amount: sourceAmount,
       recipient: addressSelected,
     })
-    const inbound = {
+    track({
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
-    }
-    setInbounds([...inbounds, inbound])
+    })
   }
 
   m.fromZetaChainSwapAndWithdraw = async () => {
@@ -309,11 +302,10 @@ const useSendTransaction = (
       recipient,
       true
     )
-    const inbound = {
+    track({
       inboundHash: tx.hash,
       desc: `Sent ${sourceAmount} ${sourceTokenSelected.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
-    }
-    setInbounds([...inbounds, inbound])
+    })
   }
 
   m.fromZetaChainSwap = async () => {
@@ -386,11 +378,10 @@ const useSendTransaction = (
       const token = sourceTokenSelected.symbol
       const from = sourceTokenSelected.chain_name
       const dest = destinationTokenSelected.chain_name
-      const inbound = {
+      track({
         inboundHash: tx.hash,
         desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
-      }
-      setInbounds([...inbounds, inbound])
+      })
     } catch (error) {
       console.error("Error during deposit: ", error)
     }
@@ -440,15 +431,13 @@ const useSendTransaction = (
       ],
       erc20: sourceTokenSelected.contract,
     }
-    console.log(params)
     const tx = await client.deposit(params)
 
     if (tx) {
-      const inbound = {
+      track({
         inboundHash: tx.hash,
         desc: `Sent ${sourceAmount} ${tiker} from ${from} to ${dest}`,
-      }
-      setInbounds([...inbounds, inbound])
+      })
     }
   }
 

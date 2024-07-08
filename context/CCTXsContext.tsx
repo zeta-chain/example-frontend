@@ -28,6 +28,10 @@ export const CCTXsProvider = ({ children }: { children: React.ReactNode }) => {
     })
   }
 
+  const trackTransaction = ({ hash, desc }: { hash: string; desc: string }) => {
+    setInbounds([...inbounds, { inboundHash: hash, desc }])
+  }
+
   useEffect(() => {
     const cctxList = cctxs.map((c: any) => c.inboundHash)
     for (let i of inbounds) {
@@ -84,7 +88,7 @@ export const CCTXsProvider = ({ children }: { children: React.ReactNode }) => {
   }, [inbounds])
 
   return (
-    <CCTXsContext.Provider value={{ cctxs, inbounds, setCCTXs, setInbounds }}>
+    <CCTXsContext.Provider value={{ cctxs, inbounds, trackTransaction }}>
       {children}
     </CCTXsContext.Provider>
   )

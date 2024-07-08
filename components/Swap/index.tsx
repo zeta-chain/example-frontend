@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useBalanceContext } from "@/context/BalanceContext"
-import { useCCTXsContext } from "@/context/CCTXsContext"
 import { useFeesContext } from "@/context/FeesContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
@@ -25,17 +24,17 @@ import useSwapErrors from "./hooks/useSwapErrors"
 
 interface SwapProps {
   contract: string
+  track: any
 }
 
-const Swap: React.FC<SwapProps> = ({ contract }) => {
+const Swap: React.FC<SwapProps> = ({ contract, track }) => {
   const signer = useEthersSigner()
   const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const { setInbounds, inbounds } = useCCTXsContext()
-  const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
-  const { fees } = useFeesContext()
   const { chain } = useNetwork()
   const { address } = useAccount()
+  const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
+  const { fees } = useFeesContext()
 
   const [sourceAmount, setSourceAmount] = useState<string>("")
   const [isRightChain, setIsRightChain] = useState(true)
@@ -106,8 +105,7 @@ const Swap: React.FC<SwapProps> = ({ contract }) => {
     addressSelected,
     setSourceAmount,
     contract,
-    inbounds,
-    setInbounds,
+    track,
     bitcoinAddress,
     client,
     signer

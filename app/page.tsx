@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useBalanceContext } from "@/context/BalanceContext"
+import { useCCTXsContext } from "@/context/CCTXsContext"
 import { usePricesContext } from "@/context/PricesContext"
 import { useStakingContext } from "@/context/StakingContext"
 import { RefreshCw } from "lucide-react"
@@ -41,6 +42,7 @@ const universalSwapContract = "0xb459F14260D1dc6484CE56EB0826be317171e91F"
 export default function IndexPage() {
   const { stakingDelegations } = useStakingContext()
   const { prices } = usePricesContext()
+  const { trackTransaction, cctxs, inbounds } = useCCTXsContext()
 
   const { balances, balancesLoading, balancesRefreshing, fetchBalances } =
     useBalanceContext()
@@ -103,6 +105,8 @@ export default function IndexPage() {
 
   return (
     <div>
+      {JSON.stringify(cctxs)}
+      {JSON.stringify(inbounds)}
       <div className="grid sm:grid-cols-3 gap-x-10">
         <div className="sm:col-span-2 overflow-x-scroll mb-20">
           <div className="mt-12 mb-8">
@@ -134,7 +138,7 @@ export default function IndexPage() {
           )}
         </div>
         <div className="mr-4">
-          <Swap contract={universalSwapContract} />
+          <Swap contract={universalSwapContract} track={trackTransaction} />
         </div>
       </div>
     </div>
