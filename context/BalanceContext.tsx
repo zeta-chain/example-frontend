@@ -34,6 +34,7 @@ export const BalanceProvider = ({
         if (!isConnected) {
           return setBalances([])
         }
+        console.log("FETCHING BALANCES...")
         const b = await client.getBalances({
           evmAddress: address,
           btcAddress: btc,

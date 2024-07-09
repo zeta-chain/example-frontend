@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useBalanceContext } from "@/context/BalanceContext"
 import { useFeesContext } from "@/context/FeesContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
 
@@ -24,19 +23,52 @@ import useSwapErrors from "./hooks/useSwapErrors"
 interface SwapProps {
   contract: string
   track?: any
+  balancesLoadingProp?: boolean
+  balancesProp?: any
 }
 
-const Swap: React.FC<SwapProps> = ({ contract, track }) => {
+const Swap: React.FC<SwapProps> = ({
+  contract,
+  track,
+  balancesLoadingProp,
+  balancesProp,
+}) => {
   const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
   const { address } = useAccount()
-  const { balances, balancesLoading, bitcoinAddress } = useBalanceContext()
+
   const { fees } = useFeesContext()
+
+  const bitcoinAddress = "" // temporary
 
   const [sourceAmount, setSourceAmount] = useState<string>("")
   const [isRightChain, setIsRightChain] = useState(true)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
+
+  const [balances, setBalances] = useState<any>(balancesProp || [])
+  const [balancesLoading, setBalancesLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      setBalancesLoading(true)
+      try {
+        const result = await client.getBalances({ evmAddress: address })
+        setBalancesLoading(result)
+      } catch (error) {
+        console.error("Error fetching local balances:", error)
+      } finally {
+        setBalancesLoading(false)
+      }
+    }
+
+    if (balancesProp) {
+      setBalances(balancesProp)
+      setBalancesLoading(false)
+    } else {
+      fetchBalances()
+    }
+  }, [balancesProp])
 
   const {
     setSourceToken,
@@ -146,39 +178,42 @@ const Swap: React.FC<SwapProps> = ({ contract, track }) => {
   }
 
   return (
-    <SwapLayout
-      sendTypeDetails={sendTypeDetails}
-      sendType={sendType}
-      sourceAmount={sourceAmount}
-      setSourceAmount={setSourceAmount}
-      sourceTokenSelected={sourceTokenSelected}
-      balancesLoading={balancesLoading}
-      sourceBalances={sourceBalances}
-      setSourceToken={setSourceToken}
-      destinationAmount={destinationAmount}
-      destinationAmountIsLoading={destinationAmountIsLoading}
-      destinationTokenSelected={destinationTokenSelected}
-      destinationBalances={destinationBalances}
-      setDestinationToken={setDestinationToken}
-      computeSendType={computeSendType}
-      addressSelected={addressSelected}
-      canChangeAddress={canChangeAddress}
-      isAddressSelectedValid={isAddressSelectedValid}
-      formatAddress={formatAddress}
-      customAddress={customAddress}
-      setCustomAddress={setCustomAddress}
-      isCustomAddressValid={isCustomAddressValid}
-      saveCustomAddress={saveCustomAddress}
-      crossChainFee={crossChainFee}
-      isRightChain={isRightChain}
-      handleSend={handleSend}
-      sendDisabled={sendDisabled}
-      isSending={isSending}
-      sendButtonText={sendButtonText}
-      handleSwitchNetwork={handleSwitchNetwork}
-      isLoading={isLoading}
-      pendingChainId={pendingChainId}
-    />
+    <div>
+      {JSON.stringify(sendType)}
+      <SwapLayout
+        sendTypeDetails={sendTypeDetails}
+        sendType={sendType}
+        sourceAmount={sourceAmount}
+        setSourceAmount={setSourceAmount}
+        sourceTokenSelected={sourceTokenSelected}
+        balancesLoading={balancesLoading}
+        sourceBalances={sourceBalances}
+        setSourceToken={setSourceToken}
+        destinationAmount={destinationAmount}
+        destinationAmountIsLoading={destinationAmountIsLoading}
+        destinationTokenSelected={destinationTokenSelected}
+        destinationBalances={destinationBalances}
+        setDestinationToken={setDestinationToken}
+        computeSendType={computeSendType}
+        addressSelected={addressSelected}
+        canChangeAddress={canChangeAddress}
+        isAddressSelectedValid={isAddressSelectedValid}
+        formatAddress={formatAddress}
+        customAddress={customAddress}
+        setCustomAddress={setCustomAddress}
+        isCustomAddressValid={isCustomAddressValid}
+        saveCustomAddress={saveCustomAddress}
+        crossChainFee={crossChainFee}
+        isRightChain={isRightChain}
+        handleSend={handleSend}
+        sendDisabled={sendDisabled}
+        isSending={isSending}
+        sendButtonText={sendButtonText}
+        handleSwitchNetwork={handleSwitchNetwork}
+        isLoading={isLoading}
+        pendingChainId={pendingChainId}
+      />
+    </div>
   )
 }
 

@@ -136,7 +136,12 @@ export default function IndexPage() {
           )}
         </div>
         <div className="mr-4">
-          <Swap contract={universalSwapContract} track={trackTransaction} />
+          <Swap
+            contract={universalSwapContract}
+            track={trackTransaction}
+            balancesProp={balances}
+            balancesLoadingProp={balancesLoading}
+          />
         </div>
       </div>
     </div>
