@@ -1,16 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useFeesContext } from "@/context/FeesContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
-
-import { formatAddress } from "@/lib/utils"
-import { useZetaChainClient } from "@/hooks/useZetaChainClient"
-import useSendType, {
-  computeSendType,
-  sendTypeDetails,
-} from "@/components/Swap/hooks/useSendType"
-import useTokenSelection from "@/components/Swap/hooks/useTokenSelection"
 
 import SwapLayout from "./Layout"
 import useAmountValidation from "./hooks/useAmountValidation"
@@ -18,27 +9,30 @@ import useCrossChainFee from "./hooks/useCrossChainFee"
 import useDestinationAddress from "./hooks/useDestinationAddress"
 import useDestinationAmount from "./hooks/useDestinationAmount"
 import useSendTransaction from "./hooks/useSendTransaction"
+import useSendType, {
+  computeSendType,
+  sendTypeDetails,
+} from "./hooks/useSendType"
 import useSwapErrors from "./hooks/useSwapErrors"
+import useTokenSelection from "./hooks/useTokenSelection"
+import { formatAddress } from "./lib/utils"
 
 interface SwapProps {
   contract: string
+  client: any
   track?: any
-  balancesLoadingProp?: boolean
-  balancesProp?: any
+  balances?: any
 }
 
 const Swap: React.FC<SwapProps> = ({
   contract,
   track,
-  balancesLoadingProp,
-  balancesProp,
+  balances: balancesProp,
+  client,
 }) => {
-  const { client } = useZetaChainClient()
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
   const { chain } = useNetwork()
   const { address } = useAccount()
-
-  const { fees } = useFeesContext()
 
   const bitcoinAddress = "" // temporary
 
@@ -84,8 +78,6 @@ const Swap: React.FC<SwapProps> = ({
   const { crossChainFee } = useCrossChainFee(
     sourceTokenSelected,
     destinationTokenSelected,
-    sendType,
-    fees,
     client
   )
 
@@ -179,7 +171,6 @@ const Swap: React.FC<SwapProps> = ({
 
   return (
     <div>
-      {JSON.stringify(sendType)}
       <SwapLayout
         sendTypeDetails={sendTypeDetails}
         sendType={sendType}

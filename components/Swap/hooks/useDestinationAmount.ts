@@ -2,8 +2,7 @@ import { useEffect, useState } from "react"
 import { utils } from "ethers"
 import debounce from "lodash/debounce"
 
-import { roundNumber } from "@/lib/utils"
-
+import { roundNumber } from "../lib/utils"
 import type { Balance, CrossChainFee, Token } from "./types"
 
 const useDestinationAmount = (

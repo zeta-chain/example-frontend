@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react"
 import { ethers, utils } from "ethers"
 
-import { roundNumber } from "@/lib/utils"
 import { computeSendType } from "@/components/Swap/hooks/useSendType"
 
+import { roundNumber } from "../lib/utils"
 import type { CrossChainFee, Token } from "./types"
 
 const useCrossChainFee = (
   sourceTokenSelected: Token | null,
   destinationTokenSelected: Token | null,
-  sendType: string | null,
-  fees: any,
   client: any
 ) => {
   const [crossChainFee, setCrossChainFee] = useState<CrossChainFee | null>(null)

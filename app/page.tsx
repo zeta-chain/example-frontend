@@ -8,6 +8,7 @@ import { useStakingContext } from "@/context/StakingContext"
 import { RefreshCw } from "lucide-react"
 import { useAccount } from "wagmi"
 
+import { useZetaChainClient } from "@/hooks/useZetaChainClient"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -40,6 +41,7 @@ const ConnectWallet = () => {
 const universalSwapContract = "0xb459F14260D1dc6484CE56EB0826be317171e91F"
 
 export default function IndexPage() {
+  const { client } = useZetaChainClient()
   const { stakingDelegations } = useStakingContext()
   const { prices } = usePricesContext()
   const { trackTransaction } = useCCTXsContext()
@@ -138,9 +140,9 @@ export default function IndexPage() {
         <div className="mr-4">
           <Swap
             contract={universalSwapContract}
+            client={client}
             track={trackTransaction}
-            balancesProp={balances}
-            balancesLoadingProp={balancesLoading}
+            balances={balances}
           />
         </div>
       </div>
