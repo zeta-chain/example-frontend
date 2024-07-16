@@ -71,23 +71,8 @@ const BtcIntegration = () => {
   const callOkxWallet = async (params: Params) => {
     if (!window.okxwallet) return alert("OKX wallet not installed")
     const okxwallet = window.okxwallet
-    const result = await okxwallet.bitcoinTestnet.connect()
-    console.log('result', result)
     const account = (await okxwallet?.bitcoinTestnet?.getAccounts())?.[0]
     if (!account) return alert("No account found")
-    console.log('account', account)
-    // const result = await wallet.bitcoin.connect()
-    // console.log('result', result)
-
-    // try {
-    //   let accounts = await okxwallet.bitcoin.requestAccounts();
-    //   console.log('connect success', accounts);
-    // } catch (e) {
-    //   console.log('connect failed');
-    // }
-    
-    // let res = await okxwallet.bitcoinTestnet.getNetwork()
-    // console.log(res);
     try {
       const txHash = await okxwallet.bitcoinTestnet.send(
         {
@@ -98,7 +83,7 @@ const BtcIntegration = () => {
           memoPos: 1,
         }
       );
-      console.log(txHash)
+      return alert(`Broadcasted a transaction: ${txHash}`)
     } catch (e: any) {
       throw new Error(e.message || "Error sending OKX Bitcoin transaction")
     }
