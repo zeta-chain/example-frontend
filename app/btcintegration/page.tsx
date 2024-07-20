@@ -71,12 +71,12 @@ const BtcIntegration = () => {
   const callOkxWallet = async (params: Params) => {
     if (!window.okxwallet) return alert("OKX wallet not installed")
     const okxwallet = window.okxwallet
-    const account = (await okxwallet?.bitcoinTestnet?.getAccounts())?.[0]
+    const account = await okxwallet?.bitcoinTestnet?.connect()
     if (!account) return alert("No account found")
     try {
       const txHash = await okxwallet.bitcoinTestnet.send(
         {
-          from: account,
+          from: account.address,
           to: params.tss,
           value: params.amount / 1e8,
           memo: `0x${params.contract}${params.message}`,
