@@ -1,17 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useBalanceContext } from "@/context/BalanceContext"
-import { useCCTXsContext } from "@/context/CCTXsContext"
 import { useAccount, useNetwork, useSwitchNetwork } from "wagmi"
-
-import { formatAddress } from "@/lib/utils"
-import { useZetaChainClient } from "@/hooks/useZetaChainClient"
-import useSendType, {
-  computeSendType,
-  sendTypeDetails,
-} from "@/components/Swap/hooks/useSendType"
-import useTokenSelection from "@/components/Swap/hooks/useTokenSelection"
 
 import SwapLayout from "./Layout"
 import useAmountValidation from "./hooks/useAmountValidation"
@@ -19,25 +9,60 @@ import useCrossChainFee from "./hooks/useCrossChainFee"
 import useDestinationAddress from "./hooks/useDestinationAddress"
 import useDestinationAmount from "./hooks/useDestinationAmount"
 import useSendTransaction from "./hooks/useSendTransaction"
+import useSendType, {
+  computeSendType,
+  sendTypeDetails,
+} from "./hooks/useSendType"
 import useSwapErrors from "./hooks/useSwapErrors"
+import useTokenSelection from "./hooks/useTokenSelection"
+import { formatAddress } from "./lib/utils"
 
-const omnichainSwapContractAddress =
-  "0xb459F14260D1dc6484CE56EB0826be317171e91F"
+interface SwapProps {
+  contract: string
+  client: any
+  track?: any
+  balances?: any
+}
 
-const Swap = () => {
-  const { client } = useZetaChainClient()
+const Swap: React.FC<SwapProps> = ({
+  contract,
+  track,
+  balances: balancesProp,
+  client,
+}) => {
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork()
-  const { setInbounds, inbounds } = useCCTXsContext()
-  const { balancesLoading, bitcoinAddress } = useBalanceContext()
   const { chain } = useNetwork()
   const { address } = useAccount()
 
+  const bitcoinAddress = "" // temporary
+
   const [sourceAmount, setSourceAmount] = useState<string>("")
-  const [sourceTokenOpen, setSourceTokenOpen] = useState(false)
-  const [destinationTokenOpen, setDestinationTokenOpen] = useState(false)
   const [isRightChain, setIsRightChain] = useState(true)
-  const [isFeeOpen, setIsFeeOpen] = useState(false)
   const [sendButtonText, setSendButtonText] = useState("Send tokens")
+
+  const [balances, setBalances] = useState<any>(balancesProp || [])
+  const [balancesLoading, setBalancesLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      setBalancesLoading(true)
+      try {
+        const result = await client.getBalances({ evmAddress: address })
+        setBalancesLoading(result)
+      } catch (error) {
+        console.error("Error fetching local balances:", error)
+      } finally {
+        setBalancesLoading(false)
+      }
+    }
+
+    if (balancesProp) {
+      setBalances(balancesProp)
+      setBalancesLoading(false)
+    } else {
+      fetchBalances()
+    }
+  }, [balancesProp])
 
   const {
     setSourceToken,
@@ -46,14 +71,14 @@ const Swap = () => {
     setDestinationToken,
     destinationTokenSelected,
     destinationBalances,
-  } = useTokenSelection()
+  } = useTokenSelection(balances, bitcoinAddress)
 
   const sendType = useSendType(sourceTokenSelected, destinationTokenSelected)
 
   const { crossChainFee } = useCrossChainFee(
     sourceTokenSelected,
     destinationTokenSelected,
-    sendType
+    client
   )
 
   const { isAmountGTFee, isAmountLTBalance } = useAmountValidation(
@@ -69,7 +94,9 @@ const Swap = () => {
       destinationTokenSelected,
       sourceAmount,
       crossChainFee,
-      sendType
+      sendType,
+      balances,
+      client
     )
 
   const { priorityErrors } = useSwapErrors(
@@ -85,8 +112,6 @@ const Swap = () => {
   const {
     addressSelected,
     isAddressSelectedValid,
-    customAddressOpen,
-    setCustomAddressOpen,
     canChangeAddress,
     customAddress,
     setCustomAddress,
@@ -101,11 +126,10 @@ const Swap = () => {
     sourceAmount,
     addressSelected,
     setSourceAmount,
-    omnichainSwapContractAddress,
-    inbounds,
-    setInbounds,
+    contract,
     bitcoinAddress,
-    client
+    client,
+    track
   )
 
   const sendDisabled =
@@ -146,47 +170,41 @@ const Swap = () => {
   }
 
   return (
-    <SwapLayout
-      sendTypeDetails={sendTypeDetails}
-      sendType={sendType}
-      sourceAmount={sourceAmount}
-      setSourceAmount={setSourceAmount}
-      sourceTokenOpen={sourceTokenOpen}
-      setSourceTokenOpen={setSourceTokenOpen}
-      sourceTokenSelected={sourceTokenSelected}
-      balancesLoading={balancesLoading}
-      sourceBalances={sourceBalances}
-      setSourceToken={setSourceToken}
-      destinationAmount={destinationAmount}
-      destinationAmountIsLoading={destinationAmountIsLoading}
-      destinationTokenOpen={destinationTokenOpen}
-      setDestinationTokenOpen={setDestinationTokenOpen}
-      destinationTokenSelected={destinationTokenSelected}
-      destinationBalances={destinationBalances}
-      setDestinationToken={setDestinationToken}
-      computeSendType={computeSendType}
-      addressSelected={addressSelected}
-      customAddressOpen={customAddressOpen}
-      setCustomAddressOpen={setCustomAddressOpen}
-      canChangeAddress={canChangeAddress}
-      isAddressSelectedValid={isAddressSelectedValid}
-      formatAddress={formatAddress}
-      customAddress={customAddress}
-      setCustomAddress={setCustomAddress}
-      isCustomAddressValid={isCustomAddressValid}
-      saveCustomAddress={saveCustomAddress}
-      crossChainFee={crossChainFee}
-      isFeeOpen={isFeeOpen}
-      setIsFeeOpen={setIsFeeOpen}
-      isRightChain={isRightChain}
-      handleSend={handleSend}
-      sendDisabled={sendDisabled}
-      isSending={isSending}
-      sendButtonText={sendButtonText}
-      handleSwitchNetwork={handleSwitchNetwork}
-      isLoading={isLoading}
-      pendingChainId={pendingChainId}
-    />
+    <div>
+      <SwapLayout
+        sendTypeDetails={sendTypeDetails}
+        sendType={sendType}
+        sourceAmount={sourceAmount}
+        setSourceAmount={setSourceAmount}
+        sourceTokenSelected={sourceTokenSelected}
+        balancesLoading={balancesLoading}
+        sourceBalances={sourceBalances}
+        setSourceToken={setSourceToken}
+        destinationAmount={destinationAmount}
+        destinationAmountIsLoading={destinationAmountIsLoading}
+        destinationTokenSelected={destinationTokenSelected}
+        destinationBalances={destinationBalances}
+        setDestinationToken={setDestinationToken}
+        computeSendType={computeSendType}
+        addressSelected={addressSelected}
+        canChangeAddress={canChangeAddress}
+        isAddressSelectedValid={isAddressSelectedValid}
+        formatAddress={formatAddress}
+        customAddress={customAddress}
+        setCustomAddress={setCustomAddress}
+        isCustomAddressValid={isCustomAddressValid}
+        saveCustomAddress={saveCustomAddress}
+        crossChainFee={crossChainFee}
+        isRightChain={isRightChain}
+        handleSend={handleSend}
+        sendDisabled={sendDisabled}
+        isSending={isSending}
+        sendButtonText={sendButtonText}
+        handleSwitchNetwork={handleSwitchNetwork}
+        isLoading={isLoading}
+        pendingChainId={pendingChainId}
+      />
+    </div>
   )
 }
 

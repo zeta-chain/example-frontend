@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react"
-import { useBalanceContext } from "@/context/BalanceContext"
 import { utils } from "ethers"
 import debounce from "lodash/debounce"
 
-import { roundNumber } from "@/lib/utils"
-import { useZetaChainClient } from "@/hooks/useZetaChainClient"
-
+import { roundNumber } from "../lib/utils"
 import type { Balance, CrossChainFee, Token } from "./types"
 
 const useDestinationAmount = (
@@ -13,13 +10,13 @@ const useDestinationAmount = (
   destinationTokenSelected: Token | null,
   sourceAmount: string,
   crossChainFee: CrossChainFee | null,
-  sendType: string | null
+  sendType: string | null,
+  balances: any,
+  client: any
 ) => {
-  const { client } = useZetaChainClient()
   const [destinationAmount, setDestinationAmount] = useState<string>("")
   const [destinationAmountIsLoading, setDestinationAmountIsLoading] =
     useState<boolean>(false)
-  const { balances } = useBalanceContext()
 
   useEffect(() => {
     setDestinationAmount("")

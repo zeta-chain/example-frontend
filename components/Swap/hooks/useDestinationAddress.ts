@@ -15,7 +15,6 @@ const useDestinationAddress = (
   const [customAddressSelected, setCustomAddressSelected] = useState<
     string | null
   >(null)
-  const [customAddressOpen, setCustomAddressOpen] = useState(false)
   const [isCustomAddressValid, setIsCustomAddressValid] = useState(false)
 
   useEffect(() => {
@@ -64,7 +63,6 @@ const useDestinationAddress = (
     if (isCustomAddressValid) {
       setCustomAddressSelected(customAddress)
       setCustomAddress(customAddress)
-      setCustomAddressOpen(false)
     }
   }
 
@@ -94,8 +92,6 @@ const useDestinationAddress = (
   return {
     addressSelected,
     isAddressSelectedValid,
-    customAddressOpen,
-    setCustomAddressOpen,
     canChangeAddress: true,
     customAddress,
     setCustomAddress,

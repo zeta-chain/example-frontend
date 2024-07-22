@@ -3,11 +3,10 @@ import ERC20_ABI from "@openzeppelin/contracts/build/contracts/ERC20.json"
 import { ParamChainName, getAddress } from "@zetachain/protocol-contracts"
 import ERC20Custody from "@zetachain/protocol-contracts/abi/evm/ERC20Custody.sol/ERC20Custody.json"
 import WETH9 from "@zetachain/protocol-contracts/abi/zevm/WZETA.sol/WETH9.json"
+import { bech32 } from "bech32"
 import { ethers } from "ethers"
 import { parseEther, parseUnits } from "viem"
 import { useAccount } from "wagmi"
-
-import { useEthersSigner } from "@/hooks/useEthersSigner"
 
 import SwapToAnyToken from "./SwapToAnyToken.json"
 import type { Inbound, Token } from "./types"
@@ -20,13 +19,11 @@ const useSendTransaction = (
   addressSelected: string,
   setSourceAmount: (amount: string) => void,
   omnichainSwapContractAddress: string,
-  inbounds: Inbound[],
-  setInbounds: (inbounds: Inbound[]) => void,
   bitcoinAddress: string,
-  client: any
+  client: any,
+  track?: any
 ) => {
   const { address } = useAccount()
-  const signer = useEthersSigner()
   const [isSending, setIsSending] = useState(false)
 
   const handleSend = async () => {
@@ -104,12 +101,11 @@ const useSendTransaction = (
     window.xfi.bitcoin.request(
       bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
-        if (!error) {
-          const inbound = {
-            inboundHash: hash,
+        if (!error && track) {
+          track({
+            hash: hash,
             desc: `Sent ${sourceAmount} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
+          })
         }
       }
     )
@@ -134,19 +130,18 @@ const useSendTransaction = (
     window.xfi.bitcoin.request(
       bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
       (error: any, hash: any) => {
-        if (!error) {
-          const inbound = {
-            inboundHash: hash,
+        if (!error && track) {
+          track({
+            hash: hash,
             desc: `Sent ${a} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
+          })
         }
       }
     )
   }
 
   m.transferNativeEVM = async () => {
-    await signer?.sendTransaction({
+    await client.signer?.sendTransaction({
       to: addressSelected,
       value: parseEther(sourceAmount),
     })
@@ -164,11 +159,12 @@ const useSendTransaction = (
       recipient: address as string,
       amount: sourceAmount,
     })
-    const inbound = {
-      inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
+    if (track) {
+      track({
+        hash: tx.hash,
+        desc: `Sent ${sourceAmount} ZETA from ${from} to ${to}`,
+      })
     }
-    setInbounds([...inbounds, inbound])
   }
 
   m.withdrawBTC = async () => {
@@ -184,11 +180,12 @@ const useSendTransaction = (
       amount: sourceAmount,
       recipient: addressSelected,
     })
-    const inbound = {
-      inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+    if (track) {
+      track({
+        hash: tx.hash,
+        desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+      })
     }
-    setInbounds([...inbounds, inbound])
   }
 
   m.wrapZeta = async () => {
@@ -196,7 +193,7 @@ const useSendTransaction = (
     if (!zetaTokenAddress) {
       throw new Error("ZetaToken address not found.")
     }
-    signer?.sendTransaction({
+    client.signer?.sendTransaction({
       to: zetaTokenAddress,
       value: parseEther(sourceAmount),
     })
@@ -207,8 +204,12 @@ const useSendTransaction = (
     if (!zetaTokenAddress) {
       throw new Error("ZetaToken address not found.")
     }
-    if (signer) {
-      const contract = new ethers.Contract(zetaTokenAddress, WETH9.abi, signer)
+    if (client.signer) {
+      const contract = new ethers.Contract(
+        zetaTokenAddress,
+        WETH9.abi,
+        client.signer
+      )
       contract.withdraw(parseEther(sourceAmount))
     }
   }
@@ -220,7 +221,7 @@ const useSendTransaction = (
     const contract = new ethers.Contract(
       sourceTokenSelected.contract as string,
       ERC20_ABI.abi,
-      signer
+      client.signer
     )
     const approve = await contract.approve(
       addressSelected,
@@ -251,11 +252,12 @@ const useSendTransaction = (
     const token = sourceTokenSelected.symbol
     const from = sourceTokenSelected.chain_name
     const dest = destinationTokenSelected.chain_name
-    const inbound = {
-      inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+    if (track) {
+      track({
+        hash: tx.hash,
+        desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+      })
     }
-    setInbounds([...inbounds, inbound])
   }
 
   m.depositNative = async () => {
@@ -270,11 +272,12 @@ const useSendTransaction = (
       amount: sourceAmount,
       recipient: addressSelected,
     })
-    const inbound = {
-      inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+    if (track) {
+      track({
+        hash: tx.hash,
+        desc: `Sent ${sourceAmount} ${token} from ${from} to ${to}`,
+      })
     }
-    setInbounds([...inbounds, inbound])
   }
 
   m.fromZetaChainSwapAndWithdraw = async () => {
@@ -284,7 +287,7 @@ const useSendTransaction = (
     const swapContract = new ethers.Contract(
       omnichainSwapContractAddress,
       SwapToAnyToken.abi,
-      signer
+      client.signer
     )
     const amount = ethers.utils.parseUnits(
       sourceAmount,
@@ -295,7 +298,7 @@ const useSendTransaction = (
     const erc20Contract = new ethers.Contract(
       sourceToken as string,
       ERC20_ABI.abi,
-      signer
+      client.signer
     )
     const approve = await erc20Contract.approve(
       omnichainSwapContractAddress,
@@ -310,11 +313,12 @@ const useSendTransaction = (
       recipient,
       true
     )
-    const inbound = {
-      inboundHash: tx.hash,
-      desc: `Sent ${sourceAmount} ${sourceTokenSelected.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
+    if (track) {
+      track({
+        hash: tx.hash,
+        desc: `Sent ${sourceAmount} ${sourceTokenSelected.symbol} from ZetaChain to ${destinationTokenSelected.chain_name}`,
+      })
     }
-    setInbounds([...inbounds, inbound])
   }
 
   m.fromZetaChainSwap = async () => {
@@ -324,7 +328,7 @@ const useSendTransaction = (
     const swapContract = new ethers.Contract(
       omnichainSwapContractAddress,
       SwapToAnyToken.abi,
-      signer
+      client.signer
     )
     const amount = ethers.utils.parseUnits(
       sourceAmount,
@@ -335,7 +339,7 @@ const useSendTransaction = (
     const erc20Contract = new ethers.Contract(
       sourceToken as string,
       ERC20_ABI.abi,
-      signer
+      client.signer
     )
     const approve = await erc20Contract.approve(
       omnichainSwapContractAddress,
@@ -363,7 +367,7 @@ const useSendTransaction = (
     const custodyContract = new ethers.Contract(
       custodyAddress as string,
       ERC20Custody.abi,
-      signer
+      client.signer
     )
     const assetAddress = sourceTokenSelected.contract
     const amount = ethers.utils.parseUnits(
@@ -374,7 +378,7 @@ const useSendTransaction = (
       const contract = new ethers.Contract(
         assetAddress as string,
         ERC20_ABI.abi,
-        signer
+        client.signer
       )
       await (await contract.approve(custodyAddress, amount)).wait()
       const tx = await custodyContract.deposit(
@@ -387,11 +391,12 @@ const useSendTransaction = (
       const token = sourceTokenSelected.symbol
       const from = sourceTokenSelected.chain_name
       const dest = destinationTokenSelected.chain_name
-      const inbound = {
-        inboundHash: tx.hash,
-        desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+      if (track) {
+        track({
+          hash: tx.hash,
+          desc: `Sent ${sourceAmount} ${token} from ${from} to ${dest}`,
+        })
       }
-      setInbounds([...inbounds, inbound])
     } catch (error) {
       console.error("Error during deposit: ", error)
     }
@@ -410,37 +415,45 @@ const useSendTransaction = (
   }
 
   const crossChainSwapHandle = async (withdraw: boolean) => {
-    if (!address) {
-      console.error("EVM address undefined.")
+    if (!sourceTokenSelected || !destinationTokenSelected) {
       return
     }
-    if (!bitcoinAddress) {
-      console.error("Bitcoin address undefined.")
-      return
-    }
-    if (!destinationTokenSelected) {
-      console.error("Destination token not selected.")
-      return
-    }
-    const a = parseFloat(sourceAmount) * 1e8
-    const bitcoinTSSAddress = "tb1qy9pqmk2pd9sv63g27jt8r657wy0d9ueeh0nqur"
-    const contract = omnichainSwapContractAddress.replace(/^0x/, "")
-    const zrc20 = destinationTokenSelected.zrc20?.replace(/^0x/, "")
-    const dest = address.replace(/^0x/, "")
-    const withdrawFlag = withdraw ? "00" : "01"
-    const memo = `hex::${contract}${zrc20}${dest}${withdrawFlag}`
-    window.xfi.bitcoin.request(
-      bitcoinXDEFITransfer(bitcoinAddress, bitcoinTSSAddress, a, memo),
-      (error: any, hash: any) => {
-        if (!error) {
-          const inbound = {
-            inboundHash: hash,
-            desc: `Sent ${sourceAmount} tBTC`,
-          }
-          setInbounds([...inbounds, inbound])
-        }
+
+    const tiker = sourceTokenSelected.ticker
+    const from = sourceTokenSelected.chain_name
+    const dest = destinationTokenSelected.chain_name
+
+    let recipient
+    try {
+      if (bech32.decode(addressSelected)) {
+        recipient = ethers.utils.solidityPack(
+          ["bytes"],
+          [ethers.utils.toUtf8Bytes(addressSelected)]
+        )
       }
-    )
+    } catch (e) {
+      recipient = addressSelected
+    }
+    const d = destinationTokenSelected
+    const zrc20 = d.coin_type === "ZRC20" ? d.contract : d.zrc20
+    const params = {
+      chain: from,
+      amount: sourceAmount,
+      recipient: omnichainSwapContractAddress,
+      message: [
+        ["address", "bytes", "bool"],
+        [zrc20, recipient, withdraw],
+      ],
+      erc20: sourceTokenSelected.contract,
+    }
+    const tx = await client.deposit(params)
+
+    if (tx && track) {
+      track({
+        hash: tx.hash,
+        desc: `Sent ${sourceAmount} ${tiker} from ${from} to ${dest}`,
+      })
+    }
   }
 
   m.crossChainSwapBTC = async () => crossChainSwapHandle(true)
