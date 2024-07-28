@@ -35,7 +35,7 @@ async function createTransaction(
   publickkey: string,
   senderAddress: string,
   params: Params
-) {
+): Promise<{ psbtB64: string; utxoCnt: number }> {
   const publicKey = hex.decode(publickkey)
 
   const p2wpkh = btc.p2wpkh(publicKey, bitcoinTestnet)
@@ -55,6 +55,8 @@ async function createTransaction(
     allowUnknowOutput: true,
   })
 
+  let utxoCnt = 0
+
   output.forEach((utxo) => {
     tx.addInput({
       txid: utxo.txid,
@@ -66,6 +68,7 @@ async function createTransaction(
       witnessScript: p2sh.witnessScript,
       redeemScript: p2sh.redeemScript,
     })
+    utxoCnt += 1
   })
 
   const changeAddress = senderAddress
@@ -73,7 +76,6 @@ async function createTransaction(
   const memo = `${params.contract}${params.message}`.toLowerCase()
 
   const opReturn = btc.Script.encode(["RETURN", Buffer.from(memo, "utf8")])
-
   tx.addOutputAddress(recipientAddress, BigInt(params.amount), bitcoinTestnet)
   tx.addOutput({
     script: opReturn,
@@ -85,10 +87,14 @@ async function createTransaction(
 
   const psbtB64 = base64.encode(psbt)
 
-  return psbtB64
+  return { psbtB64, utxoCnt }
 }
 
-async function signPsbt(psbtBase64: string, senderAddress: string) {
+async function signPsbt(
+  psbtBase64: string,
+  utxoCnt: number,
+  senderAddress: string
+) {
   // Get the PSBT Base64 from the input
 
   if (!psbtBase64) {
@@ -96,13 +102,15 @@ async function signPsbt(psbtBase64: string, senderAddress: string) {
     return
   }
 
+  const sigInputs = new Array(utxoCnt).fill(0, 0, utxoCnt).map((_, i) => i)
+
   try {
     const response = await Wallet.request("signPsbt", {
       psbt: psbtBase64,
       allowedSignHash: btc.SignatureHash.ALL,
       broadcast: true,
       signInputs: {
-        [senderAddress]: [0],
+        [senderAddress]: sigInputs,
       },
     })
 

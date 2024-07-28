@@ -120,7 +120,7 @@ const BtcIntegration = () => {
         params
       )
 
-      await signPsbt(result, response.result[0].address)
+      await signPsbt(result.psbtB64, result.utxoCnt, response.result[0].address)
     } else {
       alert("wallet connection failed")
     }
