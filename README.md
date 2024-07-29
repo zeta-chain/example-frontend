@@ -1,5 +1,8 @@
 # ZetaChain Frontend App Template
 
+> [!WARNING] 
+> This repository is no longer maintained. If you're looking for reusable React components for building universal apps on ZetaChain, please, check out [UniversalKit](https://github.com/zeta-chain/universalkit/).
+
 This repository provides a frontend app template for developers looking to build
 applications on ZetaChain. It's designed to demonstrate various ZetaChain
 functionalities and serve as a starting point for custom DApp development.
